@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { LanguageProvider } from './LanguageContext';
 import { supabase } from './supabaseClient';
 import LandingView from './views/LandingView';
@@ -71,9 +71,9 @@ const App: React.FC = () => {
 };
 
 const AuthBottomNav: React.FC<{ isAuthenticated: boolean }> = ({ isAuthenticated }) => {
-    const location = window.location.hash; // Since we use HashRouter
-    const hideOn = ['#/', '#/login', '#/register', '#/onboarding'];
-    const shouldHide = hideOn.includes(location) || !isAuthenticated;
+    const location = useLocation();
+    const hideOn = ['/', '/login', '/register', '/onboarding'];
+    const shouldHide = hideOn.includes(location.pathname) || !isAuthenticated;
 
     if (shouldHide) return null;
     return <BottomNav />;
