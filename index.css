@@ -1,0 +1,89 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #afff1e;
+  --secondary: #111814;
+  --background-light: #f9fbf9;
+  --background-dark: #0c0e0c;
+  --surface-light: #ffffff;
+  --surface-dark: #121412;
+  --text-light: #0d110f;
+  --text-dark: #f0f7f3;
+}
+
+body {
+  @apply bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark antialiased transition-colors duration-300;
+  font-family: 'Outfit', sans-serif;
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  @apply tracking-tight font-black uppercase leading-[0.9];
+}
+
+@layer components {
+  .btn-primary {
+    @apply h-16 bg-primary text-[#102217] font-black py-4 px-8 rounded-[2rem] shadow-xl shadow-primary/20 active:scale-95 transition-all duration-300 flex items-center justify-center gap-2;
+  }
+
+  .card {
+    @apply bg-white dark:bg-surface-dark p-6 rounded-[2.5rem] shadow-2xl shadow-black/5 hover:shadow-black/10 transition-shadow duration-500 border border-gray-100 dark:border-white/5;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Custom range input styling */
+input[type='range'] {
+  @apply appearance-none h-2 bg-gray-100 dark:bg-white/5 rounded-full outline-none;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  @apply appearance-none w-6 h-6 bg-primary border-4 border-white dark:border-surface-dark rounded-full shadow-lg transition-transform active:scale-125;
+}

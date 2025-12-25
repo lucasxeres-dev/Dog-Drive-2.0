@@ -1,0 +1,8 @@
+
+{
+  "name": "Dog Drive",
+  "description": "The ultimate companion app for dog owners, walkers, and pet services. Find matches, book walks, and shop for your furry friends.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
