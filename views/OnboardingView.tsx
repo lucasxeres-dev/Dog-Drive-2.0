@@ -23,6 +23,36 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
         request: '',
         photo: ''
     });
+    const [uploading, setUploading] = useState(false);
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        try {
+            setUploading(true);
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Math.random()}.${fileExt}`;
+            const filePath = `${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('pet-photos')
+                .upload(filePath, file);
+
+            if (uploadError) throw uploadError;
+
+            const { data } = supabase.storage
+                .from('pet-photos')
+                .getPublicUrl(filePath);
+
+            setDogData({ ...dogData, photo: data.publicUrl });
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            alert('Erro ao enviar imagem. Tente novamente.');
+        } finally {
+            setUploading(false);
+        }
+    };
 
     const handleNext = () => {
         if (step === 0) {
@@ -149,13 +179,37 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
 
                         <div>
                             <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">{t('pet_photo')}</label>
-                            <input
-                                type="text"
-                                value={dogData.photo}
-                                onChange={e => setDogData({ ...dogData, photo: e.target.value })}
-                                placeholder="Link da foto do pet"
-                                className="w-full h-16 bg-white dark:bg-surface-dark rounded-3xl px-6 font-bold border-2 border-transparent focus:border-primary/30 transition-all shadow-sm"
-                            />
+                            <div className="flex flex-col items-center gap-4 p-6 bg-white dark:bg-surface-dark rounded-3xl border-2 border-dashed border-gray-200 dark:border-white/10 transition-all hover:border-primary/50">
+                                {dogData.photo ? (
+                                    <div className="relative group">
+                                        <img src={dogData.photo} alt="Preview" className="size-40 rounded-2xl object-cover shadow-lg" />
+                                        <button
+                                            onClick={() => setDogData({ ...dogData, photo: '' })}
+                                            className="absolute -top-2 -right-2 size-8 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all"
+                                        >
+                                            <span className="material-symbols-outlined text-sm">close</span>
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <label className="flex flex-col items-center justify-center cursor-pointer w-full py-4">
+                                        <div className="size-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                                            {uploading ? (
+                                                <div className="size-6 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                                            ) : (
+                                                <span className="material-symbols-outlined text-3xl text-primary">add_a_photo</span>
+                                            )}
+                                        </div>
+                                        <span className="text-sm font-bold text-gray-500">{uploading ? 'Enviando...' : 'Clique para subir a foto'}</span>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleFileUpload}
+                                            className="hidden"
+                                            disabled={uploading}
+                                        />
+                                    </label>
+                                )}
+                            </div>
                         </div>
 
                         <div>
