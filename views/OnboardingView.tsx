@@ -15,11 +15,23 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
     const [step, setStep] = useState(0);
     const [selectedRole, setSelectedRole] = useState<UserRole>(UserRole.OWNER);
     const [coords, setCoords] = useState<{ lat: number, lng: number } | null>(null);
+    const [city, setCity] = useState<string>('Rio de Janeiro');
 
     React.useEffect(() => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
-                (pos) => setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+                async (pos) => {
+                    const { latitude: lat, longitude: lng } = pos.coords;
+                    setCoords({ lat, lng });
+                    try {
+                        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10`);
+                        const data = await res.json();
+                        const cityName = data.address.city || data.address.town || data.address.village || data.address.suburb || 'Rio de Janeiro';
+                        setCity(cityName);
+                    } catch (e) {
+                        console.error('Onboarding geocode error:', e);
+                    }
+                },
                 (err) => console.error('Onboarding geolocation error:', err)
             );
         }
@@ -120,7 +132,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                 image_url: dogData.photo,
                 traits: dogData.traits,
                 request_instructions: dogData.request,
-                location: 'Rio de Janeiro',
+                location: city,
                 latitude: coords?.lat,
                 longitude: coords?.lng
             });
