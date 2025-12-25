@@ -282,7 +282,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                             <div className="space-y-4">
                                 {[
                                     { id: 'walking', label: t('walking'), icon: 'directions_walk' },
-                                    { id: 'boarding', label: t('boarding_label'), icon: 'home_appliance' }
+                                    { id: 'boarding', label: t('boarding_label'), icon: 'home' }
                                 ].map(svc => (
                                     <button
                                         key={svc.id}
