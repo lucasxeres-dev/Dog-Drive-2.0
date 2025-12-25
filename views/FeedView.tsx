@@ -40,7 +40,7 @@ const FeedView: React.FC = () => {
             setLoading(true);
 
             if (!isSupabaseConfigured) {
-                setDogs(MOCK_DOGS);
+                setDogs([]);
                 setLoading(false);
                 return;
             }
@@ -48,16 +48,19 @@ const FeedView: React.FC = () => {
             try {
                 const { data, error } = await supabase
                     .from('dogs')
-                    .select('*');
+                    .select('*')
+                    .order('created_at', { ascending: false });
 
-                if (!error && data && data.length > 0) {
-                    setDogs(data as Dog[]);
-                } else {
-                    setDogs(MOCK_DOGS);
+                if (!error && data) {
+                    setDogs(data.map(d => ({
+                        ...d,
+                        imageUrl: d.image_url, // For compatibility if needed, or just change JSX
+                        distance: d.distance || 'Calculando...',
+                        match: d.match_percentage || 95
+                    })) as Dog[]);
                 }
             } catch (err) {
-                console.error('Supabase fetch failed, falling back to mock dogs', err);
-                setDogs(MOCK_DOGS);
+                console.error('Supabase fetch failed', err);
             }
             setLoading(false);
         };
@@ -101,7 +104,7 @@ const FeedView: React.FC = () => {
                             onClick={() => navigate(`/dog/${dog.id}`)}
                             className="group relative w-full aspect-[4/5] bg-white dark:bg-surface-dark rounded-[2.5rem] shadow-xl shadow-black/5 overflow-hidden border border-gray-100 dark:border-white/5"
                         >
-                            <div className="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-700" style={{ backgroundImage: `url(${dog.imageUrl})` }}></div>
+                            <div className="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-700" style={{ backgroundImage: `url(${dog.image_url})` }}></div>
                             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
 
                             <div className="absolute top-4 right-4 flex flex-col gap-2">
@@ -137,6 +140,13 @@ const FeedView: React.FC = () => {
                         </div>
                     ))}
                 </div>
+                {dogs.length === 0 && !loading && (
+                    <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
+                        <span className="material-symbols-outlined text-6xl mb-4">pets</span>
+                        <p className="text-lg font-bold">Nenhum pet encontrado por perto.</p>
+                        <p className="text-sm">Tente ajustar seus filtros de distância.</p>
+                    </div>
+                )}
             </main>
 
             {/* Filter Modal */}

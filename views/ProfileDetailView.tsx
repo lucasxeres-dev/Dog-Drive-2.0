@@ -1,14 +1,43 @@
 
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { MOCK_DOGS } from '../constants';
-import { useTranslation } from '../LanguageContext';
+import { supabase } from '../supabaseClient';
+import { Dog } from '../types';
 
 const ProfileDetailView: React.FC = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
     const { id } = useParams();
-    const dog = MOCK_DOGS.find(d => d.id === id) || MOCK_DOGS[0];
+    const [dog, setDog] = React.useState<Dog | null>(null);
+    const [loading, setLoading] = React.useState(true);
+
+    React.useEffect(() => {
+        const fetchDog = async () => {
+            if (!id) return;
+            const { data, error } = await supabase
+                .from('dogs')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (data) setDog(data as Dog);
+            setLoading(false);
+        };
+        fetchDog();
+    }, [id]);
+
+    if (loading) return (
+        <div className="flex-1 flex items-center justify-center bg-background-light dark:bg-background-dark">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+    );
+
+    if (!dog) return (
+        <div className="flex-1 flex flex-col items-center justify-center p-10 text-center">
+            <h1 className="text-2xl font-bold mb-4">Pet não encontrado</h1>
+            <button onClick={() => navigate(-1)} className="px-6 py-3 bg-primary rounded-full font-bold">Voltar</button>
+        </div>
+    );
 
     return (
         <div className="flex-1 flex flex-col bg-background-light dark:bg-background-dark overflow-y-auto no-scrollbar pb-10">
@@ -19,7 +48,7 @@ const ProfileDetailView: React.FC = () => {
             </div>
 
             <div className="relative w-full h-[50vh] overflow-hidden">
-                <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${dog.imageUrl})` }}></div>
+                <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${dog.image_url})` }}></div>
                 <div className="absolute inset-0 bg-gradient-to-t from-background-light dark:from-background-dark via-transparent"></div>
             </div>
 
@@ -45,16 +74,16 @@ const ProfileDetailView: React.FC = () => {
                 <div className="mt-8 space-y-6">
                     <section>
                         <h2 className="text-lg font-bold mb-2">{t('about')} {dog.name}</h2>
-                        <p className="text-slate-600 dark:text-gray-300 leading-relaxed text-sm font-medium">{dog.bio}</p>
+                        <p className="text-slate-600 dark:text-gray-300 leading-relaxed text-sm font-medium">{dog.description || dog.request_instructions || 'Nenhuma descrição fornecida.'}</p>
                     </section>
 
                     <section>
                         <h2 className="text-lg font-bold mb-3">{t('traits')}</h2>
                         <div className="flex flex-wrap gap-2">
-                            {dog.traits.map(trait => (
+                            {(Array.isArray(dog.traits) ? dog.traits : (dog.traits?.split(',') || [])).map(trait => (
                                 <span key={trait} className="px-4 py-2 rounded-full bg-white dark:bg-surface-dark border border-slate-100 dark:border-white/5 text-slate-700 dark:text-gray-200 text-xs font-bold flex items-center gap-2">
                                     <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
-                                    {trait}
+                                    {trait.trim()}
                                 </span>
                             ))}
                         </div>

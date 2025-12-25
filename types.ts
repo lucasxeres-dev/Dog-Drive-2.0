@@ -8,15 +8,16 @@ export enum UserRole {
 export interface Dog {
     id: string;
     name: string;
-    age: number;
-    breed: string;
+    age: string; // Changed to string to handle "3 anos", "2 meses" etc
+    breed: string | null;
     distance: string;
     location: string;
     match: number;
-    bio: string;
-    imageUrl: string;
-    traits: string[];
+    description: string | null;
+    image_url: string;
+    traits: string | string[]; // Can be string in DB or array in frontend
     is_castrated?: boolean;
+    request_instructions?: string;
 }
 
 export interface Message {
