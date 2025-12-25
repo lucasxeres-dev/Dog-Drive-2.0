@@ -83,7 +83,15 @@ const translations = {
     pet_request: 'Que serviço você procura para ele?',
     pet_photo: 'Foto do Pet (URL)',
     walker_bio: 'Sua Experiência',
-    finish_btn: 'Finalizar Cadastro'
+    finish_btn: 'Finalizar Cadastro',
+    service_type: 'Quais serviços você oferece?',
+    walking: 'Passeador',
+    boarding_label: 'Hospedagem',
+    doc_upload: 'Envie uma foto do seu Documento (RG/CPF)',
+    address_label: 'Endereço Residencial',
+    bank_title: 'Dados para Recebimento (PIX)',
+    pix_key: 'Chave PIX',
+    experience_label: 'Conte sua experiência com pets'
   },
   en: {
     app_name: 'Dog Drive',
@@ -158,7 +166,15 @@ const translations = {
     pet_request: 'What service are you looking for?',
     pet_photo: 'Pet Photo (URL)',
     walker_bio: 'Your Experience',
-    finish_btn: 'Finish Registration'
+    finish_btn: 'Finish Registration',
+    service_type: 'Which services do you offer?',
+    walking: 'Walking',
+    boarding_label: 'Boarding',
+    doc_upload: 'Upload a photo of your ID (RG/CPF)',
+    address_label: 'Home Address',
+    bank_title: 'Bank Details (PIX)',
+    pix_key: 'PIX Key',
+    experience_label: 'Tell us about your experience with pets'
   }
 };
 
