@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { LanguageProvider } from './LanguageContext';
 import { supabase } from './supabaseClient';
-import MobileLayout from './components/MobileLayout';
 import LandingView from './views/LandingView';
 import LoginView from './views/LoginView';
 import OnboardingView from './views/OnboardingView';
@@ -18,6 +17,7 @@ import MarketplaceView from './views/MarketplaceView';
 import CartView from './views/CartView';
 import WalletView from './views/WalletView';
 import ProviderRegistrationView from './views/ProviderRegistrationView';
+import BottomNav from './components/BottomNav';
 
 const App: React.FC = () => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -40,14 +40,11 @@ const App: React.FC = () => {
     return (
         <LanguageProvider>
             <Router>
-                <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex justify-center">
-                    <Routes>
-                        {/* Full Screen Routes */}
-                        <Route path="/" element={<LandingView />} />
-                        <Route path="/login" element={<LoginView onLogin={() => setIsAuthenticated(true)} />} />
-
-                        {/* Mobile App Routes */}
-                        <Route element={<MobileLayout />}>
+                <div className="min-h-screen bg-[#050705] flex justify-center items-center p-0 md:p-4">
+                    <div className="w-full max-w-[440px] h-[100dvh] md:h-[850px] bg-white dark:bg-background-dark md:rounded-[3rem] shadow-2xl relative overflow-hidden flex flex-col border border-white/5">
+                        <Routes>
+                            <Route path="/" element={<LandingView />} />
+                            <Route path="/login" element={<LoginView onLogin={() => setIsAuthenticated(true)} />} />
                             <Route path="/onboarding" element={<OnboardingView onSelectRole={(role) => setUserRole(role)} />} />
                             <Route path="/feed" element={<FeedView />} />
                             <Route path="/services" element={<ServicesView />} />
@@ -61,10 +58,10 @@ const App: React.FC = () => {
                             <Route path="/cart" element={<CartView />} />
                             <Route path="/wallet" element={<WalletView />} />
                             <Route path="/register-provider" element={<ProviderRegistrationView />} />
-                        </Route>
-
-                        <Route path="*" element={<Navigate to="/" />} />
-                    </Routes>
+                            <Route path="*" element={<Navigate to="/" />} />
+                        </Routes>
+                        {isAuthenticated && <BottomNav />}
+                    </div>
                 </div>
             </Router>
         </LanguageProvider>
