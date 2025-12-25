@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../LanguageContext';
 import { supabase } from '../supabaseClient';
+import FilterModal from '../components/FilterModal';
 
 const WalkerListView: React.FC = () => {
     const navigate = useNavigate();
@@ -9,6 +10,8 @@ const WalkerListView: React.FC = () => {
     const [sortBy, setSortBy] = useState<'nearby' | 'top_rated' | 'lowest_price'>('nearby');
     const [walkers, setWalkers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+
+    const [showFilters, setShowFilters] = useState(false);
 
     useEffect(() => {
         const fetchWalkers = async () => {
@@ -55,7 +58,12 @@ const WalkerListView: React.FC = () => {
             <header className="flex items-center px-6 py-4 pt-6 justify-between sticky top-0 z-10 bg-background-light/90 backdrop-blur-md">
                 <button onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/5"><span className="material-symbols-outlined">arrow_back</span></button>
                 <h2 className="text-xl font-bold flex-1 text-center pr-2">{t('find_walker')}</h2>
-                <button className="p-2 rounded-full bg-white dark:bg-surface-dark shadow-sm border border-gray-100 dark:border-white/10"><span className="material-symbols-outlined">tune</span></button>
+                <button
+                    onClick={() => setShowFilters(true)}
+                    className="p-2 rounded-full bg-white dark:bg-surface-dark shadow-sm border border-gray-100 dark:border-white/10 active:scale-90 transition-all text-primary"
+                >
+                    <span className="material-symbols-outlined">tune</span>
+                </button>
             </header>
 
             <div className="px-6 pb-2">
@@ -113,6 +121,15 @@ const WalkerListView: React.FC = () => {
                     </div>
                 ))}
             </main>
+
+            <FilterModal
+                isOpen={showFilters}
+                onClose={() => setShowFilters(false)}
+                onApply={(filters) => {
+                    console.log('Filters applied:', filters);
+                    setShowFilters(false);
+                }}
+            />
         </div>
     );
 };

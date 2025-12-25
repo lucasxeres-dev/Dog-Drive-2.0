@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import BottomNav from '../components/BottomNav';
 import { useTranslation } from '../LanguageContext';
 
 const ServicesView: React.FC = () => {
@@ -61,8 +60,6 @@ const ServicesView: React.FC = () => {
                     ))}
                 </div>
             </main>
-
-            <BottomNav />
         </div>
     );
 };

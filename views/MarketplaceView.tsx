@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import BottomNav from '../components/BottomNav';
 import { useTranslation } from '../LanguageContext';
 import { supabase } from '../supabaseClient';
 
@@ -152,8 +151,8 @@ const MarketplaceView: React.FC = () => {
                             key={btn.id}
                             onClick={() => setFilter(btn.id as any)}
                             className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-black whitespace-nowrap transition-all uppercase tracking-widest text-xs border ${filter === btn.id
-                                    ? 'bg-primary text-[#102217] border-primary shadow-lg shadow-primary/20 scale-105'
-                                    : 'bg-white dark:bg-surface-dark border-gray-100 dark:border-white/5 opacity-60'
+                                ? 'bg-primary text-[#102217] border-primary shadow-lg shadow-primary/20 scale-105'
+                                : 'bg-white dark:bg-surface-dark border-gray-100 dark:border-white/5 opacity-60'
                                 }`}
                         >
                             <span className="material-symbols-outlined text-lg">{btn.icon}</span>
@@ -229,7 +228,7 @@ const MarketplaceView: React.FC = () => {
                 )}
             </main>
 
-            <BottomNav />
+
         </div>
     );
 };

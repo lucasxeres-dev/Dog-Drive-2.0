@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import BottomNav from '../components/BottomNav';
 import { supabase, isSupabaseConfigured } from '../supabaseClient';
 import { useTranslation } from '../LanguageContext';
 import { ChatPreview, Dog } from '../types';
@@ -144,7 +143,7 @@ const ChatListView: React.FC = () => {
                 </section>
             </main>
 
-            <BottomNav />
+
         </div>
     );
 };
