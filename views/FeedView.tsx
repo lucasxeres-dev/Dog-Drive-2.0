@@ -21,13 +21,20 @@ const FeedView: React.FC = () => {
         // Fetch current position
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    setLocation({
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude
-                    });
-                    // Mock reverse geocoding
+                async (position) => {
+                    const { latitude: lat, longitude: lng } = position.coords;
+                    setLocation({ lat, lng });
                     setLocationName('Sua Localização');
+
+                    // Update profile location if authenticated
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user) {
+                        await supabase.from('profiles').update({
+                            latitude: lat,
+                            longitude: lng,
+                            last_active: new Date().toISOString()
+                        }).eq('id', user.id);
+                    }
                 },
                 (error) => {
                     console.error('Geolocation error:', error);
