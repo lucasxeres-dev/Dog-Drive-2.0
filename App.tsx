@@ -17,6 +17,7 @@ import MarketplaceView from './views/MarketplaceView';
 import CartView from './views/CartView';
 import WalletView from './views/WalletView';
 import ProviderRegistrationView from './views/ProviderRegistrationView';
+import RegisterView from './views/RegisterView';
 import BottomNav from './components/BottomNav';
 
 const App: React.FC = () => {
@@ -45,6 +46,7 @@ const App: React.FC = () => {
                         <Routes>
                             <Route path="/" element={<LandingView />} />
                             <Route path="/login" element={<LoginView onLogin={() => setIsAuthenticated(true)} />} />
+                            <Route path="/register" element={<RegisterView />} />
                             <Route path="/onboarding" element={<OnboardingView onSelectRole={(role) => setUserRole(role)} />} />
                             <Route path="/feed" element={<FeedView />} />
                             <Route path="/services" element={<ServicesView />} />

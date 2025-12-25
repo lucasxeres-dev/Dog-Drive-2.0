@@ -14,8 +14,28 @@ const FeedView: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [showFilters, setShowFilters] = useState(false);
     const [maxDistance, setMaxDistance] = useState(10);
+    const [location, setLocation] = useState<{ lat: number, lng: number } | null>(null);
+    const [locationName, setLocationName] = useState<string>('Rio de Janeiro');
 
     useEffect(() => {
+        // Fetch current position
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    setLocation({
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    });
+                    // Mock reverse geocoding
+                    setLocationName('Sua Localização');
+                },
+                (error) => {
+                    console.error('Geolocation error:', error);
+                    setLocationName('Rio de Janeiro');
+                }
+            );
+        }
+
         const fetchDogs = async () => {
             setLoading(true);
 
@@ -61,7 +81,7 @@ const FeedView: React.FC = () => {
                         <h1 className="text-2xl font-black tracking-tight text-primary">DOG DRIVE</h1>
                         <div className="flex items-center gap-1 text-[10px] uppercase font-bold tracking-widest opacity-50">
                             <span className="material-symbols-outlined text-[12px]">location_on</span>
-                            {t('city')}
+                            {locationName}
                         </div>
                     </div>
                     <button

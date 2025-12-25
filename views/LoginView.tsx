@@ -125,15 +125,11 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                     </button>
                 </div>
 
-                <div className="text-center mt-auto pt-8">
-                    <p className="text-gray-400 text-[10px] font-black uppercase tracking-wider opacity-60">
-                        {t('no_account')}
-                        <button className="text-primary hover:underline ml-1">{t('sign_up')}</button>
-                    </p>
-                </div>
+                <p className="text-center mt-8 text-gray-400 text-[10px] font-black uppercase tracking-wider">
+                    {t('no_account')} <button onClick={() => navigate('/register')} className="text-primary hover:underline ml-1">{t('signup_action')}</button>
+                </p>
             </div>
         </div>
-    );
     );
 };
 
