@@ -56,7 +56,8 @@ const RegisterView: React.FC = () => {
                     data: {
                         full_name: formData.fullName,
                         phone: formData.phone,
-                        cpf_rg: formData.cpfRg
+                        cpf_rg: formData.cpfRg,
+                        security_code: formData.securityCode
                     }
                 }
             });

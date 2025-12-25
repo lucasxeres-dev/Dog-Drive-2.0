@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   full_name TEXT,
   phone TEXT,
   cpf_rg TEXT,
+  security_code TEXT,
   avatar_url TEXT,
   role TEXT DEFAULT 'user' CHECK (role IN ('user', 'provider', 'admin')),
   is_verified BOOLEAN DEFAULT false,
