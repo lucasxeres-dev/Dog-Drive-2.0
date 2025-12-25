@@ -12,38 +12,75 @@ const WalkerListView: React.FC = () => {
     const [loading, setLoading] = useState(true);
 
     const [showFilters, setShowFilters] = useState(false);
+    const [location, setLocation] = useState<{ lat: number, lng: number } | null>(null);
+    const [locationName, setLocationName] = useState<string>(t('loading_location') || 'Rio de Janeiro');
+
+    const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+        const R = 6371; // Radius of the earth in km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    };
+
+    const reverseGeocode = async (lat: number, lng: number) => {
+        try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10`);
+            const data = await response.json();
+            const city = data.address.city || data.address.town || data.address.village || data.address.suburb || 'Local Desconhecido';
+            setLocationName(city);
+        } catch (error) {
+            console.error('Reverse geocoding failed:', error);
+            setLocationName('Rio de Janeiro');
+        }
+    };
 
     useEffect(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const { latitude: lat, longitude: lng } = pos.coords;
+                    setLocation({ lat, lng });
+                    reverseGeocode(lat, lng);
+                },
+                (err) => console.error('Geolocation error:', err)
+            );
+        }
+
         const fetchWalkers = async () => {
+            setLoading(true);
             const { data, error } = await supabase
                 .from('profiles')
                 .select('*')
                 .eq('role', 'provider');
 
-            if (!error && data && data.length > 0) {
-                // Add some pseudo-data for display (rating, price, dist)
-                const enhanced = data.map(w => ({
-                    ...w,
-                    name: w.full_name,
-                    specialty: 'Pet Specialist',
-                    price: 35, // Default price
-                    dist: Math.floor(Math.random() * 5) + 1,
-                    rating: 4.8 + (Math.random() * 0.2),
-                    img: w.avatar_url || 'https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg'
-                }));
+            if (!error && data) {
+                const enhanced = data.map(w => {
+                    let dist = 999;
+                    if (location && w.latitude && w.longitude) {
+                        dist = calculateDistance(location.lat, location.lng, w.latitude, w.longitude);
+                    }
+
+                    return {
+                        ...w,
+                        name: w.full_name,
+                        specialty: w.bio?.substring(0, 30) + '...' || 'Pet Specialist',
+                        price: 35, // Default price
+                        dist: dist,
+                        rating: 4.8 + (Math.random() * 0.2),
+                        img: w.avatar_url || 'https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg'
+                    };
+                });
                 setWalkers(enhanced);
-            } else {
-                // Fallback to mocks for vibrant presentation
-                setWalkers([
-                    { id: 'w1', name: 'Ana Silva', specialty: 'Large breeds specialist', price: 30, dist: 2, rating: 5.0, img: 'https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg' },
-                    { id: 'w2', name: 'John Doe', specialty: 'Active runner & trainer', price: 25, dist: 5, rating: 4.8, img: 'https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg' },
-                    { id: 'w3', name: 'Beatriz Costa', specialty: 'Small dogs & puppies', price: 40, dist: 1, rating: 4.9, img: 'https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg' }
-                ]);
             }
             setLoading(false);
         };
         fetchWalkers();
-    }, []);
+    }, [location]); // Re-fetch when location is found to calculate distances correctly
 
     const sortedWalkers = useMemo(() => {
         const list = [...walkers];
@@ -109,7 +146,10 @@ const WalkerListView: React.FC = () => {
                             <h3 className="text-lg font-bold">{walker.name}</h3>
                             <p className="text-gray-500 text-sm font-medium truncate">{walker.specialty}</p>
                             <div className="flex items-center gap-3 mt-1.5">
-                                <span className="flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider"><span className="material-symbols-outlined text-[14px]">location_on</span>{walker.dist}km</span>
+                                <span className="flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                                    <span className="material-symbols-outlined text-[14px]">location_on</span>
+                                    {walker.dist === 999 ? '...' : (walker.dist < 1 ? `${Math.round(walker.dist * 1000)}m` : `${walker.dist.toFixed(1)}km`)}
+                                </span>
                                 <div className="size-1 rounded-full bg-gray-300"></div>
                                 <span className="text-sm font-bold">R${walker.price}<span className="text-gray-400 font-normal text-xs">{t('per_hour')}</span></span>
                             </div>
