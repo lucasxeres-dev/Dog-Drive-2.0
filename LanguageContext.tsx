@@ -91,7 +91,26 @@ const translations = {
     address_label: 'Endereço Residencial',
     bank_title: 'Dados para Recebimento (PIX)',
     pix_key: 'Chave PIX',
-    experience_label: 'Conte sua experiência com pets'
+    experience_label: 'Conte sua experiência com pets',
+    // Countries
+    brazil: 'Brasil',
+    europe: 'Europa',
+    select_country: 'Selecione seu país',
+    countries: {
+      AL: 'Albânia', AD: 'Andorra', AT: 'Áustria', BY: 'Belarus', BE: 'Bélgica', BA: 'Bósnia e Herzegovina', BG: 'Bulgária', HR: 'Croácia', CY: 'Chipre', CZ: 'República Tcheca', DK: 'Dinamarca', EE: 'Estônia', FI: 'Finlândia', FR: 'França', DE: 'Alemanha', GR: 'Grécia', HU: 'Hungria', IS: 'Islândia', IE: 'Irlanda', IT: 'Itália', XK: 'Kosovo', LV: 'Letônia', LI: 'Liechtenstein', LT: 'Lituânia', LU: 'Luxemburgo', MT: 'Malta', MD: 'Moldávia', MC: 'Mônaco', ME: 'Montenegro', NL: 'Países Baixos', MK: 'Macedônia do Norte', NO: 'Noruega', PL: 'Polônia', PT: 'Portugal', RO: 'Romênia', RU: 'Rússia', SM: 'San Marino', RS: 'Sérvia', SK: 'Eslováquia', SI: 'Eslovênia', ES: 'Espanha', SE: 'Suécia', CH: 'Suíça', UA: 'Ucrânia', GB: 'Reino Unido', VA: 'Vaticano'
+    },
+    // Business Registration
+    vet_clinic: 'Clínica Veterinária',
+    grooming_shop: 'Banho e Tosa',
+    business_name: 'Nome da Empresa',
+    tax_id_br: 'CNPJ',
+    tax_id_eu: 'NIF / VAT / ID Fiscal',
+    business_address: 'Endereço Comercial',
+    settings_title: 'Configurações',
+    edit_profile: 'Editar Perfil',
+    my_dogs: 'Meus Cães',
+    add_another_dog: 'Adicionar outro cão',
+    save_changes: 'Salvar Alterações'
   },
   en: {
     app_name: 'Dog Drive',
@@ -174,7 +193,26 @@ const translations = {
     address_label: 'Home Address',
     bank_title: 'Bank Details (PIX)',
     pix_key: 'PIX Key',
-    experience_label: 'Tell us about your experience with pets'
+    experience_label: 'Tell us about your experience with pets',
+    // Countries
+    brazil: 'Brazil',
+    europe: 'Europe',
+    select_country: 'Select your country',
+    countries: {
+      AL: 'Albania', AD: 'Andorra', AT: 'Austria', BY: 'Belarus', BE: 'Belgium', BA: 'Bosnia and Herzegovina', BG: 'Bulgaria', HR: 'Croatia', CY: 'Cyprus', CZ: 'Czech Republic', DK: 'Denmark', EE: 'Estonia', FI: 'Finland', FR: 'France', DE: 'Germany', GR: 'Greece', HU: 'Hungary', IS: 'Iceland', IE: 'Ireland', IT: 'Italy', XK: 'Kosovo', LV: 'Latvia', LI: 'Liechtenstein', LT: 'Lithuania', LU: 'Luxembourg', MT: 'Malta', MD: 'Moldova', MC: 'Monaco', ME: 'Montenegro', NL: 'Netherlands', MK: 'North Macedonia', NO: 'Norway', PL: 'Poland', PT: 'Portugal', RO: 'Romania', RU: 'Russia', SM: 'San Marino', RS: 'Serbia', SK: 'Slovakia', SI: 'Slovenia', ES: 'Spain', SE: 'Sweden', CH: 'Switzerland', UA: 'Ukraine', GB: 'United Kingdom', VA: 'Vatican City'
+    },
+    // Business Registration
+    vet_clinic: 'Veterinary Clinic',
+    grooming_shop: 'Grooming & Bath',
+    business_name: 'Company Name',
+    tax_id_br: 'CNPJ',
+    tax_id_eu: 'VAT / Tax ID',
+    business_address: 'Business Address',
+    settings_title: 'Settings',
+    edit_profile: 'Edit Profile',
+    my_dogs: 'My Dogs',
+    add_another_dog: 'Add another dog',
+    save_changes: 'Save Changes'
   }
 };
 

@@ -16,6 +16,8 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
     const [selectedRole, setSelectedRole] = useState<UserRole>(UserRole.OWNER);
     const [coords, setCoords] = useState<{ lat: number, lng: number } | null>(null);
     const [city, setCity] = useState<string>('Rio de Janeiro');
+    const [selectedCountry, setSelectedCountry] = useState<string>('BR');
+    const [isEurope, setIsEurope] = useState(false);
 
     React.useEffect(() => {
         if (navigator.geolocation) {
@@ -46,13 +48,13 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
         photo: ''
     });
 
-    // Provider data
-    const [providerData, setProviderData] = useState({
-        services: [] as string[],
-        doc_url: '',
+    // Business data
+    const [businessData, setBusinessData] = useState({
+        type: 'none' as 'clinic' | 'grooming' | 'none',
+        name: '',
+        tax_id: '',
         address: '',
-        pix: '',
-        bio: ''
+        doc_url: ''
     });
 
     const [uploading, setUploading] = useState(false);
@@ -84,6 +86,8 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
 
             if (type === 'pet') {
                 setDogData({ ...dogData, photo: data.publicUrl });
+            } else if (selectedRole === UserRole.BUSINESS) {
+                setBusinessData({ ...businessData, doc_url: data.publicUrl });
             } else {
                 setProviderData({ ...providerData, doc_url: data.publicUrl });
             }
@@ -99,7 +103,11 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
     const handleNext = () => {
         if (step === 0) {
             setStep(1);
-        } else if (selectedRole === UserRole.WALKER && step < 3) {
+        } else if (step === 1) {
+            setStep(2);
+        } else if (selectedRole === UserRole.WALKER && step < 4) {
+            setStep(step + 1);
+        } else if (selectedRole === UserRole.BUSINESS && step < 3) {
             setStep(step + 1);
         } else {
             handleFinish();
@@ -115,10 +123,19 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
 
         // Update profile
         const { error: profileError } = await supabase.from('profiles').update({
-            role: selectedRole === UserRole.OWNER ? 'user' : 'provider',
-            address: selectedRole === UserRole.WALKER ? providerData.address : null,
+            role: selectedRole === UserRole.OWNER ? 'user' :
+                selectedRole === UserRole.BUSINESS ? 'business' : 'provider',
+            address: selectedRole === UserRole.WALKER ? providerData.address :
+                selectedRole === UserRole.BUSINESS ? businessData.address : null,
             provider_services: selectedRole === UserRole.WALKER ? providerData.services : null,
-            document_url: selectedRole === UserRole.WALKER ? providerData.doc_url : null
+            document_url: selectedRole === UserRole.WALKER ? providerData.doc_url :
+                selectedRole === UserRole.BUSINESS ? businessData.doc_url : null,
+            country: selectedCountry,
+            business_name: selectedRole === UserRole.BUSINESS ? businessData.name : null,
+            tax_id: selectedRole === UserRole.BUSINESS ? businessData.tax_id : null,
+            business_type: selectedRole === UserRole.BUSINESS ? businessData.type : 'none',
+            latitude: coords?.lat,
+            longitude: coords?.lng
         }).eq('id', user.id);
 
         if (profileError) console.error('Profile update error:', profileError);
@@ -167,7 +184,10 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                     </button>
                 )}
                 <div className="flex-1 text-center font-bold opacity-60">
-                    {step === 0 ? 'Dog Drive' : selectedRole === UserRole.OWNER ? t('owner') : t('walker')}
+                    {step === 0 ? 'Dog Drive' :
+                        step === 1 ? (selectedCountry === 'BR' ? t('brazil') : t('europe')) :
+                            selectedRole === UserRole.OWNER ? t('owner') :
+                                selectedRole === UserRole.BUSINESS ? t('business') : t('walker')}
                 </div>
                 {step === 0 && <div className="w-10" />}
             </header>
@@ -205,8 +225,48 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                         ))}
                     </div>
                 </>
+            ) : step === 1 ? (
+                // Step 1: Country Selection
+                <div className="space-y-6 animate-fadeIn">
+                    <div className="mb-8">
+                        <h1 className="text-3xl font-black mb-2">{t('select_country')} 🌍</h1>
+                        <p className="text-gray-500 font-medium">Onde você se encontra?</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <button
+                            onClick={() => { setSelectedCountry('BR'); setIsEurope(false); }}
+                            className={`p-6 rounded-3xl border-2 flex flex-col items-center gap-3 transition-all ${selectedCountry === 'BR' ? 'bg-primary/10 border-primary' : 'bg-white dark:bg-surface-dark border-transparent'}`}
+                        >
+                            <span className="text-4xl">🇧🇷</span>
+                            <span className="font-bold">{t('brazil')}</span>
+                        </button>
+                        <button
+                            onClick={() => { setIsEurope(true); setSelectedCountry('PT'); }}
+                            className={`p-6 rounded-3xl border-2 flex flex-col items-center gap-3 transition-all ${isEurope ? 'bg-primary/10 border-primary' : 'bg-white dark:bg-surface-dark border-transparent'}`}
+                        >
+                            <span className="text-4xl">🇪🇺</span>
+                            <span className="font-bold">{t('europe')}</span>
+                        </button>
+                    </div>
+
+                    {isEurope && (
+                        <div className="mt-6">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">País da Europa</label>
+                            <select
+                                value={selectedCountry}
+                                onChange={(e) => setSelectedCountry(e.target.value)}
+                                className="w-full h-16 bg-white dark:bg-surface-dark rounded-3xl px-6 font-bold border-2 border-transparent focus:border-primary/30 transition-all shadow-sm appearance-none"
+                            >
+                                {Object.entries(t('countries') as any).map(([code, name]: [string, any]) => (
+                                    <option key={code} value={code}>{name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+                </div>
             ) : selectedRole === UserRole.OWNER ? (
-                // Step 1: Owner (Dog Info)
+                // Step 2: Owner (Dog Info)
                 <div className="space-y-6 animate-fadeIn">
                     <div className="mb-8">
                         <h1 className="text-3xl font-black mb-2 animate-slideUp">Cadastre seu Cão 🦴</h1>
@@ -294,10 +354,98 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                         </div>
                     </div>
                 </div>
+            ) : selectedRole === UserRole.BUSINESS ? (
+                // Business Flow: Vet / Grooming
+                <div className="space-y-6 animate-fadeIn pb-10">
+                    {step === 2 && (
+                        <>
+                            <div className="mb-8">
+                                <h1 className="text-3xl font-black mb-2">Tipo de Negócio 🏢</h1>
+                                <p className="text-gray-500 font-medium">Selecione o serviço que sua empresa oferece.</p>
+                            </div>
+                            <div className="space-y-4">
+                                {[
+                                    { id: 'clinic', label: t('vet_clinic'), icon: 'medical_services' },
+                                    { id: 'grooming', label: t('grooming_shop'), icon: 'content_cut' }
+                                ].map(type => (
+                                    <button
+                                        key={type.id}
+                                        onClick={() => setBusinessData({ ...businessData, type: type.id as any })}
+                                        className={`w-full p-6 rounded-3xl border-2 flex items-center gap-4 transition-all ${businessData.type === type.id
+                                            ? 'bg-primary/10 border-primary shadow-lg shadow-primary/10'
+                                            : 'bg-white dark:bg-surface-dark border-transparent shadow-sm'
+                                            }`}
+                                    >
+                                        <div className={`size-12 rounded-2xl flex items-center justify-center ${businessData.type === type.id ? 'bg-primary text-[#102217]' : 'bg-gray-100 dark:bg-white/5 text-gray-400'}`}>
+                                            <span className="material-symbols-outlined text-2xl font-black">{type.icon}</span>
+                                        </div>
+                                        <span className="text-lg font-bold flex-1 text-left">{type.label}</span>
+                                        {businessData.type === type.id && <span className="material-symbols-outlined text-primary font-black">check_circle</span>}
+                                    </button>
+                                ))}
+                            </div>
+                        </>
+                    )}
+
+                    {step === 3 && (
+                        <div className="space-y-6">
+                            <div className="mb-8">
+                                <h1 className="text-3xl font-black mb-2">Dados da Empresa 📋</h1>
+                                <p className="text-gray-500 font-medium">Precisamos dos dados legais para validação.</p>
+                            </div>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">{t('business_name')}</label>
+                                    <input
+                                        type="text"
+                                        value={businessData.name}
+                                        onChange={e => setBusinessData({ ...businessData, name: e.target.value })}
+                                        placeholder="Nome Fantasia"
+                                        className="w-full h-16 bg-white dark:bg-surface-dark rounded-3xl px-6 font-bold border-2 border-transparent focus:border-primary transition-all shadow-sm"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">{selectedCountry === 'BR' ? t('tax_id_br') : t('tax_id_eu')}</label>
+                                    <input
+                                        type="text"
+                                        value={businessData.tax_id}
+                                        onChange={e => setBusinessData({ ...businessData, tax_id: e.target.value })}
+                                        placeholder={selectedCountry === 'BR' ? '00.000.000/0001-00' : 'Tax ID / VAT Number'}
+                                        className="w-full h-16 bg-white dark:bg-surface-dark rounded-3xl px-6 font-bold border-2 border-transparent focus:border-primary transition-all shadow-sm"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">{t('business_address')}</label>
+                                    <input
+                                        type="text"
+                                        value={businessData.address}
+                                        onChange={e => setBusinessData({ ...businessData, address: e.target.value })}
+                                        placeholder="Endereço da Sede"
+                                        className="w-full h-16 bg-white dark:bg-surface-dark rounded-3xl px-6 font-bold border-2 border-transparent focus:border-primary transition-all shadow-sm"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">Comprovante / Licença</label>
+                                    <div className="flex flex-col items-center gap-4 p-6 bg-white dark:bg-surface-dark rounded-3xl border-2 border-dashed border-primary/30">
+                                        {businessData.doc_url ? (
+                                            <span className="text-primary font-bold flex items-center gap-2"><span className="material-symbols-outlined">check_circle</span>Arquivo Enviado</span>
+                                        ) : (
+                                            <label className="cursor-pointer flex flex-col items-center">
+                                                <span className="material-symbols-outlined text-4xl text-primary mb-2">upload_file</span>
+                                                <span className="text-xs font-bold text-gray-400">Clique para enviar comprovante</span>
+                                                <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, 'doc')} />
+                                            </label>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
             ) : (
                 // Provider Flow: Walker / Boarding
                 <div className="space-y-6 animate-fadeIn pb-10">
-                    {step === 1 && (
+                    {step === 2 && (
                         <>
                             <div className="mb-8">
                                 <h1 className="text-3xl font-black mb-2 animate-slideUp">{t('service_type')}</h1>
@@ -335,7 +483,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                         </>
                     )}
 
-                    {step === 2 && (
+                    {step === 3 && (
                         <>
                             <div className="mb-8">
                                 <h1 className="text-3xl font-black mb-2 animate-slideUp">Documentação 🪪</h1>
@@ -374,7 +522,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                         </>
                     )}
 
-                    {step === 3 && (
+                    {step === 4 && (
                         <div className="space-y-6 animate-slideUp">
                             <div>
                                 <h1 className="text-3xl font-black mb-2">Quase lá! ✨</h1>
@@ -428,7 +576,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                     disabled={uploading || uploadingDoc}
                     className="w-full h-16 bg-primary text-[#102217] text-lg font-black rounded-3xl shadow-xl shadow-primary/20 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-widest disabled:opacity-50"
                 >
-                    <span>{(step === 0 || (selectedRole === UserRole.WALKER && step < 3)) ? t('continue') : t('finish_btn')}</span>
+                    <span>{(step < 2 || (selectedRole === UserRole.WALKER && step < 4) || (selectedRole === UserRole.BUSINESS && step < 3)) ? t('continue') : t('finish_btn')}</span>
                     <span className="material-symbols-outlined font-black">arrow_forward</span>
                 </button>
             </div>
