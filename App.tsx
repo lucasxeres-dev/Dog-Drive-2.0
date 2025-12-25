@@ -62,12 +62,21 @@ const App: React.FC = () => {
                             <Route path="/register-provider" element={<ProviderRegistrationView />} />
                             <Route path="*" element={<Navigate to="/" />} />
                         </Routes>
-                        {isAuthenticated && <BottomNav />}
+                        <AuthBottomNav isAuthenticated={isAuthenticated} />
                     </div>
                 </div>
             </Router>
         </LanguageProvider>
     );
+};
+
+const AuthBottomNav: React.FC<{ isAuthenticated: boolean }> = ({ isAuthenticated }) => {
+    const location = window.location.hash; // Since we use HashRouter
+    const hideOn = ['#/', '#/login', '#/register', '#/onboarding'];
+    const shouldHide = hideOn.includes(location) || !isAuthenticated;
+
+    if (shouldHide) return null;
+    return <BottomNav />;
 };
 
 export default App;

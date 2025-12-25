@@ -25,7 +25,7 @@ const translations = {
     onboarding_title: 'Bem-vindo ao Dog Drive!',
     onboarding_sub: 'Selecione seu tipo de perfil para começar.',
     owner: 'Dono do Dog',
-    walker: 'Passeador e Sitter',
+    walker: 'Passeador e Hospedagem',
     business: 'Pet Shops e Clínicas',
     email_placeholder: 'ex: amantedecao@email.com',
     password_placeholder: 'Digite sua senha',
@@ -76,7 +76,14 @@ const translations = {
     filter_preferences: 'Preferências',
     max_distance: 'Distância Máxima',
     location_filter: 'Localização',
-    apply_filters: 'Aplicar Filtros'
+    apply_filters: 'Aplicar Filtros',
+    pet_name: 'Nome do Pet',
+    pet_age: 'Idade',
+    pet_traits: 'Peculiaridades/Temperamento',
+    pet_request: 'Que serviço você procura para ele?',
+    pet_photo: 'Foto do Pet (URL)',
+    walker_bio: 'Sua Experiência',
+    finish_btn: 'Finalizar Cadastro'
   },
   en: {
     app_name: 'Dog Drive',
@@ -93,7 +100,7 @@ const translations = {
     onboarding_title: 'Welcome to Dog Drive!',
     onboarding_sub: 'Select your profile type to get started.',
     owner: 'Dog Owner',
-    walker: 'Walker & Sitter',
+    walker: 'Walker & Boarding',
     business: 'Pet Services',
     email_placeholder: 'ex: doglover@email.com',
     password_placeholder: 'Enter your password',
@@ -144,7 +151,14 @@ const translations = {
     filter_preferences: 'Preferences',
     max_distance: 'Maximum Distance',
     location_filter: 'Location',
-    apply_filters: 'Apply Filters'
+    apply_filters: 'Apply Filters',
+    pet_name: 'Pet Name',
+    pet_age: 'Age',
+    pet_traits: 'Peculiarities/Traits',
+    pet_request: 'What service are you looking for?',
+    pet_photo: 'Pet Photo (URL)',
+    walker_bio: 'Your Experience',
+    finish_btn: 'Finish Registration'
   }
 };
 
