@@ -11,6 +11,20 @@ const RegisterView: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const handleSocialLogin = async (provider: 'google' | 'apple') => {
+        try {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider,
+                options: {
+                    redirectTo: window.location.origin
+                }
+            });
+            if (error) throw error;
+        } catch (err: any) {
+            setError(err.message || `Error signing in with ${provider}`);
+        }
+    };
+
     // Form State
     const [formData, setFormData] = useState({
         fullName: '',
@@ -217,6 +231,32 @@ const RegisterView: React.FC = () => {
                                     <span className="material-symbols-outlined font-black">chevron_right</span>
                                 </>
                             )}
+                        </button>
+                    </div>
+
+                    <div className="relative my-10">
+                        <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-gray-100 dark:border-white/5"></div>
+                        </div>
+                        <div className="relative flex justify-center text-[10px]">
+                            <span className="px-6 bg-background-light dark:bg-background-dark text-gray-400 font-black uppercase tracking-[0.2em]">ou continuar com</span>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <button
+                            onClick={() => handleSocialLogin('google')}
+                            className="h-16 rounded-3xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/5 hover:border-primary/30 flex items-center justify-center transition-all shadow-sm hover:shadow-md"
+                        >
+                            <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-6 h-6" alt="Google" />
+                            <span className="ml-2 font-black text-[10px] uppercase tracking-wider">Google</span>
+                        </button>
+                        <button
+                            onClick={() => handleSocialLogin('apple')}
+                            className="h-16 rounded-3xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/5 hover:border-primary/30 flex items-center justify-center transition-all shadow-sm hover:shadow-md"
+                        >
+                            <img src="https://www.svgrepo.com/show/511330/apple-173.svg" className="w-6 h-6 dark:invert" alt="Apple" />
+                            <span className="ml-2 font-black text-[10px] uppercase tracking-wider">Apple</span>
                         </button>
                     </div>
 

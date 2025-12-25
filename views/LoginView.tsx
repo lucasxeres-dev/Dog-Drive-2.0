@@ -16,6 +16,20 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    const handleSocialLogin = async (provider: 'google' | 'apple') => {
+        try {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider,
+                options: {
+                    redirectTo: window.location.origin
+                }
+            });
+            if (error) throw error;
+        } catch (err: any) {
+            setError(err.message || `Error signing in with ${provider}`);
+        }
+    };
+
     const handleLogin = async () => {
         setLoading(true);
         setError(null);
@@ -115,11 +129,17 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                    <button className="h-16 rounded-3xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/5 hover:border-primary/30 flex items-center justify-center transition-all shadow-sm hover:shadow-md">
+                    <button
+                        onClick={() => handleSocialLogin('google')}
+                        className="h-16 rounded-3xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/5 hover:border-primary/30 flex items-center justify-center transition-all shadow-sm hover:shadow-md"
+                    >
                         <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-6 h-6" alt="Google" />
                         <span className="ml-2 font-black text-[10px] uppercase tracking-wider">Google</span>
                     </button>
-                    <button className="h-16 rounded-3xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/5 hover:border-primary/30 flex items-center justify-center transition-all shadow-sm hover:shadow-md">
+                    <button
+                        onClick={() => handleSocialLogin('apple')}
+                        className="h-16 rounded-3xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/5 hover:border-primary/30 flex items-center justify-center transition-all shadow-sm hover:shadow-md"
+                    >
                         <img src="https://www.svgrepo.com/show/511330/apple-173.svg" className="w-6 h-6 dark:invert" alt="Apple" />
                         <span className="ml-2 font-black text-[10px] uppercase tracking-wider">Apple</span>
                     </button>
