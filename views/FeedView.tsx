@@ -15,7 +15,31 @@ const FeedView: React.FC = () => {
     const [showFilters, setShowFilters] = useState(false);
     const [maxDistance, setMaxDistance] = useState(10);
     const [location, setLocation] = useState<{ lat: number, lng: number } | null>(null);
-    const [locationName, setLocationName] = useState<string>('Rio de Janeiro');
+    const [locationName, setLocationName] = useState<string>(t('loading_location') || 'Rio de Janeiro');
+
+    const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+        const R = 6371; // Radius of the earth in km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    };
+
+    const reverseGeocode = async (lat: number, lng: number) => {
+        try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10`);
+            const data = await response.json();
+            const city = data.address.city || data.address.town || data.address.village || data.address.suburb || 'Local Desconhecido';
+            setLocationName(city);
+        } catch (error) {
+            console.error('Reverse geocoding failed:', error);
+            setLocationName('Rio de Janeiro');
+        }
+    };
 
     useEffect(() => {
         // Fetch current position
@@ -24,7 +48,7 @@ const FeedView: React.FC = () => {
                 async (position) => {
                     const { latitude: lat, longitude: lng } = position.coords;
                     setLocation({ lat, lng });
-                    setLocationName('Sua Localização');
+                    reverseGeocode(lat, lng);
 
                     // Update profile location if authenticated
                     const { data: { user } } = await supabase.auth.getUser();
@@ -59,12 +83,22 @@ const FeedView: React.FC = () => {
                     .order('created_at', { ascending: false });
 
                 if (!error && data) {
-                    setDogs(data.map(d => ({
-                        ...d,
-                        imageUrl: d.image_url, // For compatibility if needed, or just change JSX
-                        distance: d.distance || 'Calculando...',
-                        match: d.match_percentage || 95
-                    })) as Dog[]);
+                    setDogs(data.map(d => {
+                        let distanceStr = 'Calculando...';
+                        if (location && d.latitude && d.longitude) {
+                            const dist = calculateDistance(location.lat, location.lng, d.latitude, d.longitude);
+                            distanceStr = dist < 1 ? `${Math.round(dist * 1000)}m` : `${dist.toFixed(1)}km`;
+                        } else if (d.distance) {
+                            distanceStr = d.distance;
+                        }
+
+                        return {
+                            ...d,
+                            imageUrl: d.image_url,
+                            distance: distanceStr,
+                            match: d.match_percentage || 95
+                        };
+                    }) as Dog[]);
                 }
             } catch (err) {
                 console.error('Supabase fetch failed', err);

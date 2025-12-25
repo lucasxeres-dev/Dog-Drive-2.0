@@ -14,6 +14,16 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
     const { t } = useTranslation();
     const [step, setStep] = useState(0);
     const [selectedRole, setSelectedRole] = useState<UserRole>(UserRole.OWNER);
+    const [coords, setCoords] = useState<{ lat: number, lng: number } | null>(null);
+
+    React.useEffect(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+                (err) => console.error('Onboarding geolocation error:', err)
+            );
+        }
+    }, []);
 
     // Owner dog data
     const [dogData, setDogData] = useState({
@@ -110,7 +120,9 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                 image_url: dogData.photo,
                 traits: dogData.traits,
                 request_instructions: dogData.request,
-                location: 'Rio de Janeiro'
+                location: 'Rio de Janeiro',
+                latitude: coords?.lat,
+                longitude: coords?.lng
             });
         }
 
