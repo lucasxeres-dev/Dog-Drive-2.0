@@ -57,6 +57,15 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
         doc_url: ''
     });
 
+    // Provider data
+    const [providerData, setProviderData] = useState({
+        services: [] as string[],
+        doc_url: '',
+        address: '',
+        pix: '',
+        bio: ''
+    });
+
     const [uploading, setUploading] = useState(false);
     const [uploadingDoc, setUploadingDoc] = useState(false);
 

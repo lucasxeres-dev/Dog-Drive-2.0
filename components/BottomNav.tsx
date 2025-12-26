@@ -25,8 +25,8 @@ const BottomNav: React.FC = () => {
                     <div className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-[#111814] ring-2 ring-white dark:ring-background-dark">2</div>
                 </NavLink>
 
-                <NavLink to="/emergency" className={({ isActive }) => `flex flex-col items-center gap-1.5 transition-all duration-300 ${isActive ? 'text-primary scale-110' : 'text-gray-400'}`}>
-                    <span className="material-symbols-outlined text-2xl font-bold">warning</span>
+                <NavLink to="/settings" className={({ isActive }) => `flex flex-col items-center gap-1.5 transition-all duration-300 ${isActive ? 'text-primary scale-110' : 'text-gray-400'}`}>
+                    <span className="material-symbols-outlined text-2xl font-bold">settings</span>
                     <span className="text-[10px] font-black uppercase tracking-wider">{t('help_tab')}</span>
                 </NavLink>
             </div>

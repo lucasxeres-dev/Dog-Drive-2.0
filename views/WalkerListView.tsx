@@ -3,9 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../LanguageContext';
 import { supabase } from '../supabaseClient';
 import FilterModal from '../components/FilterModal';
+import { useLocation as useRouterLocation } from 'react-router-dom';
 
 const WalkerListView: React.FC = () => {
     const navigate = useNavigate();
+    const routerLocation = useRouterLocation();
+    const query = new URLSearchParams(routerLocation.search);
+    const serviceFilter = query.get('service') || 'walking';
+
     const { t } = useTranslation();
     const [sortBy, setSortBy] = useState<'nearby' | 'top_rated' | 'lowest_price'>('nearby');
     const [walkers, setWalkers] = useState<any[]>([]);
@@ -53,10 +58,19 @@ const WalkerListView: React.FC = () => {
 
         const fetchWalkers = async () => {
             setLoading(true);
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('role', 'provider');
+            let query = supabase.from('profiles').select('*');
+
+            if (serviceFilter === 'walking') {
+                query = query.eq('role', 'provider').contains('provider_services', ['Passeador']);
+            } else if (serviceFilter === 'boarding') {
+                query = query.eq('role', 'provider').contains('provider_services', ['Hospedagem']);
+            } else if (serviceFilter === 'grooming') {
+                query = query.eq('role', 'business').eq('business_type', 'grooming');
+            } else if (serviceFilter === 'clinic') {
+                query = query.eq('role', 'business').eq('business_type', 'clinic');
+            }
+
+            const { data, error } = await query;
 
             if (!error && data) {
                 const enhanced = data.map(w => {
@@ -67,12 +81,14 @@ const WalkerListView: React.FC = () => {
 
                     return {
                         ...w,
-                        name: w.full_name,
-                        specialty: w.bio?.substring(0, 30) + '...' || 'Pet Specialist',
-                        price: 35, // Default price
+                        name: w.business_name || w.full_name,
+                        specialty: w.business_type === 'clinic' ? 'Hospital Veterinário 24h' :
+                            w.business_type === 'grooming' ? 'Estética e Bem-estar' :
+                                w.bio?.substring(0, 30) + '...' || 'Pet Specialist',
+                        price: w.business_type !== 'none' ? 120 : 35, // Mock price for now as we don't have price field in schema yet
                         dist: dist,
-                        rating: 4.8 + (Math.random() * 0.2),
-                        img: w.avatar_url || 'https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg'
+                        rating: 4.8 + (Math.random() * 0.2), // Still mock rating
+                        img: w.avatar_url || (w.business_type === 'clinic' ? 'https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?w=200' : 'https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg')
                     };
                 });
                 setWalkers(enhanced);

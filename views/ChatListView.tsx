@@ -25,24 +25,45 @@ const ChatListView: React.FC = () => {
             }
 
             try {
-                const { data: chatData } = await supabase.from('chats').select('*');
-                const { data: matchData } = await supabase.from('dogs').select('*').limit(5);
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
 
-                if (chatData && chatData.length > 0) {
-                    setChats(chatData as ChatPreview[]);
-                } else {
-                    setChats(MOCK_CHATS);
+                // Fetch real matches (dogs that might belong to providers or potential matches)
+                // For now, just show active dogs in the area
+                const { data: matchData } = await supabase.from('dogs').select('*').limit(10);
+
+                // Fetch real chats where the user is a participant
+                const { data: chatData } = await supabase
+                    .from('chats')
+                    .select('*')
+                    .or(`user_id_1.eq.${user.id},user_id_2.eq.${user.id}`);
+
+                if (chatData) {
+                    const enhancedChats = await Promise.all(chatData.map(async (c: any) => {
+                        const otherUserId = c.user_id_1 === user.id ? c.user_id_2 : c.user_id_1;
+                        const { data: otherProfile } = await supabase.from('profiles').select('*').eq('id', otherUserId).single();
+
+                        return {
+                            id: c.id,
+                            name: otherProfile?.full_name || 'User',
+                            avatar: otherProfile?.avatar_url || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop',
+                            lastMessage: c.last_message || 'Inicie a conversa!',
+                            time: new Date(c.last_message_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                            unreadCount: 0,
+                            online: true
+                        };
+                    }));
+                    setChats(enhancedChats);
                 }
 
-                if (matchData && matchData.length > 0) {
-                    setMatches(matchData as Dog[]);
-                } else {
-                    setMatches(MOCK_DOGS.slice(0, 5));
+                if (matchData) {
+                    setMatches(matchData.map(d => ({
+                        ...d,
+                        imageUrl: d.image_url
+                    })) as Dog[]);
                 }
             } catch (err) {
-                console.error('Supabase fetch failed, falling back to mock data', err);
-                setChats(MOCK_CHATS);
-                setMatches(MOCK_DOGS.slice(0, 5));
+                console.error('Supabase fetch failed', err);
             }
             setLoading(false);
         };

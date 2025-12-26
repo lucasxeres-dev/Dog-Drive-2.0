@@ -1,11 +1,33 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../LanguageContext';
 
 const EmergencyView: React.FC = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const [realAddress, setRealAddress] = useState<string>('Localizando...');
+    const [realCity, setRealCity] = useState<string>('');
+
+    useEffect(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const { latitude: lat, longitude: lng } = pos.coords;
+                try {
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18`);
+                    const data = await res.json();
+                    const road = data.address.road || data.address.suburb || 'Local Desconhecido';
+                    const houseNumber = data.address.house_number ? `, ${data.address.house_number}` : '';
+                    const city = data.address.city || data.address.town || data.address.village || 'Rio de Janeiro';
+                    const state = data.address.state || 'RJ';
+
+                    setRealAddress(`${road}${houseNumber}`);
+                    setRealCity(`${city}, ${state}`);
+                } catch (e) {
+                    setRealAddress('Rio de Janeiro, RJ');
+                }
+            });
+        }
+    }, []);
 
     return (
         <div className="flex-1 flex flex-col bg-background-light dark:bg-background-dark font-display h-screen overflow-hidden">
@@ -32,8 +54,8 @@ const EmergencyView: React.FC = () => {
                             <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{t('location_label')}</span>
                         </div>
                         <div>
-                            <p className="text-lg font-bold leading-tight">123 Copacabana Ave</p>
-                            <p className="text-gray-500 text-xs mt-0.5">Rio de Janeiro, RJ</p>
+                            <p className="text-lg font-bold leading-tight">{realAddress}</p>
+                            <p className="text-gray-500 text-xs mt-0.5">{realCity}</p>
                         </div>
                     </div>
                 </div>

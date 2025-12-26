@@ -18,6 +18,7 @@ import CartView from './views/CartView';
 import WalletView from './views/WalletView';
 import ProviderRegistrationView from './views/ProviderRegistrationView';
 import RegisterView from './views/RegisterView';
+import SettingsView from './views/SettingsView';
 import BottomNav from './components/BottomNav';
 
 const App: React.FC = () => {
@@ -26,13 +27,23 @@ const App: React.FC = () => {
 
     useEffect(() => {
         // Initial session check
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        supabase.auth.getSession().then(async ({ data: { session } }) => {
             setIsAuthenticated(!!session);
+            if (session) {
+                const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
+                setUserRole(profile?.role || null);
+            }
         });
 
         // Listen for auth state changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
             setIsAuthenticated(!!session);
+            if (session) {
+                const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
+                setUserRole(profile?.role || null);
+            } else {
+                setUserRole(null);
+            }
         });
 
         return () => subscription.unsubscribe();
@@ -44,11 +55,11 @@ const App: React.FC = () => {
                 <div className="min-h-screen bg-[#050705] flex justify-center items-center p-0 md:p-4">
                     <div className="w-full max-w-[440px] h-[100dvh] md:h-[850px] bg-white dark:bg-background-dark md:rounded-[3rem] shadow-2xl relative overflow-hidden flex flex-col border border-white/5">
                         <Routes>
-                            <Route path="/" element={<LandingView />} />
+                            <Route path="/" element={isAuthenticated ? <Navigate to="/feed" /> : <LandingView />} />
                             <Route path="/login" element={<LoginView onLogin={() => setIsAuthenticated(true)} />} />
                             <Route path="/register" element={<RegisterView />} />
                             <Route path="/onboarding" element={<OnboardingView onSelectRole={(role) => setUserRole(role)} />} />
-                            <Route path="/feed" element={<FeedView />} />
+                            <Route path="/feed" element={<FeedCheck isAuthenticated={isAuthenticated} />} />
                             <Route path="/services" element={<ServicesView />} />
                             <Route path="/walkers" element={<WalkerListView />} />
                             <Route path="/chats" element={<ChatListView />} />
@@ -59,6 +70,7 @@ const App: React.FC = () => {
                             <Route path="/marketplace" element={<MarketplaceView />} />
                             <Route path="/cart" element={<CartView />} />
                             <Route path="/wallet" element={<WalletView />} />
+                            <Route path="/settings" element={<SettingsView />} />
                             <Route path="/register-provider" element={<ProviderRegistrationView />} />
                             <Route path="*" element={<Navigate to="/" />} />
                         </Routes>
@@ -68,6 +80,36 @@ const App: React.FC = () => {
             </Router>
         </LanguageProvider>
     );
+};
+
+const FeedCheck: React.FC<{ isAuthenticated: boolean }> = ({ isAuthenticated }) => {
+    const [hasDogs, setHasDogs] = useState<boolean | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const check = async () => {
+            if (!isAuthenticated) return;
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+
+                // If provider/business, they don't necessarily need dogs
+                if (profile?.role === 'provider' || profile?.role === 'business') {
+                    setHasDogs(true);
+                } else {
+                    const { data: dogs } = await supabase.from('dogs').select('id').eq('owner_id', user.id);
+                    setHasDogs(dogs && dogs.length > 0);
+                }
+            }
+            setLoading(false);
+        };
+        check();
+    }, [isAuthenticated]);
+
+    if (!isAuthenticated) return <Navigate to="/login" />;
+    if (loading) return null;
+    if (!hasDogs) return <Navigate to="/onboarding" />;
+    return <FeedView />;
 };
 
 const AuthBottomNav: React.FC<{ isAuthenticated: boolean }> = ({ isAuthenticated }) => {

@@ -12,10 +12,17 @@ const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, onApply, ini
     const { t } = useTranslation();
     const [distance, setDistance] = useState(initialDistance);
     const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+    const [neighborhoods, setNeighborhoods] = useState<string[]>(['Copacabana', 'Ipanema', 'Leblon', 'Barra', 'Tijuca', 'Botafogo']);
+
+    React.useEffect(() => {
+        if (isOpen) {
+            // In a real app, you'd fetch neighborhoods based on the current city
+            // For now, we'll keep the Rio defaults but ideally this is dynamic
+        }
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
-    const locations = ['Copacabana', 'Ipanema', 'Leblon', 'Barra', 'Tijuca', 'Botafogo'];
 
     return (
         <div className="fixed inset-0 z-[100] flex items-end justify-center px-4 pb-10 bg-black/60 backdrop-blur-md animate-fadeIn transition-all">
@@ -60,13 +67,13 @@ const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, onApply, ini
                     <div>
                         <label className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400 mb-6 block">{t('location_filter') || 'Bairros Próximos'}</label>
                         <div className="grid grid-cols-3 gap-3">
-                            {locations.map(loc => (
+                            {neighborhoods.map(loc => (
                                 <button
                                     key={loc}
                                     onClick={() => setSelectedLocation(selectedLocation === loc ? null : loc)}
                                     className={`py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${selectedLocation === loc
-                                            ? 'bg-primary text-[#111814] border-primary shadow-lg shadow-primary/20 scale-105'
-                                            : 'bg-gray-100 dark:bg-white/5 text-gray-500 border-transparent hover:border-primary/30'
+                                        ? 'bg-primary text-[#111814] border-primary shadow-lg shadow-primary/20 scale-105'
+                                        : 'bg-gray-100 dark:bg-white/5 text-gray-500 border-transparent hover:border-primary/30'
                                         }`}
                                 >
                                     {loc}

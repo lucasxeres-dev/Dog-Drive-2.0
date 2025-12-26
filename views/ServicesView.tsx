@@ -8,11 +8,11 @@ const ServicesView: React.FC = () => {
     const { t } = useTranslation();
 
     const categories = [
-        { id: '1', title: t('walking_cat'), icon: 'directions_walk', image: 'https://images.unsplash.com/photo-1551730459-92db2a308d6a?q=80&w=600&auto=format&fit=crop' },
-        { id: '2', title: t('boarding_cat'), icon: 'home', image: 'https://images.unsplash.com/photo-1541591047357-9191ff29fe2b?q=80&w=600&auto=format&fit=crop' },
-        { id: '3', title: t('grooming_cat'), icon: 'content_cut', image: 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?q=80&w=600&auto=format&fit=crop' },
-        { id: '4', title: t('vet_cat'), icon: 'medical_services', image: 'https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?q=80&w=600&auto=format&fit=crop' },
-        { id: '5', title: t('marketplace_cat'), icon: 'storefront', image: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?q=80&w=600&auto=format&fit=crop' }
+        { id: 'walking', title: t('walking_cat'), icon: 'directions_walk', image: 'https://images.unsplash.com/photo-1551730459-92db2a308d6a?q=80&w=600&auto=format&fit=crop' },
+        { id: 'boarding', title: t('boarding_cat'), icon: 'home', image: 'https://images.unsplash.com/photo-1541591047357-9191ff29fe2b?q=80&w=600&auto=format&fit=crop' },
+        { id: 'grooming', title: t('grooming_cat'), icon: 'content_cut', image: 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?q=80&w=600&auto=format&fit=crop' },
+        { id: 'clinic', title: t('vet_cat'), icon: 'medical_services', image: 'https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?q=80&w=600&auto=format&fit=crop' },
+        { id: 'marketplace', title: t('marketplace_cat'), icon: 'storefront', image: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?q=80&w=600&auto=format&fit=crop' }
     ];
 
     return (
@@ -45,8 +45,10 @@ const ServicesView: React.FC = () => {
                     {categories.map((cat) => (
                         <div
                             key={cat.id}
-                            onClick={() => cat.id === '5' ? navigate('/marketplace') : navigate('/walkers')}
-                            className="group relative flex flex-col items-center justify-end overflow-hidden rounded-2xl aspect-[4/5] bg-surface-dark shadow-md active:scale-95 transition-all cursor-pointer"
+                            onClick={() => {
+                                if (cat.id === 'marketplace') navigate('/marketplace');
+                                else navigate(`/walkers?service=${cat.id}`);
+                            }}
                         >
                             <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${cat.image})` }}></div>
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent"></div>
