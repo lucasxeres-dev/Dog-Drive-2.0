@@ -4,6 +4,8 @@ import { authService } from '../services/authService';
 import { Dog } from '../types';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useNotification } from '../contexts/NotificationContext';
+import VaccinationWallet from '../components/VaccinationWallet';
+import { ShieldCheck, Info } from 'lucide-react';
 
 const ProfileDetailView: React.FC = () => {
     const navigate = useNavigate();
@@ -12,6 +14,7 @@ const ProfileDetailView: React.FC = () => {
     const { id } = useParams();
     const [dog, setDog] = React.useState<Dog | null>(null);
     const [loading, setLoading] = React.useState(true);
+    const [activeTab, setActiveTab] = React.useState<'about' | 'vaccines'>('about');
 
     React.useEffect(() => {
         const fetchDog = async () => {
@@ -80,32 +83,84 @@ const ProfileDetailView: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="mt-8 space-y-6">
-                    <section>
-                        <h2 className="text-lg font-bold mb-2">{t('about')} {dog.name}</h2>
-                        <p className="text-slate-600 dark:text-gray-300 leading-relaxed text-sm font-medium">{dog.description || dog.request_instructions || 'Nenhuma descrição fornecida.'}</p>
-                    </section>
+                <div className="flex gap-2 p-1 bg-gray-100 dark:bg-white/5 rounded-2xl mt-8">
+                    <button
+                        onClick={() => setActiveTab('about')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all ${activeTab === 'about' ? 'bg-white dark:bg-surface-dark shadow-sm text-primary' : 'text-gray-400'}`}
+                    >
+                        <Info size={18} />
+                        Sobre
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('vaccines')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all ${activeTab === 'vaccines' ? 'bg-white dark:bg-surface-dark shadow-sm text-primary' : 'text-gray-400'}`}
+                    >
+                        <ShieldCheck size={18} />
+                        Vacinas
+                    </button>
+                </div>
 
-                    <section>
-                        <h2 className="text-lg font-bold mb-3">{t('traits')}</h2>
-                        <div className="flex flex-wrap gap-2">
-                            {(Array.isArray(dog.traits) ? dog.traits : (dog.traits?.split(',') || [])).map(trait => (
-                                <span key={trait} className="px-4 py-2 rounded-full bg-white dark:bg-surface-dark border border-slate-100 dark:border-white/5 text-slate-700 dark:text-gray-200 text-xs font-bold flex items-center gap-2">
-                                    <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
-                                    {trait.trim()}
-                                </span>
-                            ))}
+                <div className="mt-8">
+                    {activeTab === 'about' ? (
+                        <div className="space-y-6">
+                            <section>
+                                <h2 className="text-lg font-bold mb-2">{t('about')} {dog.name}</h2>
+                                <p className="text-slate-600 dark:text-gray-300 leading-relaxed text-sm font-medium">{dog.description || dog.request_instructions || 'Nenhuma descrição fornecida.'}</p>
+                            </section>
+
+                            {(dog.size || dog.weight || dog.gender) && (
+                                <section className="grid grid-cols-2 gap-4">
+                                    {dog.gender && (
+                                        <div className="bg-white dark:bg-surface-dark p-4 rounded-3xl border border-gray-100 dark:border-white/5 flex flex-col items-center gap-1">
+                                            <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Gênero</span>
+                                            <span className="font-bold text-sm">{dog.gender === 'male' ? 'Macho' : 'Fêmea'}</span>
+                                        </div>
+                                    )}
+                                    {dog.size && (
+                                        <div className="bg-white dark:bg-surface-dark p-4 rounded-3xl border border-gray-100 dark:border-white/5 flex flex-col items-center gap-1">
+                                            <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Porte</span>
+                                            <span className="font-bold text-sm uppercase">{dog.size}</span>
+                                        </div>
+                                    )}
+                                    {dog.weight && (
+                                        <div className="bg-white dark:bg-surface-dark p-4 rounded-3xl border border-gray-100 dark:border-white/5 flex flex-col items-center gap-1">
+                                            <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Peso</span>
+                                            <span className="font-bold text-sm">{dog.weight}kg</span>
+                                        </div>
+                                    )}
+                                    {dog.color && (
+                                        <div className="bg-white dark:bg-surface-dark p-4 rounded-3xl border border-gray-100 dark:border-white/5 flex flex-col items-center gap-1">
+                                            <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest">Cor</span>
+                                            <span className="font-bold text-sm">{dog.color}</span>
+                                        </div>
+                                    )}
+                                </section>
+                            )}
+
+                            <section>
+                                <h2 className="text-lg font-bold mb-3">{t('traits')}</h2>
+                                <div className="flex flex-wrap gap-2">
+                                    {(Array.isArray(dog.traits) ? dog.traits : (dog.traits?.split(',') || [])).map(trait => (
+                                        <span key={trait} className="px-4 py-2 rounded-full bg-white dark:bg-surface-dark border border-slate-100 dark:border-white/5 text-slate-700 dark:text-gray-200 text-xs font-bold flex items-center gap-2">
+                                            <span className="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+                                            {trait.trim()}
+                                        </span>
+                                    ))}
+                                </div>
+                            </section>
                         </div>
-                    </section>
+                    ) : (
+                        <VaccinationWallet dogId={dog.id} />
+                    )}
+                </div>
 
-                    <div className="pt-4 flex items-center justify-center gap-6">
-                        <button onClick={() => navigate(-1)} className="size-16 rounded-full bg-white dark:bg-surface-dark shadow-lg flex items-center justify-center text-red-500 border border-red-50 active:scale-95 transition-all">
-                            <span className="material-symbols-outlined text-3xl">close</span>
-                        </button>
-                        <button onClick={() => navigate('/chats')} className="size-20 rounded-full bg-primary shadow-xl flex items-center justify-center text-black active:scale-95 transition-all">
-                            <span className="material-symbols-outlined text-4xl fill-1">favorite</span>
-                        </button>
-                    </div>
+                <div className="pt-4 flex items-center justify-center gap-6">
+                    <button onClick={() => navigate(-1)} className="size-16 rounded-full bg-white dark:bg-surface-dark shadow-lg flex items-center justify-center text-red-500 border border-red-50 active:scale-95 transition-all">
+                        <span className="material-symbols-outlined text-3xl">close</span>
+                    </button>
+                    <button onClick={() => navigate('/chats')} className="size-20 rounded-full bg-primary shadow-xl flex items-center justify-center text-black active:scale-95 transition-all">
+                        <span className="material-symbols-outlined text-4xl fill-1">favorite</span>
+                    </button>
                 </div>
             </div>
         </div>

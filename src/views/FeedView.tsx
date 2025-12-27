@@ -26,36 +26,51 @@ const FeedView: React.FC = () => {
     const [hasMore, setHasMore] = useState(true);
     const PAGE_SIZE = 20; // Load 20 dogs at a time
 
-    useEffect(() => {
-        const fetchDogsData = async () => {
-            setLoading(true);
-            try {
-                // PAGINATION: Load only PAGE_SIZE dogs
-                const { data, error } = await supabase
-                    .from('dogs')
-                    .select('*')
-                    .order('created_at', { ascending: false })
-                    .limit(PAGE_SIZE);
+    const fetchDogsData = async (isLoadMore = false) => {
+        if (!isLoadMore) setLoading(true);
+        try {
+            const query = supabase
+                .from('dogs')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .range(isLoadMore ? dogs.length : 0, (isLoadMore ? dogs.length : 0) + PAGE_SIZE - 1);
 
-                if (error) throw error;
-                if (data) {
-                    setDogs(data.map((d: any) => ({
-                        ...d,
-                        imageUrl: d.image_url,
-                        distance: '2.5km',
-                        match: d.match_percentage || 95
-                    })) as Dog[]);
-                    setHasMore(data.length === PAGE_SIZE);
+            const { data, error } = await query;
+
+            if (error) throw error;
+            if (data) {
+                const formattedDogs = data.map((d: any) => ({
+                    ...d,
+                    imageUrl: d.image_url,
+                    distance: '2.5km',
+                    match: d.match_percentage || 95
+                })) as Dog[];
+
+                if (isLoadMore) {
+                    setDogs(prev => [...prev, ...formattedDogs]);
+                } else {
+                    setDogs(formattedDogs);
+                    setCurrentIndex(0);
                 }
-            } catch (err: any) {
-                showNotification(err.message || 'Erro ao carregar feeds', 'error');
-            } finally {
-                setLoading(false);
+                setHasMore(data.length === PAGE_SIZE);
             }
-        };
+        } catch (err: any) {
+            showNotification(err.message || 'Erro ao carregar feeds', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    useEffect(() => {
         fetchDogsData();
     }, [user, supabase]);
+
+    useEffect(() => {
+        // Load more when we are near the end of the current buffer
+        if (hasMore && dogs.length > 0 && currentIndex >= dogs.length - 5) {
+            fetchDogsData(true);
+        }
+    }, [currentIndex, dogs.length, hasMore]);
 
     const handleSwipe = async (direction: 'left' | 'right') => {
         if (!user || currentDogs.length === 0) return;
@@ -99,8 +114,13 @@ const FeedView: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="flex-1 flex flex-col items-center justify-center bg-background-light dark:bg-background-dark">
-                <div className="size-12 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+            <div className="flex-1 flex flex-col bg-background-light dark:bg-background-dark p-6">
+                <div className="h-10 w-48 bg-gray-200 dark:bg-white/5 rounded-xl animate-pulse mb-8" />
+                <div className="flex-1 rounded-[40px] bg-gray-200 dark:bg-white/5 animate-pulse" />
+                <div className="flex justify-center gap-8 mt-10">
+                    <div className="size-16 rounded-full bg-gray-200 dark:bg-white/5 animate-pulse" />
+                    <div className="size-20 rounded-full bg-gray-200 dark:bg-white/5 animate-pulse" />
+                </div>
             </div>
         );
     }
@@ -150,13 +170,24 @@ const FeedView: React.FC = () => {
                                 <Heart size={40} className="text-slate-300 dark:text-slate-600" />
                             </div>
                             <h3 className="text-xl font-black mb-2">Sem mais pets por perto</h3>
-                            <p className="text-sm text-slate-500 max-w-[200px]">Aumente sua distância nas configurações para ver mais!</p>
-                            <button
-                                onClick={() => setMaxDistance(50)}
-                                className="mt-8 px-8 py-3 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/20"
-                            >
-                                Recarregar
-                            </button>
+                            <p className="text-sm text-slate-500 max-w-[200px]">Aumente sua distância ou altere os filtros para ver mais!</p>
+                            <div className="flex flex-col gap-3 mt-8 w-full max-w-[200px]">
+                                <button
+                                    onClick={() => {
+                                        setCurrentIndex(0);
+                                        fetchDogsData();
+                                    }}
+                                    className="px-8 py-3 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/20 active:scale-95 transition-all"
+                                >
+                                    Tentar Novamente
+                                </button>
+                                <button
+                                    onClick={() => setShowFilters(true)}
+                                    className="px-8 py-3 bg-white dark:bg-slate-800 rounded-2xl font-bold shadow-sm active:scale-95 transition-all border border-gray-100 dark:border-white/5"
+                                >
+                                    Ajustar Filtros
+                                </button>
+                            </div>
                         </motion.div>
                     )}
                 </AnimatePresence>

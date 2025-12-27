@@ -17,16 +17,20 @@ export interface UserProfile {
 export interface Dog {
     id: string;
     name: string;
-    age: string; // Changed to string to handle "3 anos", "2 meses" etc
+    age: string;
     breed: string | null;
-    distance: string;
-    location: string;
-    match: number;
-    description: string | null;
-    image_url: string;
-    traits: string | string[]; // Can be string in DB or array in frontend
+    gender?: 'male' | 'female' | null;
+    size?: 'mini' | 'small' | 'medium' | 'large' | 'giant' | null;
+    color?: string | null;
+    weight?: number | null;
     is_castrated?: boolean;
-    request_instructions?: string;
+    distance?: string;
+    location: string;
+    match?: number;
+    description?: string | null;
+    request_instructions?: string | null;
+    image_url: string;
+    traits: string | string[];
 }
 
 export interface Message {

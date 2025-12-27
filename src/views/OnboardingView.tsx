@@ -48,7 +48,13 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
     const [dogData, setDogData] = useState({
         name: '',
         age: '',
-        traits: '',
+        breed: '',
+        gender: '' as 'male' | 'female' | '',
+        size: '' as 'mini' | 'small' | 'medium' | 'large' | 'giant' | '',
+        weight: '',
+        color: '',
+        is_castrated: false,
+        traits: [] as string[],
         request: '',
         photo: ''
     });
@@ -80,6 +86,12 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
+        // Proactive Fix 1: Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            showNotification('Arquivo muito grande. Máximo 5MB.', 'error');
+            return;
+        }
+
         try {
             if (type === 'pet') setUploading(true);
             else setUploadingDoc(true);
@@ -89,11 +101,14 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
 
             const bucket = type === 'pet' ? 'pet-photos' : 'documents';
 
-            // Use production-ready upload with compression
+            // Proactive Fix 2: Better error reporting for uploads
             const { url } = await uploadImage(file, {
                 bucket,
                 userId: user.id,
                 onProgress: (progress) => console.log(`Upload: ${progress}%`)
+            }).catch(uploadErr => {
+                console.error('Upload sub-service error:', uploadErr);
+                throw new Error('Falha no serviço de upload. Verifique os buckets do Supabase.');
             });
 
             if (type === 'pet') {
@@ -113,8 +128,18 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
         }
     };
 
-    const handleNext = () => {
+    const handleNext = async () => {
+        // Proactive Fix 6: Persistent Role
+        // If we are at step 0, save the role immediately to prevent losing progress if session resets
         if (step === 0) {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                    await supabase.from('profiles').update({ role: selectedRole }).eq('id', user.id);
+                }
+            } catch (err) {
+                console.error('Failed to pre-save role:', err);
+            }
             setStep(1);
         } else if (step === 1) {
             setStep(2);
@@ -177,12 +202,18 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                     owner_id: user.id,
                     name: dogData.name.trim(),
                     age: dogData.age || '0',
-                    image_url: dogData.photo || null,
-                    traits: dogData.traits || '',
-                    request_instructions: dogData.request || '',
-                    location: city,
-                    latitude: coords?.lat || 0,
-                    longitude: coords?.lng || 0
+                    breed: dogData.breed || null,
+                    gender: dogData.gender || null,
+                    size: dogData.size || null,
+                    weight: dogData.weight ? parseFloat(dogData.weight) : null,
+                    color: dogData.color || null,
+                    is_castrated: dogData.is_castrated,
+                    traits: dogData.traits,
+                    request_instructions: dogData.request,
+                    image_url: dogData.photo,
+                    latitude: coords?.lat,
+                    longitude: coords?.lng,
+                    location: city || 'Portugal'
                 });
 
                 if (dogError) {
@@ -346,6 +377,86 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                             </div>
                         </div>
 
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="flex-1">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">Raça</label>
+                                <input
+                                    type="text"
+                                    value={dogData.breed}
+                                    onChange={e => setDogData({ ...dogData, breed: e.target.value })}
+                                    placeholder="ex: Golden Retriever"
+                                    className="w-full h-16 bg-white dark:bg-surface-dark rounded-3xl px-6 font-bold border-2 border-transparent focus:border-primary/30 transition-all shadow-sm"
+                                />
+                            </div>
+                            <div className="flex-1">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">Gênero</label>
+                                <select
+                                    value={dogData.gender}
+                                    onChange={e => setDogData({ ...dogData, gender: e.target.value as any })}
+                                    className="w-full h-16 bg-white dark:bg-surface-dark rounded-3xl px-6 font-bold border-2 border-transparent focus:border-primary/30 transition-all shadow-sm appearance-none"
+                                >
+                                    <option value="">Selecionar</option>
+                                    <option value="male">Macho</option>
+                                    <option value="female">Fêmea</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="flex-1">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">Porte</label>
+                                <select
+                                    value={dogData.size}
+                                    onChange={e => setDogData({ ...dogData, size: e.target.value as any })}
+                                    className="w-full h-16 bg-white dark:bg-surface-dark rounded-3xl px-6 font-bold border-2 border-transparent focus:border-primary/30 transition-all shadow-sm appearance-none"
+                                >
+                                    <option value="">Porte</option>
+                                    <option value="mini">Mini</option>
+                                    <option value="small">Pequeno</option>
+                                    <option value="medium">Médio</option>
+                                    <option value="large">Grande</option>
+                                    <option value="giant">Gigante</option>
+                                </select>
+                            </div>
+                            <div className="flex-1">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">Peso (Kg)</label>
+                                <input
+                                    type="number"
+                                    value={dogData.weight}
+                                    onChange={e => setDogData({ ...dogData, weight: e.target.value })}
+                                    placeholder="ex: 15"
+                                    className="w-full h-16 bg-white dark:bg-surface-dark rounded-3xl px-6 font-bold border-2 border-transparent focus:border-primary/30 transition-all shadow-sm"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-4 bg-white dark:bg-surface-dark p-6 rounded-3xl shadow-sm border-2 border-transparent hover:border-primary/20 transition-all">
+                            <div className={`size-12 rounded-2xl flex items-center justify-center transition-colors ${dogData.is_castrated ? 'bg-primary/20 text-primary' : 'bg-gray-100 dark:bg-white/5 text-gray-400'}`}>
+                                <span className="material-symbols-outlined text-2xl font-black">vaccines</span>
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="font-bold">Castrado?</h3>
+                                <p className="text-xs text-gray-500 font-medium">Marque se seu cão já foi castrado</p>
+                            </div>
+                            <button
+                                onClick={() => setDogData({ ...dogData, is_castrated: !dogData.is_castrated })}
+                                className={`w-14 h-8 rounded-full relative transition-colors ${dogData.is_castrated ? 'bg-primary' : 'bg-gray-200 dark:bg-white/10'}`}
+                            >
+                                <div className={`absolute top-1 size-6 bg-white rounded-full transition-all ${dogData.is_castrated ? 'left-7' : 'left-1'} shadow-sm`} />
+                            </button>
+                        </div>
+
+                        <div>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">Cor</label>
+                            <input
+                                type="text"
+                                value={dogData.color}
+                                onChange={e => setDogData({ ...dogData, color: e.target.value })}
+                                placeholder="ex: Caramelo, Preto e Branco"
+                                className="w-full h-16 bg-white dark:bg-surface-dark rounded-3xl px-6 font-bold border-2 border-transparent focus:border-primary/30 transition-all shadow-sm"
+                            />
+                        </div>
+
                         <div>
                             <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">{t('pet_photo')}</label>
                             <div className="flex flex-col items-center gap-4 p-6 bg-white dark:bg-surface-dark rounded-3xl border-2 border-dashed border-gray-200 dark:border-white/10 transition-all hover:border-primary/50">
@@ -365,10 +476,10 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                                             {uploading ? (
                                                 <div className="size-6 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
                                             ) : (
-                                                <span className="material-symbols-outlined text-3xl text-primary">add_a_photo</span>
+                                                <span className="material-symbols-outlined text-[32px] text-primary">add_a_photo</span>
                                             )}
                                         </div>
-                                        <span className="text-sm font-bold text-gray-500">{uploading ? 'Enviando...' : 'Clique para subir a foto'}</span>
+                                        <span className="text-sm font-bold text-gray-500 uppercase tracking-widest">{uploading ? 'Enviando...' : 'Subir Foto'}</span>
                                         <input
                                             type="file"
                                             accept="image/*"
@@ -382,22 +493,38 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                         </div>
 
                         <div>
-                            <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">{t('pet_traits')}</label>
-                            <textarea
-                                value={dogData.traits}
-                                onChange={e => setDogData({ ...dogData, traits: e.target.value })}
-                                placeholder="ex: Muito dócil, medo de fogos..."
-                                className="w-full h-32 bg-white dark:bg-surface-dark rounded-3xl p-6 font-bold border-2 border-transparent focus:border-primary/30 transition-all shadow-sm resize-none"
-                            />
+                            <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">Traços / Temperamento</label>
+                            <div className="grid grid-cols-2 gap-2">
+                                {['Dócil', 'Ativo', 'Calmo', 'Protetor', 'Brincalhão', 'Bravo', 'Sociável', 'Independente'].map(trait => (
+                                    <button
+                                        key={trait}
+                                        onClick={() => {
+                                            const current = dogData.traits;
+                                            setDogData({
+                                                ...dogData,
+                                                traits: current.includes(trait)
+                                                    ? current.filter(t => t !== trait)
+                                                    : [...current, trait]
+                                            });
+                                        }}
+                                        className={`px-4 py-3 rounded-2xl border-2 text-sm font-bold transition-all ${dogData.traits.includes(trait)
+                                            ? 'bg-primary/10 border-primary text-primary shadow-sm'
+                                            : 'bg-white dark:bg-surface-dark border-transparent text-gray-500'
+                                            }`}
+                                    >
+                                        {trait}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
                         <div>
-                            <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">{t('pet_request')}</label>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">Instruções ou Pedido</label>
                             <textarea
                                 value={dogData.request}
                                 onChange={e => setDogData({ ...dogData, request: e.target.value })}
-                                placeholder="ex: Procuro alguém para passeio educativo"
-                                className="w-full h-32 bg-white dark:bg-surface-dark rounded-3xl p-6 font-bold border-2 border-transparent focus:border-primary/30 transition-all shadow-sm resize-none"
+                                placeholder="ex: Preciso de alguém para gastar energia dele pela manhã..."
+                                className="w-full h-32 bg-white dark:bg-surface-dark rounded-3xl p-6 font-bold border-2 border-transparent focus:border-primary/30 transition-all shadow-sm resize-none text-sm"
                             />
                         </div>
                     </div>
@@ -427,8 +554,21 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                                 </div>
                             </div>
 
-                            <h2 className="text-4xl font-black tracking-tight mb-2">{dogData.name}</h2>
-                            <p className="font-bold opacity-80 uppercase tracking-widest text-xs mb-8">{dogData.age} • {city}</p>
+                            <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                    <h1 className="text-3xl font-extrabold">{dogData.name || 'Sem nome'}, {dogData.age || 'Idade N/I'}</h1>
+                                    <div className="flex items-center gap-2 mt-2">
+                                        <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider">{dogData.breed || 'SRD'}</span>
+                                        {dogData.is_castrated && (
+                                            <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-500 text-[10px] font-bold uppercase tracking-wider ml-2">Castrado</span>
+                                        )}
+                                        <div className="flex items-center gap-1 text-slate-500 text-sm">
+                                            <span className="material-symbols-outlined text-[16px]">location_on</span>
+                                            <span>{city || 'Portugal'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
                             <div className="w-full space-y-4">
                                 <div className="flex items-center gap-4 rounded-2xl bg-white/10 p-4 backdrop-blur-md">
@@ -437,17 +577,17 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                                     </div>
                                     <div className="flex-1">
                                         <p className="text-[10px] font-black uppercase text-white/50 tracking-wider">Temperamento</p>
-                                        <p className="font-bold text-sm">{dogData.traits || 'Não informado'}</p>
+                                        <p className="font-bold text-sm">{(dogData.traits || []).join(', ') || 'Não informado'}</p>
                                     </div>
                                 </div>
 
                                 <div className="flex items-center gap-4 rounded-2xl bg-white/10 p-4 backdrop-blur-md">
                                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10">
-                                        <span className="material-symbols-outlined text-primary">campaign</span>
+                                        <span className="material-symbols-outlined text-primary">monitor_weight</span>
                                     </div>
                                     <div className="flex-1">
-                                        <p className="text-[10px] font-black uppercase text-white/50 tracking-wider">Solicitação</p>
-                                        <p className="font-bold text-sm max-h-20 overflow-y-auto custom-scrollbar">{dogData.request || 'Não informado'}</p>
+                                        <p className="text-[10px] font-black uppercase text-white/50 tracking-wider">Porte / Peso</p>
+                                        <p className="font-bold text-sm uppercase tracking-tighter">{dogData.size || 'N/I'} • {dogData.weight ? `${dogData.weight}kg` : 'N/I'} • {dogData.is_castrated ? 'Castrado' : 'Não Castrado'}</p>
                                     </div>
                                 </div>
                             </div>
