@@ -135,8 +135,8 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
         try {
             // Update profile
             const { error: profileError } = await (authService as any).supabase.from('profiles').update({
-                role: selectedRole === UserRole.OWNER ? 'user' :
-                    selectedRole === UserRole.BUSINESS ? 'business' : 'provider',
+                role: selectedRole === UserRole.OWNER ? 'owner' :
+                    selectedRole === UserRole.BUSINESS ? 'business' : 'walker',
                 address: selectedRole === UserRole.WALKER ? providerData.address :
                     selectedRole === UserRole.BUSINESS ? businessData.address : null,
                 provider_services: selectedRole === UserRole.WALKER ? providerData.services : null,
@@ -195,7 +195,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
     const roles = [
         { id: UserRole.OWNER, title: t('owner'), icon: 'pets' },
         { id: UserRole.WALKER, title: t('walker'), icon: 'directions_walk' },
-        { id: UserRole.BUSINESS, title: t('business'), icon: 'storefront' }
+        { id: UserRole.BUSINESS, title: t('business'), icon: 'content_cut' }
     ];
 
     return (

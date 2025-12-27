@@ -16,10 +16,9 @@ const RegisterView: React.FC = () => {
         fullName: '',
         email: '',
         phone: '',
-        cpfRg: '',
         password: '',
         confirmPassword: '',
-        securityCode: ''
+        role: 'owner' as 'owner' | 'walker' | 'business'
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,10 +35,6 @@ const RegisterView: React.FC = () => {
                 showNotification('E-mail inválido', 'error');
                 return;
             }
-        }
-        if (step === 2 && !formData.cpfRg) {
-            showNotification('O CPF ou RG é obrigatório para sua segurança.', 'error');
-            return;
         }
         setStep(step + 1);
     };
@@ -60,8 +55,7 @@ const RegisterView: React.FC = () => {
                 data: {
                     full_name: formData.fullName,
                     phone: formData.phone,
-                    cpf_rg: formData.cpfRg,
-                    security_code: formData.securityCode
+                    role: formData.role
                 }
             });
 
@@ -133,23 +127,25 @@ const RegisterView: React.FC = () => {
 
                     {step === 2 && (
                         <div className="space-y-6 animate-fadeIn">
-                            <div className="space-y-2">
-                                <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">CPF ou RG</label>
-                                <input
-                                    name="cpfRg"
-                                    className="w-full rounded-3xl border-2 border-transparent bg-white dark:bg-white/5 h-16 pl-6 text-base font-bold transition-all outline-none focus:bg-white dark:focus:bg-black/20 focus:border-primary shadow-sm"
-                                    placeholder="000.000.000-00"
-                                    value={formData.cpfRg}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="p-4 bg-primary/5 rounded-3xl border border-primary/20">
-                                <div className="flex items-start gap-3">
-                                    <span className="material-symbols-outlined text-primary text-xl">shield</span>
-                                    <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
-                                        Seus dados são criptografados e utilizados apenas para verificação de identidade e segurança nas caminhadas.
-                                    </p>
-                                </div>
+                            <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Selecione seu Perfil</label>
+                            <div className="grid grid-cols-1 gap-4">
+                                {[
+                                    { id: 'owner', label: t('owner'), icon: 'pets' },
+                                    { id: 'walker', label: t('walker'), icon: 'directions_walk' },
+                                    { id: 'business', label: t('business'), icon: 'content_cut' }
+                                ].map(role => (
+                                    <button
+                                        key={role.id}
+                                        onClick={() => setFormData({ ...formData, role: role.id as any })}
+                                        className={`flex items-center gap-4 p-5 rounded-3xl border-2 transition-all ${formData.role === role.id ? 'bg-primary/10 border-primary' : 'bg-white dark:bg-white/5 border-transparent'}`}
+                                    >
+                                        <div className={`size-12 rounded-2xl flex items-center justify-center ${formData.role === role.id ? 'bg-primary text-[#050705]' : 'bg-gray-100 dark:bg-white/10 text-gray-400'}`}>
+                                            <span className="material-symbols-outlined text-2xl font-black">{role.icon}</span>
+                                        </div>
+                                        <span className="text-base font-bold flex-1 text-left">{role.label}</span>
+                                        {formData.role === role.id && <span className="material-symbols-outlined text-primary">check_circle</span>}
+                                    </button>
+                                ))}
                             </div>
                         </div>
                     )}
@@ -175,16 +171,6 @@ const RegisterView: React.FC = () => {
                                     className="w-full rounded-3xl border-2 border-transparent bg-white dark:bg-white/5 h-16 pl-6 text-base font-bold transition-all outline-none focus:bg-white dark:focus:bg-black/20 focus:border-primary shadow-sm"
                                     placeholder="••••••••"
                                     value={formData.confirmPassword}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Código de Segurança (Opcional)</label>
-                                <input
-                                    name="securityCode"
-                                    className="w-full rounded-3xl border-2 border-transparent bg-white dark:bg-white/5 h-16 pl-6 text-base font-bold transition-all outline-none focus:bg-white dark:focus:bg-black/20 focus:border-primary shadow-sm"
-                                    placeholder="Ex: 123456"
-                                    value={formData.securityCode}
                                     onChange={handleChange}
                                 />
                             </div>
