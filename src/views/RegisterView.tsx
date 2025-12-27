@@ -56,16 +56,12 @@ const RegisterView: React.FC = () => {
 
         setLoading(true);
         try {
-            const { error: signUpError } = await (authService as any).supabase.auth.signUp({
-                email: formData.email,
-                password: formData.password,
-                options: {
-                    data: {
-                        full_name: formData.fullName,
-                        phone: formData.phone,
-                        cpf_rg: formData.cpfRg,
-                        security_code: formData.securityCode
-                    }
+            const { error: signUpError } = await authService.signUp(formData.email, formData.password, {
+                data: {
+                    full_name: formData.fullName,
+                    phone: formData.phone,
+                    cpf_rg: formData.cpfRg,
+                    security_code: formData.securityCode
                 }
             });
 
@@ -74,7 +70,8 @@ const RegisterView: React.FC = () => {
             showNotification('Cadastro realizado! Verifique seu email.', 'success');
             navigate('/login');
         } catch (err: any) {
-            showNotification(err.message || 'Erro ao registrar usuário', 'error');
+            console.error('Registration error:', err);
+            showNotification('Ops, algo deu errado no cadastro. Poderia conferir os dados e tentar novamente?', 'error');
         } finally {
             setLoading(false);
         }

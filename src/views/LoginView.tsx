@@ -38,10 +38,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
 
         setLoading(true);
         try {
-            const { data: { user, session }, error: authError } = await (authService as any).supabase.auth.signInWithPassword({
-                email,
-                password,
-            });
+            const { data: { user, session }, error: authError } = await authService.signIn(email, password);
             if (authError) throw authError;
 
             if (user && session) {
@@ -58,7 +55,8 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                 showNotification('Bem-vindo de volta!', 'success');
             }
         } catch (err: any) {
-            showNotification(err.message || 'Erro ao entrar', 'error');
+            console.error('Login error:', err);
+            showNotification('Ops, algo deu errado. Poderia tentar novamente?', 'error');
         } finally {
             setLoading(false);
         }
@@ -72,9 +70,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
 
         setResetLoading(true);
         try {
-            const { error } = await (authService as any).supabase.auth.resetPasswordForEmail(resetEmail, {
-                redirectTo: `${window.location.origin}/#/settings?tab=password`,
-            });
+            const { error } = await authService.resetPassword(resetEmail, `${window.location.origin}/#/settings?tab=password`);
 
             if (error) throw error;
 
@@ -82,7 +78,8 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
             setShowForgotPassword(false);
             setResetEmail('');
         } catch (err: any) {
-            showNotification(err.message || 'Erro ao enviar e-mail', 'error');
+            console.error('Reset password error:', err);
+            showNotification('Ops, não conseguimos enviar o e-mail. Tente novamente mais tarde.', 'error');
         } finally {
             setResetLoading(false);
         }

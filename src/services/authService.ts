@@ -2,6 +2,18 @@ import { supabase } from '../lib/supabaseClient';
 import { UserProfile } from '../types';
 
 export const authService = {
+    async signUp(email: string, password: string, options: any) {
+        return await supabase.auth.signUp({ email, password, options });
+    },
+
+    async signIn(email: string, password: string) {
+        return await supabase.auth.signInWithPassword({ email, password });
+    },
+
+    async resetPassword(email: string, redirectTo: string) {
+        return await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+    },
+
     async getSession() {
         return await supabase.auth.getSession();
     },
@@ -23,6 +35,13 @@ export const authService = {
         }
 
         return data;
+    },
+
+    async updateProfile(userId: string, profile: Partial<UserProfile>) {
+        return await supabase
+            .from('profiles')
+            .update(profile)
+            .eq('id', userId);
     },
 
     onAuthStateChange(callback: (event: any, session: any) => void) {
