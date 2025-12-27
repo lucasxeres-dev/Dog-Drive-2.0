@@ -19,11 +19,24 @@ const RegisterView: React.FC = () => {
         phone: '',
         password: '',
         confirmPassword: '',
-        role: 'owner' as 'owner' | 'walker' | 'boarding' | 'petshop' | 'grooming'
+        role: 'owner' as 'owner' | 'walker' | 'boarding' | 'petshop' | 'grooming',
+        avatarFile: null as File | null,
+        avatarPreview: ''
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setFormData({
+                ...formData,
+                avatarFile: file,
+                avatarPreview: URL.createObjectURL(file)
+            });
+        }
     };
 
 
@@ -53,20 +66,57 @@ const RegisterView: React.FC = () => {
 
         setLoading(true);
         try {
-            const { error: signUpError } = await authService.signUp(formData.email, formData.password, {
+            let avatarUrl = '';
+
+            // Upload photo if selected
+            if (formData.avatarFile) {
+                const fileExt = formData.avatarFile.name.split('.').pop();
+                const fileName = `${Math.random()}.${fileExt}`;
+                const filePath = `registration/${fileName}`;
+
+                // Upload using public policy or anon
+                const { error: uploadError } = await (authService as any).supabase.storage
+                    .from('avatars')
+                    .upload(filePath, formData.avatarFile);
+
+                if (!uploadError) {
+                    const { data } = (authService as any).supabase.storage
+                        .from('avatars')
+                        .getPublicUrl(filePath);
+                    avatarUrl = data.publicUrl;
+                }
+            }
+
+            const { data, error: signUpError } = await authService.signUp(formData.email, formData.password, {
                 data: {
                     full_name: formData.fullName,
                     username: formData.username.toLowerCase(),
                     phone: formData.phone,
                     role: formData.role,
-                    email: formData.email
+                    email: formData.email,
+                    avatar_url: avatarUrl // Send photo URL with metadata
                 }
             });
 
             if (signUpError) throw signUpError;
 
-            showNotification('Cadastro realizado! Verifique seu email.', 'success');
-            navigate('/login');
+            // Attempt Auto-Login
+            if (data.user && !data.session) {
+                showNotification('Cadastro realizado! Verifique seu email para confirmar.', 'success');
+                navigate('/login');
+            } else if (data.session) {
+                // Auto login successful (Email confirm disabled or implicit)
+                showNotification(`Bem-vindo, ${formData.fullName}!`, 'success');
+                // Navigate based on role or to onboarding
+                if (formData.role === 'owner') navigate('/onboarding'); // Logic in OnboardingView handles the rest
+                else navigate('/feed'); // Or wherever
+            } else {
+                showNotification('Cadastro realizado! Fazendo login...', 'success');
+                const { error: loginError } = await authService.signIn(formData.email, formData.password);
+                if (!loginError) navigate('/onboarding');
+                else navigate('/login');
+            }
+
         } catch (err: any) {
             console.error('Registration error:', err);
             if (err.message && err.message.includes('already registered')) {
@@ -129,29 +179,44 @@ const RegisterView: React.FC = () => {
 
                     {step === 2 && (
                         <div className="space-y-6 animate-fadeIn">
-                            {/* Personal Info Group */}
+                            {/* Photo Upload */}
+                            <div className="flex justify-center mb-6">
+                                <label className="relative cursor-pointer group">
+                                    <div className="w-24 h-24 rounded-full bg-gray-100 dark:bg-white/10 border-2 border-dashed border-gray-300 dark:border-white/20 flex items-center justify-center overflow-hidden transition-all group-hover:border-primary">
+                                        {formData.avatarPreview ? (
+                                            <img src={formData.avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <span className="material-symbols-outlined text-gray-400 text-3xl group-hover:text-primary">add_a_photo</span>
+                                        )}
+                                    </div>
+                                    <div className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-[#050705] shadow-lg">
+                                        <span className="material-symbols-outlined text-sm font-black">edit</span>
+                                    </div>
+                                    <input type="file" className="hidden" accept="image/*" onChange={handlePhotoChange} />
+                                </label>
+                            </div>
+
+                            {/* Personal Info Group - Single Column Vertical Layout */}
                             <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Nome</label>
-                                        <input
-                                            name="fullName"
-                                            className="input-premium h-12"
-                                            placeholder="João Silva"
-                                            value={formData.fullName}
-                                            onChange={handleChange}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Usuário</label>
-                                        <input
-                                            name="username"
-                                            className="input-premium h-12"
-                                            placeholder="joao.silva"
-                                            value={formData.username}
-                                            onChange={handleChange}
-                                        />
-                                    </div>
+                                <div className="space-y-2">
+                                    <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Nome Completo</label>
+                                    <input
+                                        name="fullName"
+                                        className="input-premium h-14" // Slightly taller for better touch
+                                        placeholder="Ex: João da Silva"
+                                        value={formData.fullName}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Nome de Usuário</label>
+                                    <input
+                                        name="username"
+                                        className="input-premium h-14"
+                                        placeholder="@joaosilva"
+                                        value={formData.username}
+                                        onChange={handleChange}
+                                    />
                                 </div>
 
                                 <div className="space-y-2">
@@ -159,7 +224,7 @@ const RegisterView: React.FC = () => {
                                     <input
                                         name="email"
                                         type="email"
-                                        className="input-premium h-12"
+                                        className="input-premium h-14"
                                         placeholder="seu@email.com"
                                         value={formData.email}
                                         onChange={handleChange}
@@ -167,44 +232,38 @@ const RegisterView: React.FC = () => {
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Telefone</label>
+                                    <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Telefone / WhatsApp</label>
                                     <input
                                         name="phone"
-                                        className="input-premium h-12"
+                                        className="input-premium h-14"
                                         placeholder="(11) 99999-9999"
                                         value={formData.phone}
                                         onChange={handleChange}
                                     />
                                 </div>
-                            </div>
 
-                            <div className="w-full h-px bg-gray-100 dark:bg-white/5 my-2"></div>
+                                <div className="space-y-2">
+                                    <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Senha</label>
+                                    <input
+                                        name="password"
+                                        type="password"
+                                        className="input-premium h-14"
+                                        placeholder="••••••"
+                                        value={formData.password}
+                                        onChange={handleChange}
+                                    />
+                                </div>
 
-                            {/* Password Group */}
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Senha</label>
-                                        <input
-                                            name="password"
-                                            type="password"
-                                            className="input-premium h-12"
-                                            placeholder="••••••"
-                                            value={formData.password}
-                                            onChange={handleChange}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Confirmar</label>
-                                        <input
-                                            name="confirmPassword"
-                                            type="password"
-                                            className="input-premium h-12"
-                                            placeholder="••••••"
-                                            value={formData.confirmPassword}
-                                            onChange={handleChange}
-                                        />
-                                    </div>
+                                <div className="space-y-2">
+                                    <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Confirmar Senha</label>
+                                    <input
+                                        name="confirmPassword"
+                                        type="password"
+                                        className="input-premium h-14"
+                                        placeholder="••••••"
+                                        value={formData.confirmPassword}
+                                        onChange={handleChange}
+                                    />
                                 </div>
                             </div>
                         </div>

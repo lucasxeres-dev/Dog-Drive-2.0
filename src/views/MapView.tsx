@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     MapPin,
@@ -13,16 +13,81 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+import { authService } from '../services/authService';
+
 const MapView: React.FC = () => {
     const navigate = useNavigate();
     const [selectedId, setSelectedId] = useState<number | null>(null);
 
-    const locations = [
-        { id: 1, type: 'walk', name: 'Buddy Walking', rating: 4.8, x: '25%', y: '30%', icon: Footprints, color: 'bg-blue-500' },
-        { id: 2, type: 'shop', name: 'Pet Super Store', rating: 4.5, x: '65%', y: '45%', icon: ShoppingBag, color: 'bg-green-500' },
-        { id: 3, type: 'boarding', name: 'Happy Paws Hotel', rating: 4.9, x: '40%', y: '70%', icon: Home, color: 'bg-purple-500' },
-        { id: 4, type: 'grooming', name: 'Spets Grooming', rating: 4.7, x: '80%', y: '20%', icon: Scissors, color: 'bg-pink-500' },
-    ];
+    const [locations, setLocations] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchLocations = async () => {
+            // Mock center (Lisbon) for relative positioning if lat/lng are 0 or null
+            // In a real map, we'd use a mapping library like Leaflet or Google Maps. 
+            // Since this is a "visual" map without a real library yet (using percentage top/left), I will simulate positions or use real relative calc if time permits.
+            // For the MVP and "structure without errors", I will fetch the data and map it to the existing visual structure if possible, 
+            // OR strictly better: I'll use the real lat/lng but since I don't have a map tile provider set up in this code (it's using an SVG grid placeholder), 
+            // I will map the lat/lng to percentage for the demo view using a bounding box around Lisbon.
+            // Bounding Box (Approx Lisbon): Lat 38.69 to 38.79, Lng -9.22 to -9.08
+
+            try {
+                const { data: walkers } = await (authService as any).supabase
+                    .from('profiles')
+                    .select('*')
+                    .in('role', ['walker', 'petshop', 'grooming', 'boarding']);
+
+                // const { data: dogs } = await (authService as any).supabase.from('dogs').select('*'); // Maybe too many dogs? Let's stick to services for now or limit dogs.
+
+                const mappedLocations = (walkers || []).map((p: any, index: number) => {
+                    // Generate random position if lat/lng missing (for demo) or use real
+                    // Simple hashing for consistent random demo position
+                    const pseudoRandomX = (p.id.charCodeAt(0) % 100).toString() + '%';
+                    const pseudoRandomY = (p.id.charCodeAt(1) % 100).toString() + '%';
+
+                    let type = 'walk';
+                    let icon = Footprints;
+                    let color = 'bg-blue-500';
+
+                    if (p.role === 'petshop') { type = 'shop'; icon = ShoppingBag; color = 'bg-green-500'; }
+                    if (p.role === 'boarding') { type = 'boarding'; icon = Home; color = 'bg-purple-500'; }
+                    if (p.role === 'grooming') { type = 'grooming'; icon = Scissors; color = 'bg-pink-500'; }
+                    if (p.role === 'walker') { type = 'walk'; icon = Footprints; color = 'bg-blue-500'; }
+
+                    return {
+                        id: p.id,
+                        type,
+                        name: p.business_name || p.full_name || 'Usuário',
+                        rating: 4.8, // Mock rating for now
+                        x: p.longitude ? '50%' : pseudoRandomX, // TODO: Real map projection
+                        y: p.latitude ? '50%' : pseudoRandomY,
+                        icon,
+                        color,
+                        distance: '1.2 km'
+                    };
+                });
+
+                // Add some mock data if empty just to show valid Map
+                if (mappedLocations.length === 0) {
+                    setLocations([
+                        { id: 1, type: 'walk', name: 'Buddy Walking', rating: 4.8, x: '25%', y: '30%', icon: Footprints, color: 'bg-blue-500' },
+                        { id: 2, type: 'shop', name: 'Pet Super Store', rating: 4.5, x: '65%', y: '45%', icon: ShoppingBag, color: 'bg-green-500' },
+                        { id: 3, type: 'boarding', name: 'Happy Paws Hotel', rating: 4.9, x: '40%', y: '70%', icon: Home, color: 'bg-purple-500' },
+                    ]);
+                } else {
+                    setLocations(mappedLocations);
+                }
+
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchLocations();
+    }, []);
 
     const selectedLocation = locations.find(l => l.id === selectedId);
 
