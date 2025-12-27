@@ -80,15 +80,23 @@ const FeedCheck: React.FC<{ isAuthenticated: boolean, role: string | null }> = (
 
     React.useEffect(() => {
         const check = async () => {
-            if (!isAuthenticated || !user) return;
-            if (role === 'provider' || role === 'business') {
-                setHasDogs(true);
+            if (!isAuthenticated || !user) {
                 setLoading(false);
                 return;
             }
-            const count = await dogService.countDogsByOwner(user.id);
-            setHasDogs(count > 0);
-            setLoading(false);
+            try {
+                if (role === 'provider' || role === 'business') {
+                    setHasDogs(true);
+                } else {
+                    const count = await dogService.countDogsByOwner(user.id);
+                    setHasDogs(count > 0);
+                }
+            } catch (err) {
+                console.error('Feed check error:', err);
+                setHasDogs(false);
+            } finally {
+                setLoading(false);
+            }
         };
         check();
     }, [isAuthenticated, role, user]);
@@ -100,28 +108,14 @@ const FeedCheck: React.FC<{ isAuthenticated: boolean, role: string | null }> = (
     return role === 'user' ? <WalkerListView /> : <FeedView />;
 };
 
-const AuthBottomNav: React.FC<{ isAuthenticated: boolean, preferences: any, role: string | null }> = ({ isAuthenticated, preferences, role }) => {
-    const { pathname } = (window as any).location; // Fallback since useLocation is inside Suspense
-    // Note: useLocation is better but need to handle correctly with router context
-    // This is a simplified version; ideally would use a child component with useLocation
-    return <BottomNavContainer isAuthenticated={isAuthenticated} preferences={preferences} role={role} />;
-};
+import { useLocation } from 'react-router-dom';
 
-const BottomNavContainer: React.FC<{ isAuthenticated: boolean, preferences: any, role: string | null }> = ({ isAuthenticated, preferences, role }) => {
-    // We need to be inside a component that is a child of Router to use useLocation
-    try {
-        const location = (window as any).ReactRouterDOM?.useLocation() || { pathname: '/' };
-        const hideOn = ['/', '/login', '/register', '/onboarding'];
-        const shouldHide = hideOn.includes(location.pathname) || !isAuthenticated;
-        if (shouldHide) return null;
-        return <BottomNav preferences={preferences} role={role} />;
-    } catch {
-        // Fallback if useLocation fails outside context
-        const hideOn = ['/', '/login', '/register', '/onboarding'];
-        const shouldHide = hideOn.some(path => window.location.hash.includes(path)) || !isAuthenticated;
-        if (shouldHide) return null;
-        return <BottomNav preferences={preferences} role={role} />;
-    }
-}
+const AuthBottomNav: React.FC<{ isAuthenticated: boolean, preferences: any, role: string | null }> = ({ isAuthenticated, preferences, role }) => {
+    const location = useLocation();
+    const hideOn = ['/', '/login', '/register', '/onboarding'];
+    const shouldHide = hideOn.includes(location.pathname) || !isAuthenticated;
+    if (shouldHide) return null;
+    return <BottomNav preferences={preferences} role={role} />;
+};
 
 export default App;
