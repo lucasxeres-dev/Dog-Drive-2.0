@@ -4,11 +4,13 @@ import { useTranslation } from '../contexts/LanguageContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useAuth } from '../hooks/useAuth';
 import { authService } from '../services/authService';
+import { useSupabase } from '../hooks/useSupabase';
 
 const ChatDetailView: React.FC = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
     const { showNotification } = useNotification();
+    const supabase = useSupabase();
     const { user } = useAuth();
     const { id } = useParams();
     const [messages, setMessages] = useState<any[]>([]);
@@ -25,7 +27,7 @@ const ChatDetailView: React.FC = () => {
             setLoading(true);
             try {
                 // Fetch chat metadata
-                const { data: chatData, error: chatError } = await (authService as any).supabase
+                const { data: chatData, error: chatError } = await supabase
                     .from('chats')
                     .select('*')
                     .eq('id', id)
@@ -34,7 +36,7 @@ const ChatDetailView: React.FC = () => {
                 if (chatError) throw chatError;
 
                 const otherUserId = chatData.user_id_1 === user.id ? chatData.user_id_2 : chatData.user_id_1;
-                const { data: otherProfile } = await (authService as any).supabase
+                const { data: otherProfile } = await supabase
                     .from('profiles')
                     .select('*')
                     .eq('id', otherUserId)
@@ -48,7 +50,7 @@ const ChatDetailView: React.FC = () => {
                 });
 
                 // Fetch messages
-                const { data: msgData, error: msgError } = await (authService as any).supabase
+                const { data: msgData, error: msgError } = await supabase
                     .from('messages')
                     .select('*')
                     .eq('chat_id', id)
@@ -66,7 +68,7 @@ const ChatDetailView: React.FC = () => {
         fetchChatDetails();
 
         // Subscribe to new messages
-        const channel = (authService as any).supabase.channel(`chat-${id}`)
+        const channel = supabase.channel(`chat-${id}`)
             .on('postgres_changes', {
                 event: 'INSERT',
                 schema: 'public',
@@ -78,7 +80,7 @@ const ChatDetailView: React.FC = () => {
             .subscribe();
 
         return () => {
-            (authService as any).supabase.removeChannel(channel);
+            supabase.removeChannel(channel);
         };
     }, [id, user]);
 
@@ -95,7 +97,7 @@ const ChatDetailView: React.FC = () => {
         setInput('');
 
         try {
-            const { error } = await (authService as any).supabase.from('messages').insert([newMessage]);
+            const { error } = await supabase.from('messages').insert([newMessage]);
             if (error) throw error;
         } catch (err: any) {
             showNotification('Erro ao enviar mensagem', 'error');
