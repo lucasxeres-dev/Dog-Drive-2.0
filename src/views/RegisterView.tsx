@@ -26,12 +26,7 @@ const RegisterView: React.FC = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleNextStep = () => {
-        if (step === 1) {
-            // Role is selected by click, so just validation if needed, but here we just proceed
-        }
-        setStep(step + 1);
-    };
+
 
     const handleRegister = async () => {
         // Validation

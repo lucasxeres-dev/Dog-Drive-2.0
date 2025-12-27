@@ -88,58 +88,18 @@ const FeedView: React.FC = () => {
             <main className="flex-1 relative px-4 mt-4 flex items-center justify-center">
                 <AnimatePresence>
                     {currentDogs.length > 0 ? (
-                        currentDogs.map((dog, index) => (
-                            <SwipeCard
-                                key={dog.id}
-                                onSwipeLeft={() => handleSwipe('left')}
-                                onSwipeRight={() => handleSwipe('right')}
-                                className="z-[index]"
-                            >
-                                <div className="relative w-full h-[65vh] rounded-[3rem] overflow-hidden shadow-2xl">
-                                    <img
-                                        src={dog.imageUrl}
-                                        alt={dog.name}
-                                        className="absolute inset-0 w-full h-full object-cover"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-
-                                    <div className="absolute top-6 right-6">
-                                        <div className="glass-card !bg-white/20 !rounded-full px-4 py-1.5 text-[10px] font-black text-white uppercase tracking-wider">
-                                            {dog.match}% Match
-                                        </div>
-                                    </div>
-
-                                    <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-                                        <div className="flex items-end justify-between">
-                                            <div>
-                                                <h2 className="text-4xl font-black tracking-tight leading-none">
-                                                    {dog.name}, <span className="font-light opacity-80">{dog.age}</span>
-                                                </h2>
-                                                <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary mt-2">{dog.breed}</p>
-                                            </div>
-                                            <button
-                                                onClick={() => navigate(`/dog/${dog.id}`)}
-                                                className="size-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20 active:scale-90 transition-transform"
-                                            >
-                                                <Info size={24} />
-                                            </button>
-                                        </div>
-
-                                        <div className="flex items-center gap-6 mt-6 pt-6 border-t border-white/10">
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] uppercase font-black opacity-40">Distance</span>
-                                                <span className="text-sm font-bold tracking-tight">{dog.distance}</span>
-                                            </div>
-                                            <div className="w-px h-8 bg-white/10" />
-                                            <div className="flex flex-col grow">
-                                                <span className="text-[10px] uppercase font-black opacity-40">Location</span>
-                                                <span className="text-sm font-bold tracking-tight truncate">{dog.location}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </SwipeCard>
-                        ))
+                        currentDogs.map((dog, index) => {
+                            const isFront = index === currentDogs.length - 1;
+                            return (
+                                <SwipeCard
+                                    key={dog.id}
+                                    dog={dog}
+                                    onSwipeLeft={() => handleSwipe('left')}
+                                    onSwipeRight={() => handleSwipe('right')}
+                                    isFront={isFront}
+                                />
+                            );
+                        })
                     ) : (
                         <motion.div
                             initial={{ opacity: 0, scale: 0.9 }}
