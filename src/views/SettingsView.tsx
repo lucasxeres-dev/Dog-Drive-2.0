@@ -257,6 +257,21 @@ const SettingsView: React.FC = () => {
                 <h1 className="text-2xl font-black">{t('settings_title')}</h1>
             </header>
 
+            {/* MERCHANT DASHBOARD LINK */}
+            {['petshop', 'boarding', 'grooming', 'walker'].includes(profile?.role) && (
+                <section className="bg-gradient-to-r from-primary/20 to-primary/5 rounded-[2.5rem] p-6 shadow-sm mb-6 border border-primary/20">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h2 className="text-sm font-black uppercase tracking-widest text-primary mb-1">Painel do Vendedor</h2>
+                            <p className="text-[10px] text-gray-500 dark:text-gray-400 font-bold">Gerencie seus produtos e serviços</p>
+                        </div>
+                        <button onClick={() => showNotification("Painel em desenvolvimento", "info")} className="size-12 bg-primary text-[#050705] rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 active:scale-90 transition-transform">
+                            <span className="material-symbols-outlined font-black">storefront</span>
+                        </button>
+                    </div>
+                </section>
+            )}
+
             <section className="bg-white dark:bg-surface-dark rounded-[2.5rem] p-6 shadow-sm mb-6">
                 {/* ... Profile Section ... */}
                 <h2 className="text-sm font-black uppercase tracking-widest text-primary mb-6">{t('edit_profile')}</h2>

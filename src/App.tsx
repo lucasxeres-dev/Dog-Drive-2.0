@@ -57,7 +57,15 @@ const MainApp: React.FC = () => {
                             <Route path="/booking/:id" element={<BookingView />} />
                             <Route path="/emergency" element={<EmergencyView />} />
                             <Route path="/marketplace" element={<MarketplaceView />} />
+                            <Route path="/marketplace" element={<MarketplaceView />} />
                             <Route path="/cart" element={<CartView />} />
+                            <Route path="/checkout" element={
+                                <div className="flex-1 flex flex-col items-center justify-center dark:text-white p-6 text-center">
+                                    <h2 className="text-xl font-black mb-2">Checkout</h2>
+                                    <p className="opacity-60">Funcionalidade de pagamento em breve.</p>
+                                    <button onClick={() => window.history.back()} className="mt-6 text-primary font-bold">Voltar</button>
+                                </div>
+                            } />
                             <Route path="/wallet" element={<WalletView />} />
                             <Route path="/settings" element={<SettingsView />} />
                             <Route path="/register-provider" element={<ProviderRegistrationView />} />
