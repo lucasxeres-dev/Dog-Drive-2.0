@@ -189,9 +189,12 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                         onClick={handleGuestLogin}
                         className="w-full h-16 bg-white dark:bg-white/5 border-2 border-gray-100 dark:border-white/10 text-[#111814] dark:text-white font-black text-sm uppercase tracking-widest rounded-3xl hover:bg-gray-50 dark:hover:bg-white/10 transition-all flex items-center justify-center gap-2"
                     >
-                        <span className="material-symbols-outlined">visibility</span>
-                        <span>ENTRAR COMO VISITANTE</span>
+                        <span className="material-symbols-outlined">rocket_launch</span>
+                        <span>ACESSO BETA (IPHONE/TESTE)</span>
                     </button>
+                    <div className="text-center mt-2">
+                        <span className="text-[10px] text-primary/60 font-black uppercase tracking-widest">Modo de Teste Ativado (Sem Registro)</span>
+                    </div>
                 </div>
 
                 <p className="text-center mt-8 text-gray-400 text-[10px] font-black uppercase tracking-wider">
