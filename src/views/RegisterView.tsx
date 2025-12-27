@@ -3,15 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { authService } from '../services/authService';
+import { useSupabase } from '../hooks/useSupabase';
 
 const RegisterView: React.FC = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
     const { showNotification } = useNotification();
+    const supabase = useSupabase();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
 
-    // Form State (SIMPLIFIED)
+    // Form State
     const [formData, setFormData] = useState({
         fullName: '',
         username: '',
@@ -19,12 +21,22 @@ const RegisterView: React.FC = () => {
         phone: '',
         password: '',
         confirmPassword: '',
-        role: 'owner' as 'owner' | 'walker' | 'boarding' | 'petshop' | 'grooming'
+        role: 'owner' as 'owner' | 'walker' | 'boarding' | 'petshop' | 'grooming',
+        // Business fields (Step 3)
+        nif: '',
+        companyName: '',
+        businessEmail: '',
+        businessPhone: '',
+        businessAddress: '',
+        vatRegistered: false
     });
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const value = e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : e.target.value;
+        setFormData({ ...formData, [e.target.name]: value });
     };
+
+    const isBusinessRole = ['petshop', 'grooming', 'boarding'].includes(formData.role);
 
     const handleRegister = async () => {
         // Validation
@@ -36,10 +48,6 @@ const RegisterView: React.FC = () => {
             showNotification('E-mail inválido', 'error');
             return;
         }
-        if (formData.username.length < 3) {
-            showNotification('O nome de usuário deve ter pelo menos 3 caracteres.', 'error');
-            return;
-        }
         if (formData.password !== formData.confirmPassword) {
             showNotification('As senhas não coincidem.', 'error');
             return;
@@ -49,9 +57,15 @@ const RegisterView: React.FC = () => {
             return;
         }
 
+        // Business validation
+        if (isBusinessRole && (!formData.nif || !formData.companyName)) {
+            showNotification('Preencha NIF e Nome da Empresa.', 'error');
+            return;
+        }
+
         setLoading(true);
         try {
-            const { error: signUpError } = await authService.signUp(formData.email, formData.password, {
+            const { data, error: signUpError } = await authService.signUp(formData.email, formData.password, {
                 data: {
                     full_name: formData.fullName,
                     username: formData.username.toLowerCase(),
@@ -63,14 +77,30 @@ const RegisterView: React.FC = () => {
 
             if (signUpError) throw signUpError;
 
+            // If business user, save business profile
+            if (isBusinessRole && data.user) {
+                const { error: businessError } = await supabase.from('business_profiles').insert({
+                    user_id: data.user.id,
+                    nif: formData.nif,
+                    company_name: formData.companyName,
+                    business_email: formData.businessEmail || formData.email,
+                    business_phone: formData.businessPhone || formData.phone,
+                    business_address: formData.businessAddress,
+                    vat_registered: formData.vatRegistered
+                });
+
+                if (businessError) {
+                    console.error('Business profile error:', businessError);
+                    // Don't fail entirely, just log
+                }
+            }
+
             showNotification('Cadastro realizado com sucesso! Faça login para continuar.', 'success');
             navigate('/login');
         } catch (err: any) {
             console.error('Registration error:', err);
             if (err.message && err.message.includes('already registered')) {
                 showNotification('Este e-mail já está cadastrado.', 'error');
-            } else if (err.status === 429) {
-                showNotification('Muitas tentativas. Tente novamente mais tarde.', 'error');
             } else {
                 showNotification(`Erro ao criar conta: ${err.message || 'Tente novamente.'}`, 'error');
             }
@@ -78,6 +108,8 @@ const RegisterView: React.FC = () => {
             setLoading(false);
         }
     };
+
+    const totalSteps = isBusinessRole ? 3 : 2;
 
     return (
         <div className="flex-1 flex flex-col bg-background-light dark:bg-background-dark overflow-hidden h-full">
@@ -87,24 +119,28 @@ const RegisterView: React.FC = () => {
                     <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center shadow-lg transform rotate-3 mb-4">
                         <span className="material-symbols-outlined text-[#050705] text-[24px] font-black">person_add</span>
                     </div>
-                    <h2 className="text-[#111814] dark:text-white text-2xl font-black uppercase text-center">{step === 1 ? 'Selecione seu Perfil' : 'Seus Dados'}</h2>
+                    <h2 className="text-[#111814] dark:text-white text-2xl font-black uppercase text-center">
+                        {step === 1 && 'Selecione seu Perfil'}
+                        {step === 2 && 'Seus Dados'}
+                        {step === 3 && 'Dados da Empresa'}
+                    </h2>
                     <div className="flex gap-2 mt-4">
-                        {[1, 2].map(i => (
-                            <div key={i} className={`h-1.5 w-8 rounded-full transition-all duration-300 ${step >= i ? 'bg-primary' : 'bg-gray-200 dark:bg-white/10'}`}></div>
+                        {Array.from({ length: totalSteps }).map((_, i) => (
+                            <div key={i} className={`h-1.5 w-8 rounded-full transition-all duration-300 ${step >= i + 1 ? 'bg-primary' : 'bg-gray-200 dark:bg-white/10'}`}></div>
                         ))}
                     </div>
                 </div>
-
 
                 <div className="flex-1 flex flex-col">
                     {step === 1 && (
                         <div className="space-y-6 animate-fadeIn">
                             <div className="grid grid-cols-1 gap-4">
                                 {[
-                                    { id: 'owner', label: t('owner'), icon: 'pets' },
-                                    { id: 'walker', label: t('walker'), icon: 'directions_walk' },
-                                    { id: 'boarding', label: t('boarding'), icon: 'home' },
-                                    { id: 'petshop', label: 'Petshop ou Banho e Tosa', icon: 'storefront' }
+                                    { id: 'owner', label: t('owner'), icon: 'pets', desc: 'Tenho um pet' },
+                                    { id: 'walker', label: t('walker'), icon: 'directions_walk', desc: 'Passeador individual' },
+                                    { id: 'boarding', label: t('boarding'), icon: 'home', desc: 'Hotel/Hospedagem' },
+                                    { id: 'petshop', label: 'Petshop', icon: 'storefront', desc: 'Loja de pets' },
+                                    { id: 'grooming', label: 'Banho e Tosa', icon: 'shower', desc: 'Serviços de estética' }
                                 ].map(role => (
                                     <button
                                         key={role.id}
@@ -117,7 +153,10 @@ const RegisterView: React.FC = () => {
                                         <div className={`size-12 rounded-2xl flex items-center justify-center transition-colors ${formData.role === role.id ? 'bg-primary text-[#050705]' : 'bg-gray-100 dark:bg-white/10 text-gray-400'}`}>
                                             <span className="material-symbols-outlined text-2xl font-black">{role.icon}</span>
                                         </div>
-                                        <span className="text-base font-bold flex-1 text-left">{role.label}</span>
+                                        <div className="flex-1 text-left">
+                                            <span className="text-base font-bold block">{role.label}</span>
+                                            <span className="text-xs text-gray-500 dark:text-gray-400">{role.desc}</span>
+                                        </div>
                                         <span className={`material-symbols-outlined transition-opacity ${formData.role === role.id ? 'text-primary opacity-100' : 'opacity-0'}`}>arrow_forward</span>
                                     </button>
                                 ))}
@@ -127,74 +166,64 @@ const RegisterView: React.FC = () => {
 
                     {step === 2 && (
                         <div className="space-y-6 animate-fadeIn">
-                            {/* Personal Info - Vertical Layout */}
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Nome Completo</label>
-                                    <input
-                                        name="fullName"
-                                        className="input-premium h-14"
-                                        placeholder="Ex: João da Silva"
-                                        value={formData.fullName}
-                                        onChange={handleChange}
-                                    />
+                                    <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2">Nome Completo</label>
+                                    <input name="fullName" className="input-premium h-14" placeholder="Ex: João da Silva" value={formData.fullName} onChange={handleChange} />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Nome de Usuário</label>
-                                    <input
-                                        name="username"
-                                        className="input-premium h-14"
-                                        placeholder="@joaosilva"
-                                        value={formData.username}
-                                        onChange={handleChange}
-                                    />
+                                    <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2">Nome de Usuário</label>
+                                    <input name="username" className="input-premium h-14" placeholder="@joaosilva" value={formData.username} onChange={handleChange} />
                                 </div>
+                                <div className="space-y-2">
+                                    <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2">Email</label>
+                                    <input name="email" type="email" className="input-premium h-14" placeholder="seu@email.com" value={formData.email} onChange={handleChange} />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2">Telefone / WhatsApp</label>
+                                    <input name="phone" className="input-premium h-14" placeholder="(11) 99999-9999" value={formData.phone} onChange={handleChange} />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2">Senha</label>
+                                    <input name="password" type="password" className="input-premium h-14" placeholder="••••••" value={formData.password} onChange={handleChange} />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2">Confirmar Senha</label>
+                                    <input name="confirmPassword" type="password" className="input-premium h-14" placeholder="••••••" value={formData.confirmPassword} onChange={handleChange} />
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
+                    {step === 3 && isBusinessRole && (
+                        <div className="space-y-6 animate-fadeIn">
+                            <div className="bg-primary/10 border border-primary/20 rounded-2xl p-4 mb-4">
+                                <p className="text-xs font-bold text-gray-700 dark:text-gray-300">Dados da empresa (similar ao Glovo fornecedor)</p>
+                            </div>
+                            <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Email</label>
-                                    <input
-                                        name="email"
-                                        type="email"
-                                        className="input-premium h-14"
-                                        placeholder="seu@email.com"
-                                        value={formData.email}
-                                        onChange={handleChange}
-                                    />
+                                    <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2">NIF / CNPJ *</label>
+                                    <input name="nif" className="input-premium h-14" placeholder="123456789" value={formData.nif} onChange={handleChange} />
                                 </div>
-
                                 <div className="space-y-2">
-                                    <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Telefone / WhatsApp</label>
-                                    <input
-                                        name="phone"
-                                        className="input-premium h-14"
-                                        placeholder="(11) 99999-9999"
-                                        value={formData.phone}
-                                        onChange={handleChange}
-                                    />
+                                    <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2">Nome da Empresa *</label>
+                                    <input name="companyName" className="input-premium h-14" placeholder="PetShop ABC Ltda" value={formData.companyName} onChange={handleChange} />
                                 </div>
-
                                 <div className="space-y-2">
-                                    <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Senha</label>
-                                    <input
-                                        name="password"
-                                        type="password"
-                                        className="input-premium h-14"
-                                        placeholder="••••••"
-                                        value={formData.password}
-                                        onChange={handleChange}
-                                    />
+                                    <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2">Email Comercial</label>
+                                    <input name="businessEmail" type="email" className="input-premium h-14" placeholder="contato@empresa.com" value={formData.businessEmail} onChange={handleChange} />
                                 </div>
-
                                 <div className="space-y-2">
-                                    <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Confirmar Senha</label>
-                                    <input
-                                        name="confirmPassword"
-                                        type="password"
-                                        className="input-premium h-14"
-                                        placeholder="••••••"
-                                        value={formData.confirmPassword}
-                                        onChange={handleChange}
-                                    />
+                                    <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2">Telefone Comercial</label>
+                                    <input name="businessPhone" className="input-premium h-14" placeholder="(11) 3333-3333" value={formData.businessPhone} onChange={handleChange} />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2">Endereço Completo</label>
+                                    <textarea name="businessAddress" className="input-premium h-24 resize-none" placeholder="Rua, número, bairro, cidade, CEP" value={formData.businessAddress} onChange={handleChange}></textarea>
+                                </div>
+                                <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-white/5 rounded-2xl">
+                                    <input type="checkbox" name="vatRegistered" checked={formData.vatRegistered} onChange={handleChange} className="w-5 h-5" />
+                                    <label className="text-sm font-bold">Empresa registrada para IVA/Impostos</label>
                                 </div>
                             </div>
                         </div>
@@ -209,7 +238,7 @@ const RegisterView: React.FC = () => {
                                 <span className="material-symbols-outlined font-black">arrow_back</span>
                             </button>
                         )}
-                        {step === 2 && (
+                        {(step === 2 && !isBusinessRole) || step === 3 ? (
                             <button
                                 onClick={handleRegister}
                                 disabled={loading}
@@ -224,9 +253,16 @@ const RegisterView: React.FC = () => {
                                     </>
                                 )}
                             </button>
-                        )}
+                        ) : step === 2 && isBusinessRole ? (
+                            <button
+                                onClick={() => setStep(3)}
+                                className="btn-primary flex-1 h-16 text-sm uppercase tracking-widest"
+                            >
+                                <span>Próximo: Dados da Empresa</span>
+                                <span className="material-symbols-outlined font-black">arrow_forward</span>
+                            </button>
+                        ) : null}
                     </div>
-
 
                     <p className="text-center mt-6 text-gray-400 text-[10px] font-black uppercase tracking-wider">
                         Já tem conta? <button onClick={() => navigate('/login')} className="text-primary hover:underline ml-1">Fazer Login</button>
