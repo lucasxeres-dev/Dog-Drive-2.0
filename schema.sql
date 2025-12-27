@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS bank_details (
 -- Dogs / Feed
 CREATE TABLE IF NOT EXISTS dogs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  owner_id UUID REFERENCES auth.users(id),
+  owner_id UUID REFERENCES auth.users(id) UNIQUE, -- Enforce one dog per user
   name TEXT NOT NULL,
   breed TEXT,
   age TEXT,
@@ -110,6 +110,11 @@ CREATE TABLE IF NOT EXISTS dogs (
   match_percentage INTEGER DEFAULT 0, -- Simulated match % for now
   created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- RLS Policies (Applied via Migration)
+-- 1. Dogs: Owners see own, Providers see all.
+-- 2. Profiles: Owners see Providers, Providers see Owners.
+
 
 -- Chats
 CREATE TABLE IF NOT EXISTS chats (

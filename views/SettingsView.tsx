@@ -12,6 +12,7 @@ const SettingsView: React.FC = () => {
     const [saving, setSaving] = useState(false);
     const [profile, setProfile] = useState<any>(null);
     const [dogs, setDogs] = useState<Dog[]>([]);
+    const [preferences, setPreferences] = useState<any>({});
     const [showAddDog, setShowAddDog] = useState(false);
 
     // New dog state
@@ -39,6 +40,7 @@ const SettingsView: React.FC = () => {
         const { data: dogsData } = await supabase.from('dogs').select('*').eq('owner_id', user.id);
 
         setProfile(profileData);
+        setPreferences(profileData?.preferences || {});
         setDogs(dogsData || []);
         setLoading(false);
     };
@@ -54,6 +56,17 @@ const SettingsView: React.FC = () => {
         if (!error) alert('Perfil atualizado!');
         setSaving(false);
     };
+
+    const handleTogglePreference = async (key: string) => {
+        const newPreferences = { ...preferences, [key]: !preferences[key] };
+        setPreferences(newPreferences);
+
+        await supabase.from('profiles').update({
+            preferences: newPreferences
+        }).eq('id', profile.id);
+    };
+
+    // ... (rest of upload/profile logic same) ...
 
     const handleUploadDogPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -96,6 +109,10 @@ const SettingsView: React.FC = () => {
             setShowAddDog(false);
             setNewDog({ name: '', age: '', traits: '', photo: '' });
             fetchData();
+        } else {
+            if (error.code === '23505') {
+                alert('Você já possui um cão cadastrado!');
+            }
         }
     };
 
@@ -111,42 +128,46 @@ const SettingsView: React.FC = () => {
             </header>
 
             <section className="bg-white dark:bg-surface-dark rounded-[2.5rem] p-6 shadow-sm mb-6">
+                {/* ... Profile Section ... */}
                 <h2 className="text-sm font-black uppercase tracking-widest text-primary mb-6">{t('edit_profile')}</h2>
                 <div className="space-y-4">
                     <div>
                         <label className="text-[10px] font-black uppercase text-gray-400 ml-4 mb-1 block">Nome Completo</label>
-                        <input
-                            type="text"
-                            className="w-full h-14 bg-gray-50 dark:bg-background-dark/50 rounded-2xl px-5 font-bold border-2 border-transparent focus:border-primary/20 transition-all"
-                            value={profile.full_name || ''}
-                            onChange={e => setProfile({ ...profile, full_name: e.target.value })}
-                        />
+                        <input className="w-full h-14 bg-gray-50 dark:bg-background-dark/50 rounded-2xl px-5 font-bold border-2 border-transparent focus:border-primary/20 transition-all" value={profile.full_name || ''} onChange={e => setProfile({ ...profile, full_name: e.target.value })} />
                     </div>
                     <div>
                         <label className="text-[10px] font-black uppercase text-gray-400 ml-4 mb-1 block">Endereço</label>
-                        <input
-                            type="text"
-                            className="w-full h-14 bg-gray-50 dark:bg-background-dark/50 rounded-2xl px-5 font-bold border-2 border-transparent focus:border-primary/20 transition-all"
-                            value={profile.address || ''}
-                            onChange={e => setProfile({ ...profile, address: e.target.value })}
-                        />
+                        <input className="w-full h-14 bg-gray-50 dark:bg-background-dark/50 rounded-2xl px-5 font-bold border-2 border-transparent focus:border-primary/20 transition-all" value={profile.address || ''} onChange={e => setProfile({ ...profile, address: e.target.value })} />
                     </div>
-                    <button
-                        onClick={handleSaveProfile}
-                        disabled={saving}
-                        className="w-full h-14 bg-primary text-[#102217] font-black rounded-2xl shadow-lg shadow-primary/10 active:scale-95 transition-all"
-                    >
-                        {saving ? 'Salvando...' : t('save_changes')}
-                    </button>
+                    <button onClick={handleSaveProfile} disabled={saving} className="w-full h-14 bg-primary text-[#102217] font-black rounded-2xl shadow-lg shadow-primary/10 active:scale-95 transition-all">{saving ? 'Salvando...' : t('save_changes')}</button>
+                </div>
+            </section>
+
+            {/* PREFERENCES SECTION */}
+            <section className="bg-white dark:bg-surface-dark rounded-[2.5rem] p-6 shadow-sm mb-6">
+                <h2 className="text-sm font-black uppercase tracking-widest text-primary mb-6">Preferências de Exibição</h2>
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-background-dark/50 rounded-2xl">
+                        <div className="flex items-center gap-3">
+                            <span className="material-symbols-outlined text-primary">pets</span>
+                            <span className="font-bold">Serviços Pet / Veterinária</span>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" className="sr-only peer" checked={preferences.show_services || false} onChange={() => handleTogglePreference('show_services')} />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                        </label>
+                    </div>
                 </div>
             </section>
 
             <section className="bg-white dark:bg-surface-dark rounded-[2.5rem] p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-sm font-black uppercase tracking-widest text-primary">{t('my_dogs')}</h2>
-                    <button onClick={() => setShowAddDog(!showAddDog)} className="size-10 bg-primary/10 rounded-full flex items-center justify-center text-primary">
-                        <span className="material-symbols-outlined">{showAddDog ? 'close' : 'add'}</span>
-                    </button>
+                    {dogs.length === 0 && (
+                        <button onClick={() => setShowAddDog(!showAddDog)} className="size-10 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                            <span className="material-symbols-outlined">{showAddDog ? 'close' : 'add'}</span>
+                        </button>
+                    )}
                 </div>
 
                 {showAddDog ? (

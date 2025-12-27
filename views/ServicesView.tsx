@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../LanguageContext';
@@ -7,57 +6,60 @@ const ServicesView: React.FC = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
 
-    const categories = [
-        { id: 'walking', title: t('walking_cat'), icon: 'directions_walk', image: 'https://images.unsplash.com/photo-1551730459-92db2a308d6a?q=80&w=600&auto=format&fit=crop' },
-        { id: 'boarding', title: t('boarding_cat'), icon: 'home', image: 'https://images.unsplash.com/photo-1541591047357-9191ff29fe2b?q=80&w=600&auto=format&fit=crop' },
-        { id: 'grooming', title: t('grooming_cat'), icon: 'content_cut', image: 'https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?q=80&w=600&auto=format&fit=crop' },
-        { id: 'clinic', title: t('vet_cat'), icon: 'medical_services', image: 'https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?q=80&w=600&auto=format&fit=crop' },
-        { id: 'marketplace', title: t('marketplace_cat'), icon: 'storefront', image: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?q=80&w=600&auto=format&fit=crop' }
+    // Mapping icons to service types
+    const services = [
+        { id: 'walking', title: 'Passeio', icon: 'directions_walk', color: 'bg-[#4ADE80]' },
+        { id: 'boarding', title: 'Hospedagem', icon: 'home', color: 'bg-[#4ADE80]' },
+        { id: 'grooming', title: 'Banho e Tosa', icon: 'content_cut', color: 'bg-[#4ADE80]' },
+        { id: 'clinic', title: 'Veterinário', icon: 'medical_services', color: 'bg-[#4ADE80]' },
+        { id: 'marketplace', title: 'Mercado', icon: 'storefront', color: 'bg-[#4ADE80]' }
     ];
 
     return (
-        <div className="flex-1 flex flex-col bg-background-light dark:bg-background-dark font-display overflow-hidden">
-            <header className="flex items-center p-5 justify-between bg-background-light/90 dark:bg-background-dark/90 sticky top-0 z-10">
+        <div className="flex-1 flex flex-col font-display h-screen overflow-hidden relative bg-[#050705]">
+            {/* Full Screen Background Image */}
+            <div
+                className="absolute inset-0 bg-cover bg-center z-0"
+                style={{
+                    backgroundImage: 'url("https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?q=80&w=2000&auto=format&fit=crop")', // French bulldog similar to mock
+                    filter: 'brightness(0.85)'
+                }}
+            ></div>
+
+            {/* Gradient Overlay for text readability */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/60 z-0"></div>
+
+            {/* Header - Transparent */}
+            <header className="relative z-10 flex items-center justify-between p-6 pt-8">
                 <div className="flex flex-col">
-                    <h2 className="text-2xl font-bold tracking-tight">Dog Drive</h2>
-                    <span className="text-xs font-medium text-slate-500">{t('services_top_sub')}</span>
+                    <h1 className="text-3xl font-black text-white tracking-tight drop-shadow-md">Dog Drive</h1>
+                    <span className="text-xs font-bold text-gray-200 tracking-wider opacity-90 drop-shadow-md">Serviços • Atendimento</span>
                 </div>
-                <button className="flex items-center justify-center rounded-full h-10 w-10 bg-white dark:bg-surface-dark border border-slate-200">
+                <button
+                    onClick={() => navigate('/settings')}
+                    className="flex items-center justify-center rounded-full h-10 w-10 bg-white/20 backdrop-blur-md border border-white/20 text-white hover:bg-white/30 transition-all"
+                >
                     <span className="material-symbols-outlined">person</span>
                 </button>
             </header>
 
-            <div className="px-5 py-2">
-                <div className="flex w-full items-center rounded-2xl h-14 bg-white dark:bg-surface-dark shadow-sm border border-slate-100">
-                    <span className="material-symbols-outlined pl-4 text-slate-400">search</span>
-                    <input className="flex-1 bg-transparent border-none focus:ring-0 text-base font-medium px-2" placeholder={t('search_placeholder')} />
-                    <span className="material-symbols-outlined pr-4 text-primary">tune</span>
-                </div>
-            </div>
-
-            <main className="flex-1 overflow-y-auto px-5 pt-4 no-scrollbar">
-                <h1 className="text-3xl font-bold leading-tight mb-6">
-                    {t('services_title').split('?')[0]} <br />
-                    <span className="text-primary">{t('services_title').split('?')[1] || ''}</span>
-                </h1>
-
-                <div className="grid grid-cols-2 gap-4 pb-8">
-                    {categories.map((cat) => (
+            {/* Main Content - Floating Buttons */}
+            <main className="relative z-10 flex-1 px-6 flex flex-col justify-center pb-20">
+                <div className="grid grid-cols-2 gap-x-8 gap-y-12 max-w-xs mx-auto w-full">
+                    {/* Render services in a staggered or grid layout */}
+                    {services.map((service, index) => (
                         <div
-                            key={cat.id}
+                            key={service.id}
                             onClick={() => {
-                                if (cat.id === 'marketplace') navigate('/marketplace');
-                                else navigate(`/walkers?service=${cat.id}`);
+                                if (service.id === 'marketplace') navigate('/marketplace');
+                                else navigate(`/walkers?service=${service.id}`);
                             }}
+                            className={`flex flex-col items-center gap-3 group cursor-pointer ${index === 4 ? 'col-span-2' : ''}`}
                         >
-                            <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${cat.image})` }}></div>
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent"></div>
-                            <div className="relative z-10 p-4 w-full">
-                                <div className="inline-flex items-center justify-center w-10 h-10 mb-3 rounded-full bg-primary text-[#102217]">
-                                    <span className="material-symbols-outlined text-[20px]">{cat.icon}</span>
-                                </div>
-                                <h3 className="text-white text-lg font-bold leading-none">{cat.title}</h3>
-                            </div>
+                            <button className={`${service.color} w-16 h-16 rounded-full flex items-center justify-center shadow-xl shadow-black/20 group-active:scale-95 transition-transform duration-200`}>
+                                <span className="material-symbols-outlined text-[#102217] text-3xl">{service.icon}</span>
+                            </button>
+                            <span className="text-white font-black text-lg tracking-wide drop-shadow-lg text-center leading-none">{service.title}</span>
                         </div>
                     ))}
                 </div>

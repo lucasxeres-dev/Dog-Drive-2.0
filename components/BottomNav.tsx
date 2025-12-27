@@ -3,8 +3,14 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from '../LanguageContext';
 
-const BottomNav: React.FC = () => {
+interface BottomNavProps {
+    preferences?: any;
+    role?: string | null;
+}
+
+const BottomNav: React.FC<BottomNavProps> = ({ preferences = {}, role }) => {
     const { t } = useTranslation();
+    const showServices = (preferences as any)?.show_services === true;
 
     return (
         <nav className="shrink-0 bg-white/80 dark:bg-background-dark/80 backdrop-blur-xl border-t border-gray-100 dark:border-white/5 pb-8 pt-4 px-8 z-30">
@@ -14,10 +20,12 @@ const BottomNav: React.FC = () => {
                     <span className="text-[10px] font-black uppercase tracking-wider">{t('match_tab')}</span>
                 </NavLink>
 
-                <NavLink to="/services" className={({ isActive }) => `flex flex-col items-center gap-1.5 transition-all duration-300 ${isActive ? 'text-primary scale-110' : 'text-gray-400'}`}>
-                    <span className="material-symbols-outlined text-2xl font-bold">pets</span>
-                    <span className="text-[10px] font-black uppercase tracking-wider">{t('services_tab')}</span>
-                </NavLink>
+                {showServices && (
+                    <NavLink to="/services" className={({ isActive }) => `flex flex-col items-center gap-1.5 transition-all duration-300 ${isActive ? 'text-primary scale-110' : 'text-gray-400'}`}>
+                        <span className="material-symbols-outlined text-2xl font-bold">pets</span>
+                        <span className="text-[10px] font-black uppercase tracking-wider">{t('services_tab')}</span>
+                    </NavLink>
+                )}
 
                 <NavLink to="/chats" className={({ isActive }) => `flex flex-col items-center gap-1.5 transition-all duration-300 ${isActive ? 'text-primary scale-110' : 'text-gray-400'} relative`}>
                     <span className="material-symbols-outlined text-2xl font-bold">chat_bubble</span>

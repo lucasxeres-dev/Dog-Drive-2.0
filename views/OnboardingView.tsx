@@ -151,7 +151,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
 
         // Save dog for owners
         if (selectedRole === UserRole.OWNER) {
-            await supabase.from('dogs').insert({
+            const { error: dogError } = await supabase.from('dogs').insert({
                 owner_id: user.id,
                 name: dogData.name,
                 age: dogData.age,
@@ -162,6 +162,19 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                 latitude: coords?.lat,
                 longitude: coords?.lng
             });
+
+            if (dogError) {
+                if (dogError.code === '23505') {
+                    // Unique violation: User already has a dog.
+                    // This is acceptable as we just want to ensure they have one.
+                    // effectively "ignore" the attempt to add a second one.
+                    console.warn('User already has a dog registered. Skipping insertion.');
+                } else {
+                    console.error('Error registering dog:', dogError);
+                    alert('Erro ao cadastrar cachorro. Tente novamente.');
+                    return; // Stop if genuine error
+                }
+            }
         }
 
         // Save bank details for providers

@@ -34,17 +34,35 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
         setLoading(true);
         setError(null);
         try {
-            const { error } = await supabase.auth.signInWithPassword({
+            // 1. Authenticate
+            const { data: { user, session }, error: authError } = await supabase.auth.signInWithPassword({
                 email,
                 password,
             });
-            if (error) throw error;
-            onLogin();
-            navigate('/onboarding');
+            if (authError) throw authError;
+
+            if (user && session) {
+                // 2. Optimistic Fetch: Fetch profile immediately to speed up role check
+                // We don't await this to block navigation, but we trigger it so it's fresh in cache/state
+                // Actually, to redirect correctly, we SHOULD wait for role, but it's fast.
+                const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+
+                // 3. Signal success
+                onLogin();
+
+                // 4. Navigate based on role immediately if possible
+                // (The App.tsx listener will catch up, but we can preempt)
+                if (profile?.role === 'user') {
+                    navigate('/walkers');
+                } else if (profile?.role === 'provider' || profile?.role === 'business') {
+                    navigate('/feed');
+                } else {
+                    navigate('/onboarding');
+                }
+            }
         } catch (err: any) {
             setError(err.message || 'Error signing in');
-        } finally {
-            setLoading(false);
+            setLoading(false); // Only stop loading on error. On success, keep loading until nav switch.
         }
     };
 

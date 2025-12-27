@@ -22,32 +22,45 @@ import SettingsView from './views/SettingsView';
 import BottomNav from './components/BottomNav';
 
 const App: React.FC = () => {
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [userRole, setUserRole] = useState<string | null>(null);
+    const [userPreferences, setUserPreferences] = useState<any>({});
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
     useEffect(() => {
         // Initial session check
-        supabase.auth.getSession().then(async ({ data: { session } }) => {
+        const initChoice = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
             setIsAuthenticated(!!session);
             if (session) {
-                const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
-                setUserRole(profile?.role || null);
+                const { data: profile } = await supabase.from('profiles').select('role, preferences').eq('id', session.user.id).single();
+                setUserRole(profile?.role || 'user');
+                setUserPreferences(profile?.preferences || {});
             }
-        });
+            setIsLoadingAuth(false);
+        };
+        initChoice();
 
         // Listen for auth state changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
             setIsAuthenticated(!!session);
             if (session) {
-                const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).single();
-                setUserRole(profile?.role || null);
+                // If we already have role (e.g. from login view prefetch), this might be redundant but safe
+                const { data: profile } = await supabase.from('profiles').select('role, preferences').eq('id', session.user.id).single();
+                setUserRole(profile?.role || 'user');
+                setUserPreferences(profile?.preferences || {});
             } else {
                 setUserRole(null);
+                setUserPreferences({});
             }
+            setIsLoadingAuth(false);
         });
 
         return () => subscription.unsubscribe();
     }, []);
+
+    // Show nothing while initial auth check happens to avoid flicker
+    if (isLoadingAuth) return null;
 
     return (
         <LanguageProvider>
@@ -59,7 +72,7 @@ const App: React.FC = () => {
                             <Route path="/login" element={<LoginView onLogin={() => setIsAuthenticated(true)} />} />
                             <Route path="/register" element={<RegisterView />} />
                             <Route path="/onboarding" element={<OnboardingView onSelectRole={(role) => setUserRole(role)} />} />
-                            <Route path="/feed" element={<FeedCheck isAuthenticated={isAuthenticated} />} />
+                            <Route path="/feed" element={<FeedCheck isAuthenticated={isAuthenticated} role={userRole} />} />
                             <Route path="/services" element={<ServicesView />} />
                             <Route path="/walkers" element={<WalkerListView />} />
                             <Route path="/chats" element={<ChatListView />} />
@@ -74,7 +87,7 @@ const App: React.FC = () => {
                             <Route path="/register-provider" element={<ProviderRegistrationView />} />
                             <Route path="*" element={<Navigate to="/" />} />
                         </Routes>
-                        <AuthBottomNav isAuthenticated={isAuthenticated} />
+                        <AuthBottomNav isAuthenticated={isAuthenticated} preferences={userPreferences} role={userRole} />
                     </div>
                 </div>
             </Router>
@@ -82,43 +95,53 @@ const App: React.FC = () => {
     );
 };
 
-const FeedCheck: React.FC<{ isAuthenticated: boolean }> = ({ isAuthenticated }) => {
+const FeedCheck: React.FC<{ isAuthenticated: boolean, role: string | null }> = ({ isAuthenticated, role }) => {
     const [hasDogs, setHasDogs] = useState<boolean | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const check = async () => {
             if (!isAuthenticated) return;
+
+            // If provider, we don't strictly need to check dogs for access, they have access
+            if (role === 'provider' || role === 'business') {
+                setHasDogs(true);
+                setLoading(false);
+                return;
+            }
+
+            // Only fetch dogs if role is user or unknown
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
-                const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-
-                // If provider/business, they don't necessarily need dogs
-                if (profile?.role === 'provider' || profile?.role === 'business') {
-                    setHasDogs(true);
-                } else {
-                    const { data: dogs } = await supabase.from('dogs').select('id').eq('owner_id', user.id);
-                    setHasDogs(dogs && dogs.length > 0);
-                }
+                const { count } = await supabase.from('dogs').select('*', { count: 'exact', head: true }).eq('owner_id', user.id);
+                setHasDogs(count !== null && count > 0);
             }
             setLoading(false);
         };
         check();
-    }, [isAuthenticated]);
+    }, [isAuthenticated, role]);
 
     if (!isAuthenticated) return <Navigate to="/login" />;
-    if (loading) return null;
-    if (!hasDogs) return <Navigate to="/onboarding" />;
-    return <FeedView />;
+    if (loading) return null; // Or a skeleton
+
+    // Redirect to onboarding if owner has no dogs
+    if (role === 'user' && !hasDogs) return <Navigate to="/onboarding" />;
+
+    // Role-based Feed
+    if (role === 'user') {
+        return <WalkerListView />;
+    } else {
+        return <FeedView />;
+    }
 };
 
-const AuthBottomNav: React.FC<{ isAuthenticated: boolean }> = ({ isAuthenticated }) => {
+const AuthBottomNav: React.FC<{ isAuthenticated: boolean, preferences: any, role: string | null }> = ({ isAuthenticated, preferences, role }) => {
     const location = useLocation();
     const hideOn = ['/', '/login', '/register', '/onboarding'];
     const shouldHide = hideOn.includes(location.pathname) || !isAuthenticated;
 
     if (shouldHide) return null;
-    return <BottomNav />;
+    return <BottomNav preferences={preferences} role={role} />;
 };
 
 export default App;
