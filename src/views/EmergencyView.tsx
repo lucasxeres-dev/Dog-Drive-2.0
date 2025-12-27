@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTranslation } from '../LanguageContext';
+import { useTranslation } from '../contexts/LanguageContext';
 
 const EmergencyView: React.FC = () => {
     const navigate = useNavigate();

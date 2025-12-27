@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTranslation } from '../LanguageContext';
+import { useTranslation } from '../contexts/LanguageContext';
 
 const LandingView: React.FC = () => {
     const navigate = useNavigate();

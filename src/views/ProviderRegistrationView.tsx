@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTranslation } from '../LanguageContext';
+import { useTranslation } from '../contexts/LanguageContext';
 import LocationSelector from '../components/LocationSelector';
-import { supabase } from '../supabaseClient';
+import { supabase } from '../lib/supabaseClient';
 
 const ProviderRegistrationView: React.FC = () => {
     const navigate = useNavigate();

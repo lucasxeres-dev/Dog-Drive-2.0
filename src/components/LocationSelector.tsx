@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useTranslation } from '../LanguageContext';
+import { useTranslation } from '../contexts/LanguageContext';
 
 const AVAILABLE_STATES = ['MS', 'SP', 'SC'];
 

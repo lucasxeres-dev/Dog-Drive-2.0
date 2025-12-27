@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { MOCK_CHATS } from '../constants';
-import { useTranslation } from '../LanguageContext';
+import { useTranslation } from '../contexts/LanguageContext';
 
 const ChatDetailView: React.FC = () => {
     const navigate = useNavigate();

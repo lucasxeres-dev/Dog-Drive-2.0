@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTranslation } from '../LanguageContext';
-import { supabase } from '../supabaseClient';
+import { useTranslation } from '../contexts/LanguageContext';
+import { supabase } from '../lib/supabaseClient';
 
 const RegisterView: React.FC = () => {
     const navigate = useNavigate();

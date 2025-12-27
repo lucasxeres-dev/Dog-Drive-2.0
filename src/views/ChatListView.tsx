@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, isSupabaseConfigured } from '../supabaseClient';
-import { useTranslation } from '../LanguageContext';
+import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
+import { useTranslation } from '../contexts/LanguageContext';
 import { ChatPreview, Dog } from '../types';
 import { MOCK_CHATS, MOCK_DOGS } from '../constants';
 

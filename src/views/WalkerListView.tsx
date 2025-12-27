@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTranslation } from '../LanguageContext';
-import { supabase } from '../supabaseClient';
+import { useTranslation } from '../contexts/LanguageContext';
+import { supabase } from '../lib/supabaseClient';
 import FilterModal from '../components/FilterModal';
 import { useLocation as useRouterLocation } from 'react-router-dom';
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { LanguageProvider } from './LanguageContext';
-import { supabase } from './supabaseClient';
+import { LanguageProvider } from './contexts/LanguageContext';
+import { supabase } from './lib/supabaseClient';
 import LandingView from './views/LandingView';
 import LoginView from './views/LoginView';
 import OnboardingView from './views/OnboardingView';

@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserRole } from '../types';
-import { useTranslation } from '../LanguageContext';
-import { supabase } from '../supabaseClient';
+import { useTranslation } from '../contexts/LanguageContext';
+import { supabase } from '../lib/supabaseClient';
 
 interface OnboardingViewProps {
     onSelectRole: (role: string) => void;
