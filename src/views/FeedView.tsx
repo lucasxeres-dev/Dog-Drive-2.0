@@ -50,10 +50,43 @@ const FeedView: React.FC = () => {
         fetchDogsData();
     }, [user]);
 
-    const handleSwipe = (direction: 'left' | 'right') => {
-        if (direction === 'right') {
-            showNotification('Matched! ❤️', 'success');
+    const handleSwipe = async (direction: 'left' | 'right') => {
+        if (!user || currentDogs.length === 0) return;
+
+        const swipedDog = currentDogs[currentDogs.length - 1]; // Top card
+
+        try {
+            // Save swipe to Supabase
+            const { error } = await (authService as any).supabase.from('matches').insert({
+                user_id: user.id,
+                target_dog_id: swipedDog.id,
+                status: direction === 'right' ? 'like' : 'pass'
+            });
+
+            if (error) {
+                console.error('Error saving swipe:', error);
+            }
+
+            if (direction === 'right') {
+                showNotification(`Você curtiu ${swipedDog.name}! ❤️`, 'success');
+
+                // For MVP: Create a chat if it doesn't exist (Simulating a match)
+                // In a real app, logic would check if the other user also liked the current user/dog
+                const { data: existingChat } = await (authService as any).supabase
+                    .from('chats')
+                    .select('*')
+                    .or(`user_id_1.eq.${user.id},user_id_2.eq.${user.id}`) // Check if chat exists with this user (simplified)
+                // Note: Ideally we need the dog's owner ID here. 
+                // Let's fetch the dog owner first to be accurate.
+                // .eq('user_id_2', swipedDog.owner_id);
+
+                // Simplified MVP: Just Notify
+            }
+
+        } catch (e) {
+            console.error(e);
         }
+
         setCurrentIndex(prev => prev + 1);
     };
 

@@ -4,6 +4,7 @@ import { UserRole } from '../types';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { authService } from '../services/authService';
+import { Dog } from 'lucide-react';
 
 interface OnboardingViewProps {
     onSelectRole: (role: string) => void;
@@ -207,7 +208,21 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
 
     const roles = [
         { id: UserRole.OWNER, title: t('owner'), icon: 'pets' },
-        { id: UserRole.WALKER, title: t('walker'), icon: 'directions_walk' },
+        {
+            id: UserRole.WALKER,
+            title: t('walker'),
+            icon: 'directions_walk',
+            customIcon: (
+                <div className="flex items-end -ml-2">
+                    <span className="material-symbols-outlined text-[28px]">directions_walk</span>
+                    <div className="relative -ml-1 mb-1">
+                        <Dog size={18} strokeWidth={2.5} />
+                        {/* Leash effect */}
+                        <div className="absolute -top-3 -left-2 w-4 h-px bg-current rotate-45 origin-right opacity-50"></div>
+                    </div>
+                </div>
+            )
+        },
         { id: UserRole.BOARDING, title: t('boarding'), icon: 'home' },
         { id: UserRole.PETSHOP, title: t('petshop'), icon: 'storefront' },
         { id: UserRole.GROOMING, title: t('grooming'), icon: 'content_cut' }
@@ -250,7 +265,13 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                                 />
                                 <div className="flex items-center gap-4 bg-white dark:bg-surface-dark p-5 rounded-3xl shadow-sm border-2 border-transparent peer-checked:border-primary transition-all">
                                     <div className="flex items-center justify-center rounded-2xl bg-[#f0f5f2] dark:bg-[#25382c] peer-checked:bg-primary/20 shrink-0 size-14">
-                                        <span className={`material-symbols-outlined text-[28px] ${selectedRole === role.id ? 'text-primary' : 'text-gray-400'}`}>{role.icon}</span>
+                                        {(role as any).customIcon ? (
+                                            <div className={selectedRole === role.id ? 'text-primary' : 'text-gray-400'}>
+                                                {(role as any).customIcon}
+                                            </div>
+                                        ) : (
+                                            <span className={`material-symbols-outlined text-[28px] ${selectedRole === role.id ? 'text-primary' : 'text-gray-400'}`}>{role.icon}</span>
+                                        )}
                                     </div>
                                     <div className="flex flex-col flex-1">
                                         <h3 className="text-lg font-bold">{role.title}</h3>
