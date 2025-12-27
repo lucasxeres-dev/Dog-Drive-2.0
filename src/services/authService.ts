@@ -2,6 +2,17 @@ import { supabase } from '../lib/supabaseClient';
 import { UserProfile } from '../types';
 
 export const authService = {
+    async guestSignIn() {
+        // Mock a successful guest session
+        return {
+            data: {
+                user: { id: 'guest-id', email: 'guest@dogdrive.com' },
+                session: { user: { id: 'guest-id' } }
+            },
+            error: null
+        };
+    },
+
     async signUp(email: string, password: string, options: any) {
         return await supabase.auth.signUp({ email, password, options });
     },

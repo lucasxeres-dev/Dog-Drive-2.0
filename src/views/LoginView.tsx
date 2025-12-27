@@ -77,6 +77,20 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
         }
     };
 
+    const handleGuestLogin = async () => {
+        setLoading(true);
+        try {
+            // Simulated guest login
+            onLogin();
+            navigate('/feed');
+            showNotification('Entrando como visitante...', 'info');
+        } catch (err) {
+            showNotification('Ops, algo deu errado. Tente novamente.', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleForgotPassword = async () => {
         if (!resetEmail) {
             showNotification('Por favor, insira seu e-mail', 'error');
@@ -166,6 +180,20 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                                 <span className="material-symbols-outlined text-2xl font-black">arrow_forward</span>
                             </>
                         )}
+                    </button>
+
+                    <div className="relative flex items-center justify-center py-4">
+                        <div className="flex-1 border-t border-gray-200 dark:border-white/10"></div>
+                        <span className="px-4 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-background-light dark:bg-background-dark">ou</span>
+                        <div className="flex-1 border-t border-gray-200 dark:border-white/10"></div>
+                    </div>
+
+                    <button
+                        onClick={handleGuestLogin}
+                        className="w-full h-16 bg-white dark:bg-white/5 border-2 border-gray-100 dark:border-white/10 text-[#111814] dark:text-white font-black text-sm uppercase tracking-widest rounded-3xl hover:bg-gray-50 dark:hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+                    >
+                        <span className="material-symbols-outlined">visibility</span>
+                        <span>ENTRAR COMO VISITANTE</span>
                     </button>
                 </div>
 
