@@ -131,7 +131,11 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                 handleFinish();
             }
         } else { // Owner
-            handleFinish();
+            if (step < 3) { // Owner now has 3 steps (2, 3)
+                setStep(step + 1);
+            } else {
+                handleFinish();
+            }
         }
     };
 
@@ -365,6 +369,58 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                                 placeholder="ex: Procuro alguém para passeio educativo"
                                 className="w-full h-32 bg-white dark:bg-surface-dark rounded-3xl p-6 font-bold border-2 border-transparent focus:border-primary/30 transition-all shadow-sm resize-none"
                             />
+                        </div>
+                    </div>
+                </div>
+            ) : selectedRole === UserRole.OWNER && step === 3 ? (
+                // Step 3: Owner Summary (The Green Bar)
+                <div className="space-y-6 animate-fadeIn pb-10">
+                    <div className="mb-4">
+                        <h1 className="text-3xl font-black mb-2">Quase Pronto! 🚀</h1>
+                        <p className="text-gray-500 font-medium">Confira seus dados antes de finalizar.</p>
+                    </div>
+
+                    <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#102217] via-[#102217] to-primary p-8 text-white shadow-2xl shadow-primary/20">
+                        <div className="absolute top-0 right-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-primary/20 blur-3xl"></div>
+
+                        <div className="relative z-10 flex flex-col items-center">
+                            <div className="relative mb-6">
+                                <div className="h-28 w-28 rounded-full border-4 border-white/20 p-1">
+                                    <img
+                                        src={dogData.photo || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=200&auto=format&fit=crop'}
+                                        alt={dogData.name}
+                                        className="h-full w-full rounded-full object-cover"
+                                    />
+                                </div>
+                                <div className="absolute bottom-0 right-0 flex h-10 w-10 items-center justify-center rounded-full bg-primary text-[#102217] shadow-lg border-2 border-[#102217]">
+                                    <span className="material-symbols-outlined font-black text-xl">pets</span>
+                                </div>
+                            </div>
+
+                            <h2 className="text-4xl font-black tracking-tight mb-2">{dogData.name}</h2>
+                            <p className="font-bold opacity-80 uppercase tracking-widest text-xs mb-8">{dogData.age} • {city}</p>
+
+                            <div className="w-full space-y-4">
+                                <div className="flex items-center gap-4 rounded-2xl bg-white/10 p-4 backdrop-blur-md">
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10">
+                                        <span className="material-symbols-outlined text-primary">psychology</span>
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-[10px] font-black uppercase text-white/50 tracking-wider">Temperamento</p>
+                                        <p className="font-bold text-sm">{dogData.traits || 'Não informado'}</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-4 rounded-2xl bg-white/10 p-4 backdrop-blur-md">
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10">
+                                        <span className="material-symbols-outlined text-primary">campaign</span>
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="text-[10px] font-black uppercase text-white/50 tracking-wider">Solicitação</p>
+                                        <p className="font-bold text-sm max-h-20 overflow-y-auto custom-scrollbar">{dogData.request || 'Não informado'}</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -606,7 +662,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                     disabled={uploading || uploadingDoc}
                     className="w-full h-16 bg-primary text-[#102217] text-lg font-black rounded-3xl shadow-xl shadow-primary/20 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-widest disabled:opacity-50"
                 >
-                    <span>{((selectedRole === UserRole.OWNER && step === 2) || ((selectedRole === UserRole.WALKER || selectedRole === UserRole.BOARDING) && step === 4) || ((selectedRole === UserRole.PETSHOP || selectedRole === UserRole.GROOMING) && step === 3)) ? t('finish_btn') : t('continue')}</span>
+                    <span>{((selectedRole === UserRole.OWNER && step === 3) || ((selectedRole === UserRole.WALKER || selectedRole === UserRole.BOARDING) && step === 4) || ((selectedRole === UserRole.PETSHOP || selectedRole === UserRole.GROOMING) && step === 3)) ? t('finish_btn') : t('continue')}</span>
                     <span className="material-symbols-outlined font-black">arrow_forward</span>
                 </button>
             </div>

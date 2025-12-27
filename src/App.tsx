@@ -114,9 +114,9 @@ const FeedCheck: React.FC<{ isAuthenticated: boolean, role: string | null }> = (
 
     if (!isAuthenticated) return <Navigate to="/login" />;
     if (loading) return <LoadingFallback />;
-    if (role === 'user' && !hasDogs) return <Navigate to="/onboarding" />;
+    if (role === 'owner' && !hasDogs) return <Navigate to="/onboarding" />;
 
-    return role === 'user' ? <WalkerListView /> : <FeedView />;
+    return role === 'owner' ? <WalkerListView /> : <FeedView />;
 };
 
 import { useLocation } from 'react-router-dom';
