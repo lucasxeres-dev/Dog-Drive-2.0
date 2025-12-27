@@ -5,6 +5,129 @@ import { useTranslation } from '../contexts/LanguageContext';
 import { supabase } from '../lib/supabaseClient';
 import { Dog } from '../types';
 
+// Password Change Component
+const PasswordChangeSection: React.FC = () => {
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    const handleChangePassword = async () => {
+        if (newPassword !== confirmPassword) {
+            setMessage({ type: 'error', text: 'As senhas não coincidem' });
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            setMessage({ type: 'error', text: 'A senha deve ter pelo menos 6 caracteres' });
+            return;
+        }
+
+        setLoading(true);
+        setMessage(null);
+
+        try {
+            const { error } = await supabase.auth.updateUser({
+                password: newPassword
+            });
+
+            if (error) throw error;
+
+            setMessage({ type: 'success', text: 'Senha alterada com sucesso!' });
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+            setIsExpanded(false);
+        } catch (err: any) {
+            setMessage({ type: 'error', text: err.message || 'Erro ao alterar senha' });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <section className="bg-white dark:bg-surface-dark rounded-[2.5rem] p-6 shadow-sm mb-6">
+            <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm font-black uppercase tracking-widest text-primary">Segurança</h2>
+                <button
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="size-10 bg-primary/10 rounded-full flex items-center justify-center text-primary"
+                >
+                    <span className="material-symbols-outlined">{isExpanded ? 'expand_less' : 'lock'}</span>
+                </button>
+            </div>
+
+            {!isExpanded ? (
+                <button
+                    onClick={() => setIsExpanded(true)}
+                    className="w-full p-4 bg-gray-50 dark:bg-background-dark/50 rounded-2xl flex items-center justify-between hover:bg-gray-100 dark:hover:bg-background-dark/70 transition-colors"
+                >
+                    <div className="flex items-center gap-3">
+                        <span className="material-symbols-outlined text-gray-400">password</span>
+                        <span className="font-bold text-gray-600 dark:text-gray-300">Alterar Senha</span>
+                    </div>
+                    <span className="material-symbols-outlined text-gray-400">chevron_right</span>
+                </button>
+            ) : (
+                <div className="space-y-4 animate-fadeIn">
+                    {message && (
+                        <div className={`p-3 rounded-xl flex items-center gap-2 ${message.type === 'success'
+                                ? 'bg-green-50 dark:bg-green-900/10 text-green-600'
+                                : 'bg-red-50 dark:bg-red-900/10 text-red-500'
+                            }`}>
+                            <span className="material-symbols-outlined text-sm">
+                                {message.type === 'success' ? 'check_circle' : 'error'}
+                            </span>
+                            <span className="text-xs font-bold">{message.text}</span>
+                        </div>
+                    )}
+
+                    <div>
+                        <label className="text-[10px] font-black uppercase text-gray-400 ml-4 mb-1 block">Nova Senha</label>
+                        <input
+                            type="password"
+                            className="w-full h-14 bg-gray-50 dark:bg-background-dark/50 rounded-2xl px-5 font-bold border-2 border-transparent focus:border-primary/20 transition-all"
+                            placeholder="Digite a nova senha"
+                            value={newPassword}
+                            onChange={e => setNewPassword(e.target.value)}
+                        />
+                    </div>
+
+                    <div>
+                        <label className="text-[10px] font-black uppercase text-gray-400 ml-4 mb-1 block">Confirmar Nova Senha</label>
+                        <input
+                            type="password"
+                            className="w-full h-14 bg-gray-50 dark:bg-background-dark/50 rounded-2xl px-5 font-bold border-2 border-transparent focus:border-primary/20 transition-all"
+                            placeholder="Confirme a nova senha"
+                            value={confirmPassword}
+                            onChange={e => setConfirmPassword(e.target.value)}
+                        />
+                    </div>
+
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => setIsExpanded(false)}
+                            className="flex-1 h-12 bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-300 font-black rounded-xl transition-all"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={handleChangePassword}
+                            disabled={loading || !newPassword || !confirmPassword}
+                            className="flex-1 h-12 bg-primary text-[#102217] font-black rounded-xl shadow-lg shadow-primary/10 active:scale-95 transition-all disabled:opacity-50"
+                        >
+                            {loading ? 'Salvando...' : 'Salvar'}
+                        </button>
+                    </div>
+                </div>
+            )}
+        </section>
+    );
+};
+
+
 const SettingsView: React.FC = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
@@ -159,6 +282,9 @@ const SettingsView: React.FC = () => {
                     </div>
                 </div>
             </section>
+
+            {/* PASSWORD CHANGE SECTION */}
+            <PasswordChangeSection />
 
             <section className="bg-white dark:bg-surface-dark rounded-[2.5rem] p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-6">
