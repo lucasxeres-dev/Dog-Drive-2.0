@@ -4,6 +4,8 @@ import { UserRole } from '../types';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { authService } from '../services/authService';
+import { useSupabase } from '../hooks/useSupabase';
+import { uploadImage } from '../lib/imageUpload';
 import { Dog } from 'lucide-react';
 
 interface OnboardingViewProps {
@@ -14,6 +16,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
     const navigate = useNavigate();
     const { t } = useTranslation();
     const { showNotification } = useNotification();
+    const supabase = useSupabase();
     const [step, setStep] = useState(0);
     const [selectedRole, setSelectedRole] = useState<UserRole>(UserRole.OWNER);
     const [coords, setCoords] = useState<{ lat: number, lng: number } | null>(null);
@@ -81,33 +84,29 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
             if (type === 'pet') setUploading(true);
             else setUploadingDoc(true);
 
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${Math.random()}.${fileExt}`;
-            const { data: { user } } = await (authService as any).supabase.auth.getUser();
-            const filePath = `${user?.id || 'guest'}/${fileName}`;
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error('Usuário não autenticado');
+
             const bucket = type === 'pet' ? 'pet-photos' : 'documents';
 
-            const { error: uploadError } = await (authService as any).supabase.storage
-                .from(bucket)
-                .upload(filePath, file);
-
-            if (uploadError) throw uploadError;
-
-            const { data } = (authService as any).supabase.storage
-                .from(bucket)
-                .getPublicUrl(filePath);
+            // Use production-ready upload with compression
+            const { url } = await uploadImage(file, {
+                bucket,
+                userId: user.id,
+                onProgress: (progress) => console.log(`Upload: ${progress}%`)
+            });
 
             if (type === 'pet') {
-                setDogData({ ...dogData, photo: data.publicUrl });
+                setDogData({ ...dogData, photo: url });
             } else if (selectedRole === UserRole.PETSHOP || selectedRole === UserRole.GROOMING) {
-                setBusinessData({ ...businessData, doc_url: data.publicUrl });
+                setBusinessData({ ...businessData, doc_url: url });
             } else {
-                setProviderData({ ...providerData, doc_url: data.publicUrl });
+                setProviderData({ ...providerData, doc_url: url });
             }
             showNotification('Upload concluído!', 'success');
         } catch (error: any) {
             console.error('Error uploading image:', error);
-            showNotification(error.message || 'Erro ao enviar imagem', 'error');
+            showNotification(error.message || 'Erro ao enviar imagem. Verifique sua conexão.', 'error');
         } finally {
             if (type === 'pet') setUploading(false);
             else setUploadingDoc(false);
@@ -141,15 +140,16 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
     };
 
     const handleFinish = async () => {
-        const { data: { user } } = await (authService as any).supabase.auth.getUser();
+        const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
+            showNotification('Sessão expirada. Faça login novamente.', 'error');
             navigate('/login');
             return;
         }
 
         try {
             // Update profile
-            const { error: profileError } = await (authService as any).supabase.from('profiles').update({
+            const { error: profileError } = await supabase.from('profiles').update({
                 role: selectedRole,
                 address: (selectedRole === UserRole.WALKER || selectedRole === UserRole.BOARDING || selectedRole === UserRole.PETSHOP || selectedRole === UserRole.GROOMING) ? providerData.address : null,
                 provider_services: (selectedRole === UserRole.WALKER || selectedRole === UserRole.BOARDING) ? providerData.services : null,
@@ -168,29 +168,37 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
 
             // Save dog for owners
             if (selectedRole === UserRole.OWNER) {
-                if (!dogData.name) {
+                if (!dogData.name || dogData.name.trim() === '') {
                     showNotification('Nome do cachorro é obrigatório', 'error');
                     return;
                 }
 
-                const { error: dogError } = await (authService as any).supabase.from('dogs').insert({
+                const { error: dogError } = await supabase.from('dogs').insert({
                     owner_id: user.id,
-                    name: dogData.name,
-                    age: dogData.age,
-                    image_url: dogData.photo,
-                    traits: dogData.traits,
-                    request_instructions: dogData.request,
+                    name: dogData.name.trim(),
+                    age: dogData.age || '0',
+                    image_url: dogData.photo || null,
+                    traits: dogData.traits || '',
+                    request_instructions: dogData.request || '',
                     location: city,
-                    latitude: coords?.lat,
-                    longitude: coords?.lng
+                    latitude: coords?.lat || 0,
+                    longitude: coords?.lng || 0
                 });
 
-                if (dogError && dogError.code !== '23505') throw dogError;
+                if (dogError) {
+                    console.error('Dog registration error:', dogError);
+                    if (dogError.code === '23505') {
+                        showNotification('Você já cadastrou este cachorro', 'error');
+                    } else {
+                        showNotification(`Erro ao cadastrar cachorro: ${dogError.message}`, 'error');
+                    }
+                    return; // Don't proceed if dog save fails
+                }
             }
 
             // Save bank details for providers
             if (selectedRole === UserRole.WALKER && providerData.pix) {
-                await (authService as any).supabase.from('bank_details').upsert({
+                await supabase.from('bank_details').upsert({
                     user_id: user.id,
                     encrypted_data: providerData.pix,
                     bank_name: 'PIX',
@@ -202,7 +210,8 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
             onSelectRole(selectedRole);
             navigate('/feed');
         } catch (err: any) {
-            showNotification(err.message || 'Erro ao finalizar onboarding', 'error');
+            console.error('Onboarding error:', err);
+            showNotification(err.message || 'Erro ao finalizar onboarding. Tente novamente.', 'error');
         }
     };
 
