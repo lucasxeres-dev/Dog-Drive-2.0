@@ -9,27 +9,33 @@ import { Dog } from '../types';
 import { MapPin, SlidersHorizontal, Heart, X, Info } from 'lucide-react';
 import FilterModal from '../components/FilterModal';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useSupabase } from '../hooks/useSupabase';
 
 const FeedView: React.FC = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
     const { showNotification } = useNotification();
     const { user } = useAuth();
+    const supabase = useSupabase();
     const [dogs, setDogs] = useState<Dog[]>([]);
     const [loading, setLoading] = useState(true);
     const [showFilters, setShowFilters] = useState(false);
     const [maxDistance, setMaxDistance] = useState(10);
     const [locationName, setLocationName] = useState<string>('Rio de Janeiro');
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
+    const PAGE_SIZE = 20; // Load 20 dogs at a time
 
     useEffect(() => {
         const fetchDogsData = async () => {
             setLoading(true);
             try {
-                const { data, error } = await (authService as any).supabase
+                // PAGINATION: Load only PAGE_SIZE dogs
+                const { data, error } = await supabase
                     .from('dogs')
                     .select('*')
-                    .order('created_at', { ascending: false });
+                    .order('created_at', { ascending: false })
+                    .limit(PAGE_SIZE);
 
                 if (error) throw error;
                 if (data) {
@@ -39,6 +45,7 @@ const FeedView: React.FC = () => {
                         distance: '2.5km',
                         match: d.match_percentage || 95
                     })) as Dog[]);
+                    setHasMore(data.length === PAGE_SIZE);
                 }
             } catch (err: any) {
                 showNotification(err.message || 'Erro ao carregar feeds', 'error');
@@ -48,7 +55,7 @@ const FeedView: React.FC = () => {
         };
 
         fetchDogsData();
-    }, [user]);
+    }, [user, supabase]);
 
     const handleSwipe = async (direction: 'left' | 'right') => {
         if (!user || currentDogs.length === 0) return;
@@ -57,7 +64,7 @@ const FeedView: React.FC = () => {
 
         try {
             // Save swipe to Supabase
-            const { error } = await (authService as any).supabase.from('matches').insert({
+            const { error } = await supabase.from('matches').insert({
                 user_id: user.id,
                 target_dog_id: swipedDog.id,
                 status: direction === 'right' ? 'like' : 'pass'

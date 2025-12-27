@@ -6,6 +6,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { useAuth } from './hooks/useAuth';
 import { dogService } from './services/dogService';
 import BottomNav from './components/BottomNav';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Lazy loading views for performance
 const LandingView = lazy(() => import('./views/LandingView'));
@@ -82,13 +83,15 @@ const MainApp: React.FC = () => {
 
 const App: React.FC = () => {
     return (
-        <LanguageProvider>
-            <NotificationProvider>
-                <AuthProvider>
-                    <MainApp />
-                </AuthProvider>
-            </NotificationProvider>
-        </LanguageProvider>
+        <ErrorBoundary>
+            <LanguageProvider>
+                <NotificationProvider>
+                    <AuthProvider>
+                        <MainApp />
+                    </AuthProvider>
+                </NotificationProvider>
+            </LanguageProvider>
+        </ErrorBoundary>
     );
 };
 
