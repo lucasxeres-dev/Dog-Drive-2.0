@@ -75,18 +75,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
         }
     };
 
-    const handleGuestLogin = async () => {
-        setLoading(true);
-        try {
-            localStorage.setItem('dogdrive_guest', 'true');
-            onLogin();
-            window.location.reload(); // Force reload to ensure useAuth picks up the guest state
-        } catch (err) {
-            showNotification('Ops, algo deu errado. Tente novamente.', 'error');
-        } finally {
-            setLoading(false);
-        }
-    };
+
 
     const handleForgotPassword = async () => {
         if (!resetEmail) {
@@ -179,22 +168,6 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                         )}
                     </button>
 
-                    <div className="relative flex items-center justify-center py-4">
-                        <div className="flex-1 border-t border-gray-200 dark:border-white/10"></div>
-                        <span className="px-4 text-[10px] font-black text-gray-400 uppercase tracking-widest bg-background-light dark:bg-background-dark">ou</span>
-                        <div className="flex-1 border-t border-gray-200 dark:border-white/10"></div>
-                    </div>
-
-                    <button
-                        onClick={handleGuestLogin}
-                        className="w-full h-16 bg-white dark:bg-white/5 border-2 border-gray-100 dark:border-white/10 text-[#111814] dark:text-white font-black text-sm uppercase tracking-widest rounded-3xl hover:bg-gray-50 dark:hover:bg-white/10 transition-all flex items-center justify-center gap-2"
-                    >
-                        <span className="material-symbols-outlined">rocket_launch</span>
-                        <span>ACESSO BETA (IPHONE/TESTE)</span>
-                    </button>
-                    <div className="text-center mt-2">
-                        <span className="text-[10px] text-primary/60 font-black uppercase tracking-widest">Modo de Teste Ativado (Sem Registro)</span>
-                    </div>
                 </div>
 
                 <p className="text-center mt-8 text-gray-400 text-[10px] font-black uppercase tracking-wider">

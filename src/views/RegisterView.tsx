@@ -11,7 +11,7 @@ const RegisterView: React.FC = () => {
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
 
-    // Form State
+    // Form State (SIMPLIFIED)
     const [formData, setFormData] = useState({
         fullName: '',
         username: '',
@@ -19,27 +19,12 @@ const RegisterView: React.FC = () => {
         phone: '',
         password: '',
         confirmPassword: '',
-        role: 'owner' as 'owner' | 'walker' | 'boarding' | 'petshop' | 'grooming',
-        avatarFile: null as File | null,
-        avatarPreview: ''
+        role: 'owner' as 'owner' | 'walker' | 'boarding' | 'petshop' | 'grooming'
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
-
-    const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            setFormData({
-                ...formData,
-                avatarFile: file,
-                avatarPreview: URL.createObjectURL(file)
-            });
-        }
-    };
-
-
 
     const handleRegister = async () => {
         // Validation
@@ -66,57 +51,20 @@ const RegisterView: React.FC = () => {
 
         setLoading(true);
         try {
-            let avatarUrl = '';
-
-            // Upload photo if selected
-            if (formData.avatarFile) {
-                const fileExt = formData.avatarFile.name.split('.').pop();
-                const fileName = `${Math.random()}.${fileExt}`;
-                const filePath = `registration/${fileName}`;
-
-                // Upload using public policy or anon
-                const { error: uploadError } = await (authService as any).supabase.storage
-                    .from('avatars')
-                    .upload(filePath, formData.avatarFile);
-
-                if (!uploadError) {
-                    const { data } = (authService as any).supabase.storage
-                        .from('avatars')
-                        .getPublicUrl(filePath);
-                    avatarUrl = data.publicUrl;
-                }
-            }
-
-            const { data, error: signUpError } = await authService.signUp(formData.email, formData.password, {
+            const { error: signUpError } = await authService.signUp(formData.email, formData.password, {
                 data: {
                     full_name: formData.fullName,
                     username: formData.username.toLowerCase(),
                     phone: formData.phone,
                     role: formData.role,
-                    email: formData.email,
-                    avatar_url: avatarUrl // Send photo URL with metadata
+                    email: formData.email
                 }
             });
 
             if (signUpError) throw signUpError;
 
-            // Attempt Auto-Login
-            if (data.user && !data.session) {
-                showNotification('Cadastro realizado! Verifique seu email para confirmar.', 'success');
-                navigate('/login');
-            } else if (data.session) {
-                // Auto login successful (Email confirm disabled or implicit)
-                showNotification(`Bem-vindo, ${formData.fullName}!`, 'success');
-                // Navigate based on role or to onboarding
-                if (formData.role === 'owner') navigate('/onboarding'); // Logic in OnboardingView handles the rest
-                else navigate('/feed'); // Or wherever
-            } else {
-                showNotification('Cadastro realizado! Fazendo login...', 'success');
-                const { error: loginError } = await authService.signIn(formData.email, formData.password);
-                if (!loginError) navigate('/onboarding');
-                else navigate('/login');
-            }
-
+            showNotification('Cadastro realizado com sucesso! Faça login para continuar.', 'success');
+            navigate('/login');
         } catch (err: any) {
             console.error('Registration error:', err);
             if (err.message && err.message.includes('already registered')) {
@@ -179,30 +127,13 @@ const RegisterView: React.FC = () => {
 
                     {step === 2 && (
                         <div className="space-y-6 animate-fadeIn">
-                            {/* Photo Upload */}
-                            <div className="flex justify-center mb-6">
-                                <label className="relative cursor-pointer group">
-                                    <div className="w-24 h-24 rounded-full bg-gray-100 dark:bg-white/10 border-2 border-dashed border-gray-300 dark:border-white/20 flex items-center justify-center overflow-hidden transition-all group-hover:border-primary">
-                                        {formData.avatarPreview ? (
-                                            <img src={formData.avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
-                                        ) : (
-                                            <span className="material-symbols-outlined text-gray-400 text-3xl group-hover:text-primary">add_a_photo</span>
-                                        )}
-                                    </div>
-                                    <div className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-[#050705] shadow-lg">
-                                        <span className="material-symbols-outlined text-sm font-black">edit</span>
-                                    </div>
-                                    <input type="file" className="hidden" accept="image/*" onChange={handlePhotoChange} />
-                                </label>
-                            </div>
-
-                            {/* Personal Info Group - Single Column Vertical Layout */}
+                            {/* Personal Info - Vertical Layout */}
                             <div className="space-y-4">
                                 <div className="space-y-2">
                                     <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Nome Completo</label>
                                     <input
                                         name="fullName"
-                                        className="input-premium h-14" // Slightly taller for better touch
+                                        className="input-premium h-14"
                                         placeholder="Ex: João da Silva"
                                         value={formData.fullName}
                                         onChange={handleChange}

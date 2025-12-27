@@ -27,15 +27,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     useEffect(() => {
         const initAuth = async () => {
             try {
-                // Check for guest session in localStorage first
-                const isGuest = localStorage.getItem('dogdrive_guest') === 'true';
-                if (isGuest) {
-                    setUser({ id: 'guest-id', email: 'guest@dogdrive.com' });
-                    setProfile({ role: 'owner', id: 'guest-id', latitude: 1, longitude: 1 } as any); // Set lat/lng to bypass onboarding
-                    setLoading(false);
-                    return;
-                }
-
                 const { data: { session } } = await authService.getSession();
                 if (session) {
                     setUser(session.user);
@@ -57,7 +48,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 setUser(session.user);
                 const userProfile = await authService.getProfile(session.user.id);
                 setProfile(userProfile);
-            } else if (localStorage.getItem('dogdrive_guest') !== 'true') {
+            } else {
                 setUser(null);
                 setProfile(null);
             }
