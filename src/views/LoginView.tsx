@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { authService } from '../services/authService';
+import { isSupabaseConfigured } from '../lib/supabaseClient';
 
 interface LoginViewProps {
     onLogin: () => void;
@@ -36,10 +37,24 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
     const handleLogin = async () => {
         if (!validateForm()) return;
 
+        if (!isSupabaseConfigured) {
+            showNotification('Supabase não configurado. Verifique seu arquivo .env', 'error');
+            return;
+        }
+
         setLoading(true);
         try {
             const { data: { user, session }, error: authError } = await authService.signIn(email, password);
-            if (authError) throw authError;
+
+            if (authError) {
+                console.error('Supabase Auth Error:', authError);
+                if (authError.message === 'Invalid login credentials') {
+                    showNotification('E-mail ou senha incorretos. Tente novamente.', 'error');
+                } else {
+                    showNotification(`Erro: ${authError.message}`, 'error');
+                }
+                return;
+            }
 
             if (user && session) {
                 const profile = await authService.getProfile(user.id);
@@ -55,7 +70,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                 showNotification('Bem-vindo de volta!', 'success');
             }
         } catch (err: any) {
-            console.error('Login error:', err);
+            console.error('Unexpected Login Error:', err);
             showNotification('Ops, algo deu errado. Poderia tentar novamente?', 'error');
         } finally {
             setLoading(false);
