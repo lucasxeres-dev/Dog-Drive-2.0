@@ -17,7 +17,25 @@ export const authService = {
         return await supabase.auth.signUp({ email, password, options });
     },
 
-    async signIn(email: string, password: string) {
+    async signIn(identifier: string, password: string) {
+        // If it's not an email, try to find the email via username
+        let email = identifier;
+        if (!identifier.includes('@')) {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('username', identifier.toLowerCase())
+                .single();
+
+            if (data) {
+                // Fetch the actual email from auth.users (requires a helper or being the same)
+                // In this setup, we can try to sign in with a "fake" email format if we had it,
+                // but better: retrieve email from our profiles if we stored it there.
+                // Let's add email to profiles for easier lookup.
+                const { data: userAuth } = await supabase.rpc('get_user_email_by_username', { username_p: identifier.toLowerCase() });
+                if (userAuth) email = userAuth;
+            }
+        }
         return await supabase.auth.signInWithPassword({ email, password });
     },
 
