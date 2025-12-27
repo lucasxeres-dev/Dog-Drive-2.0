@@ -31,7 +31,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 const isGuest = localStorage.getItem('dogdrive_guest') === 'true';
                 if (isGuest) {
                     setUser({ id: 'guest-id', email: 'guest@dogdrive.com' });
-                    setProfile({ role: 'user', id: 'guest-id' } as any);
+                    setProfile({ role: 'owner', id: 'guest-id', latitude: 1, longitude: 1 } as any); // Set lat/lng to bypass onboarding
                     setLoading(false);
                     return;
                 }
