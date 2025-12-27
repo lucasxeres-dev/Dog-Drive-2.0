@@ -28,23 +28,25 @@ const RegisterView: React.FC = () => {
 
     const handleNextStep = () => {
         if (step === 1) {
-            if (!formData.fullName || !formData.email || !formData.phone || !formData.username) {
-                showNotification('Por favor, preencha todos os campos obrigatórios.', 'error');
-                return;
-            }
-            if (!/\S+@\S+\.\S+/.test(formData.email)) {
-                showNotification('E-mail inválido', 'error');
-                return;
-            }
-            if (formData.username.length < 3) {
-                showNotification('O nome de usuário deve ter pelo menos 3 caracteres.', 'error');
-                return;
-            }
+            // Role is selected by click, so just validation if needed, but here we just proceed
         }
         setStep(step + 1);
     };
 
     const handleRegister = async () => {
+        // Validation
+        if (!formData.fullName || !formData.email || !formData.phone || !formData.username || !formData.password) {
+            showNotification('Por favor, preencha todos os campos obrigatórios.', 'error');
+            return;
+        }
+        if (!/\S+@\S+\.\S+/.test(formData.email)) {
+            showNotification('E-mail inválido', 'error');
+            return;
+        }
+        if (formData.username.length < 3) {
+            showNotification('O nome de usuário deve ter pelo menos 3 caracteres.', 'error');
+            return;
+        }
         if (formData.password !== formData.confirmPassword) {
             showNotification('As senhas não coincidem.', 'error');
             return;
@@ -62,7 +64,7 @@ const RegisterView: React.FC = () => {
                     username: formData.username.toLowerCase(),
                     phone: formData.phone,
                     role: formData.role,
-                    email: formData.email // Include email in metadata for trigger/lookup
+                    email: formData.email
                 }
             });
 
@@ -72,7 +74,13 @@ const RegisterView: React.FC = () => {
             navigate('/login');
         } catch (err: any) {
             console.error('Registration error:', err);
-            showNotification('Ops, algo deu errado no cadastro. Poderia conferir os dados e tentar novamente?', 'error');
+            if (err.message && err.message.includes('already registered')) {
+                showNotification('Este e-mail já está cadastrado.', 'error');
+            } else if (err.status === 429) {
+                showNotification('Muitas tentativas. Tente novamente mais tarde.', 'error');
+            } else {
+                showNotification(`Erro ao criar conta: ${err.message || 'Tente novamente.'}`, 'error');
+            }
         } finally {
             setLoading(false);
         }
@@ -86,9 +94,9 @@ const RegisterView: React.FC = () => {
                     <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center shadow-lg transform rotate-3 mb-4">
                         <span className="material-symbols-outlined text-[#050705] text-[24px] font-black">person_add</span>
                     </div>
-                    <h2 className="text-[#111814] dark:text-white text-2xl font-black uppercase text-center">Criar Conta</h2>
+                    <h2 className="text-[#111814] dark:text-white text-2xl font-black uppercase text-center">{step === 1 ? 'Selecione seu Perfil' : 'Seus Dados'}</h2>
                     <div className="flex gap-2 mt-4">
-                        {[1, 2, 3].map(i => (
+                        {[1, 2].map(i => (
                             <div key={i} className={`h-1.5 w-8 rounded-full transition-all duration-300 ${step >= i ? 'bg-primary' : 'bg-gray-200 dark:bg-white/10'}`}></div>
                         ))}
                     </div>
@@ -98,53 +106,6 @@ const RegisterView: React.FC = () => {
                 <div className="flex-1 flex flex-col">
                     {step === 1 && (
                         <div className="space-y-6 animate-fadeIn">
-                            <div className="space-y-2">
-                                <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Nome Completo</label>
-                                <input
-                                    name="fullName"
-                                    className="w-full rounded-3xl border-2 border-transparent bg-white dark:bg-white/5 h-16 pl-6 text-base font-bold transition-all outline-none focus:bg-white dark:focus:bg-black/20 focus:border-primary shadow-sm"
-                                    placeholder="Ex: João Silva"
-                                    value={formData.fullName}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Nome de Usuário</label>
-                                <input
-                                    name="username"
-                                    className="w-full rounded-3xl border-2 border-transparent bg-white dark:bg-white/5 h-16 pl-6 text-base font-bold transition-all outline-none focus:bg-white dark:focus:bg-black/20 focus:border-primary shadow-sm"
-                                    placeholder="Ex: joaosilva"
-                                    value={formData.username}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Email</label>
-                                <input
-                                    name="email"
-                                    type="email"
-                                    className="w-full rounded-3xl border-2 border-transparent bg-white dark:bg-white/5 h-16 pl-6 text-base font-bold transition-all outline-none focus:bg-white dark:focus:bg-black/20 focus:border-primary shadow-sm"
-                                    placeholder="seu@email.com"
-                                    value={formData.email}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Telefone</label>
-                                <input
-                                    name="phone"
-                                    className="w-full rounded-3xl border-2 border-transparent bg-white dark:bg-white/5 h-16 pl-6 text-base font-bold transition-all outline-none focus:bg-white dark:focus:bg-black/20 focus:border-primary shadow-sm"
-                                    placeholder="(11) 99999-9999"
-                                    value={formData.phone}
-                                    onChange={handleChange}
-                                />
-                            </div>
-                        </div>
-                    )}
-
-                    {step === 2 && (
-                        <div className="space-y-6 animate-fadeIn">
-                            <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Selecione seu Perfil</label>
                             <div className="grid grid-cols-1 gap-4">
                                 {[
                                     { id: 'owner', label: t('owner'), icon: 'pets' },
@@ -154,43 +115,102 @@ const RegisterView: React.FC = () => {
                                 ].map(role => (
                                     <button
                                         key={role.id}
-                                        onClick={() => setFormData({ ...formData, role: role.id as any })}
-                                        className={`flex items-center gap-4 p-5 rounded-3xl border-2 transition-all ${formData.role === role.id ? 'bg-primary/10 border-primary' : 'bg-white dark:bg-white/5 border-transparent'}`}
+                                        onClick={() => {
+                                            setFormData({ ...formData, role: role.id as any });
+                                            setStep(2);
+                                        }}
+                                        className={`flex items-center gap-4 p-5 rounded-3xl border-2 transition-all hover:scale-[1.02] active:scale-[0.98] duration-300 ${formData.role === role.id ? 'bg-primary/10 border-primary shadow-lg shadow-primary/10' : 'bg-white dark:bg-white/5 border-transparent shadow-sm'}`}
                                     >
-                                        <div className={`size-12 rounded-2xl flex items-center justify-center ${formData.role === role.id ? 'bg-primary text-[#050705]' : 'bg-gray-100 dark:bg-white/10 text-gray-400'}`}>
+                                        <div className={`size-12 rounded-2xl flex items-center justify-center transition-colors ${formData.role === role.id ? 'bg-primary text-[#050705]' : 'bg-gray-100 dark:bg-white/10 text-gray-400'}`}>
                                             <span className="material-symbols-outlined text-2xl font-black">{role.icon}</span>
                                         </div>
                                         <span className="text-base font-bold flex-1 text-left">{role.label}</span>
-                                        {formData.role === role.id && <span className="material-symbols-outlined text-primary">check_circle</span>}
+                                        <span className={`material-symbols-outlined transition-opacity ${formData.role === role.id ? 'text-primary opacity-100' : 'opacity-0'}`}>arrow_forward</span>
                                     </button>
                                 ))}
                             </div>
                         </div>
                     )}
 
-                    {step === 3 && (
+                    {step === 2 && (
                         <div className="space-y-6 animate-fadeIn">
-                            <div className="space-y-2">
-                                <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Senha</label>
-                                <input
-                                    name="password"
-                                    type="password"
-                                    className="w-full rounded-3xl border-2 border-transparent bg-white dark:bg-white/5 h-16 pl-6 text-base font-bold transition-all outline-none focus:bg-white dark:focus:bg-black/20 focus:border-primary shadow-sm"
-                                    placeholder="••••••••"
-                                    value={formData.password}
-                                    onChange={handleChange}
-                                />
+                            {/* Personal Info Group */}
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Nome</label>
+                                        <input
+                                            name="fullName"
+                                            className="input-premium h-12"
+                                            placeholder="João Silva"
+                                            value={formData.fullName}
+                                            onChange={handleChange}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Usuário</label>
+                                        <input
+                                            name="username"
+                                            className="input-premium h-12"
+                                            placeholder="joao.silva"
+                                            value={formData.username}
+                                            onChange={handleChange}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Email</label>
+                                    <input
+                                        name="email"
+                                        type="email"
+                                        className="input-premium h-12"
+                                        placeholder="seu@email.com"
+                                        value={formData.email}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Telefone</label>
+                                    <input
+                                        name="phone"
+                                        className="input-premium h-12"
+                                        placeholder="(11) 99999-9999"
+                                        value={formData.phone}
+                                        onChange={handleChange}
+                                    />
+                                </div>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Confirmar Senha</label>
-                                <input
-                                    name="confirmPassword"
-                                    type="password"
-                                    className="w-full rounded-3xl border-2 border-transparent bg-white dark:bg-white/5 h-16 pl-6 text-base font-bold transition-all outline-none focus:bg-white dark:focus:bg-black/20 focus:border-primary shadow-sm"
-                                    placeholder="••••••••"
-                                    value={formData.confirmPassword}
-                                    onChange={handleChange}
-                                />
+
+                            <div className="w-full h-px bg-gray-100 dark:bg-white/5 my-2"></div>
+
+                            {/* Password Group */}
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Senha</label>
+                                        <input
+                                            name="password"
+                                            type="password"
+                                            className="input-premium h-12"
+                                            placeholder="••••••"
+                                            value={formData.password}
+                                            onChange={handleChange}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Confirmar</label>
+                                        <input
+                                            name="confirmPassword"
+                                            type="password"
+                                            className="input-premium h-12"
+                                            placeholder="••••••"
+                                            value={formData.confirmPassword}
+                                            onChange={handleChange}
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -199,25 +219,27 @@ const RegisterView: React.FC = () => {
                         {step > 1 && (
                             <button
                                 onClick={() => setStep(step - 1)}
-                                className="w-16 h-16 bg-gray-100 dark:bg-white/5 rounded-3xl flex items-center justify-center text-gray-400 hover:text-primary transition-all"
+                                className="w-16 h-16 bg-gray-100 dark:bg-white/5 rounded-3xl flex items-center justify-center text-gray-400 hover:text-primary transition-all active:scale-95"
                             >
                                 <span className="material-symbols-outlined font-black">arrow_back</span>
                             </button>
                         )}
-                        <button
-                            onClick={step < 3 ? handleNextStep : handleRegister}
-                            disabled={loading}
-                            className="btn-primary flex-1 h-16 text-sm uppercase tracking-widest"
-                        >
-                            {loading ? (
-                                <div className="w-6 h-6 border-4 border-[#050705] border-t-transparent rounded-full animate-spin"></div>
-                            ) : (
-                                <>
-                                    <span>{step < 3 ? 'Próximo' : 'Finalizar Cadastro'}</span>
-                                    <span className="material-symbols-outlined font-black">chevron_right</span>
-                                </>
-                            )}
-                        </button>
+                        {step === 2 && (
+                            <button
+                                onClick={handleRegister}
+                                disabled={loading}
+                                className="btn-primary flex-1 h-16 text-sm uppercase tracking-widest"
+                            >
+                                {loading ? (
+                                    <div className="w-6 h-6 border-4 border-[#050705] border-t-transparent rounded-full animate-spin"></div>
+                                ) : (
+                                    <>
+                                        <span>Finalizar Cadastro</span>
+                                        <span className="material-symbols-outlined font-black">check</span>
+                                    </>
+                                )}
+                            </button>
+                        )}
                     </div>
 
 
