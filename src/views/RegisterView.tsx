@@ -14,11 +14,12 @@ const RegisterView: React.FC = () => {
     // Form State
     const [formData, setFormData] = useState({
         fullName: '',
+        username: '',
         email: '',
         phone: '',
         password: '',
         confirmPassword: '',
-        role: 'owner' as 'owner' | 'walker' | 'business'
+        role: 'owner' as 'owner' | 'walker' | 'boarding' | 'petshop' | 'grooming'
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -27,12 +28,16 @@ const RegisterView: React.FC = () => {
 
     const handleNextStep = () => {
         if (step === 1) {
-            if (!formData.fullName || !formData.email || !formData.phone) {
+            if (!formData.fullName || !formData.email || !formData.phone || !formData.username) {
                 showNotification('Por favor, preencha todos os campos obrigatórios.', 'error');
                 return;
             }
             if (!/\S+@\S+\.\S+/.test(formData.email)) {
                 showNotification('E-mail inválido', 'error');
+                return;
+            }
+            if (formData.username.length < 3) {
+                showNotification('O nome de usuário deve ter pelo menos 3 caracteres.', 'error');
                 return;
             }
         }
@@ -54,8 +59,10 @@ const RegisterView: React.FC = () => {
             const { error: signUpError } = await authService.signUp(formData.email, formData.password, {
                 data: {
                     full_name: formData.fullName,
+                    username: formData.username.toLowerCase(),
                     phone: formData.phone,
-                    role: formData.role
+                    role: formData.role,
+                    email: formData.email // Include email in metadata for trigger/lookup
                 }
             });
 
@@ -102,6 +109,16 @@ const RegisterView: React.FC = () => {
                                 />
                             </div>
                             <div className="space-y-2">
+                                <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Nome de Usuário</label>
+                                <input
+                                    name="username"
+                                    className="w-full rounded-3xl border-2 border-transparent bg-white dark:bg-white/5 h-16 pl-6 text-base font-bold transition-all outline-none focus:bg-white dark:focus:bg-black/20 focus:border-primary shadow-sm"
+                                    placeholder="Ex: joaosilva"
+                                    value={formData.username}
+                                    onChange={handleChange}
+                                />
+                            </div>
+                            <div className="space-y-2">
                                 <label className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] ml-2 leading-none">Email</label>
                                 <input
                                     name="email"
@@ -132,7 +149,8 @@ const RegisterView: React.FC = () => {
                                 {[
                                     { id: 'owner', label: t('owner'), icon: 'pets' },
                                     { id: 'walker', label: t('walker'), icon: 'directions_walk' },
-                                    { id: 'business', label: t('business'), icon: 'content_cut' }
+                                    { id: 'boarding', label: t('boarding'), icon: 'home' },
+                                    { id: 'petshop', label: 'Petshop ou Banho e Tosa', icon: 'storefront' }
                                 ].map(role => (
                                     <button
                                         key={role.id}

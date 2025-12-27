@@ -5,38 +5,38 @@ export const MOCK_DOGS: Dog[] = [
     {
         id: '1',
         name: 'Thor',
-        age: 2,
+        age: '2 anos',
         breed: 'Golden Retriever',
         distance: '2 km',
         location: 'Copacabana',
         match: 98,
-        bio: 'Adoro correr no parque e nadar! 🎾 I love running at the park and swimming!',
-        imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCIgw68kCAjAjep3K-dc6QYoTA5p_yaGH5-JJRPXgjMgKLsFHuO-ISxCU2MG83064lLyCiffcngvSpmizGsaQtUNDsW2-I0D2DClUkfiMbvBLn-mlMat8-1xinadvDwQmlPPqpgC2q5xmcxxHs23rsW3y5z-31_0Nm_iOJEb8NkGrmnX_iNH9kqjyUB25FSxuMCHJ913e2HdBRZvwNb0VDTrMXn4YCD8riPdIelMVCmRtJgeIA3cgDRY07Zhpf7-n9jHFbK4dta3-AJ',
+        description: 'Adoro correr no parque e nadar! 🎾 I love running at the park and swimming!',
+        image_url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCIgw68kCAjAjep3K-dc6QYoTA5p_yaGH5-JJRPXgjMgKLsFHuO-ISxCU2MG83064lLyCiffcngvSpmizGsaQtUNDsW2-I0D2DClUkfiMbvBLn-mlMat8-1xinadvDwQmlPPqpgC2q5xmcxxHs23rsW3y5z-31_0Nm_iOJEb8NkGrmnX_iNH9kqjyUB25FSxuMCHJ913e2HdBRZvwNb0VDTrMXn4YCD8riPdIelMVCmRtJgeIA3cgDRY07Zhpf7-n9jHFbK4dta3-AJ',
         traits: ['Vaccinated', 'Neutered', 'High Energy'],
         is_castrated: true
     },
     {
         id: '2',
         name: 'Rex',
-        age: 4,
+        age: '4 anos',
         breed: 'Golden Retriever',
         distance: '2 km',
         location: 'Ipanema',
         match: 95,
-        bio: "Olá! I'm a super energetic Golden who loves long walks on the beach.",
-        imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBw74xqbgAl2rKhAn1gJXd98vS696SypOti2sG5rD6leUTfTRMdI8wbvZcQoY2q3NAqtW5UiD-ok7DaPyqAFVuS6CnZGUqxhFnyxVuvsjzT66WttV7HlwOedKKwunea5tMvBtZIjuAqCItrdoyG5MAQG0o_7J1XsRZDEySXPem9QYAiX9UoQS1Jnx6agb8uAxhe58AD6AgQQhPl6C8agUX-IBRax6NZBoLfk9aQ8ANUwx0MaCsP2k2NZp-bV3h8CUUc5rodBkybQOrF',
+        description: "Olá! I'm a super energetic Golden who loves long walks on the beach.",
+        image_url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBw74xqbgAl2rKhAn1gJXd98vS696SypOti2sG5rD6leUTfTRMdI8wbvZcQoY2q3NAqtW5UiD-ok7DaPyqAFVuS6CnZGUqxhFnyxVuvsjzT66WttV7HlwOedKKwunea5tMvBtZIjuAqCItrdoyG5MAQG0o_7J1XsRZDEySXPem9QYAiX9UoQS1Jnx6agb8uAxhe58AD6AgQQhPl6C8agUX-IBRax6NZBoLfk9aQ8ANUwx0MaCsP2k2NZp-bV3h8CUUc5rodBkybQOrF',
         traits: ['Vaccinated', 'Loves Beach', 'Social']
     },
     {
         id: '3',
         name: 'Max',
-        age: 1,
+        age: '1 ano',
         breed: 'French Bulldog',
         distance: '1.5 km',
         location: 'Botafogo',
         match: 87,
-        bio: 'Small but full of personality. I love belly rubs!',
-        imageUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB303FhK5TXzuaKiUYh2fVCuDReCvRHov6YEz-TbfdekV2okEHBaxn5ogCUdwG_2XXc-xPEz8673DOIqx1zsDzEfSP4Sz-W2AVihqQm874y-sqivH01hFpRviBy3qWf6vBczCETeDws9eFpAXDwbgRLkYRFCHG__YYSxupRQVEQ-9D0MtDK6aSnqOac_5Z5BO56YTqp-johPHlDkw2IPCVk2LsiWZkhSLCviZUbgMvTh0F7JsqYNGKn7Lql9EzgKRio5lVkyHJQmLZu',
+        description: 'Small but full of personality. I love belly rubs!',
+        image_url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB303FhK5TXzuaKiUYh2fVCuDReCvRHov6YEz-TbfdekV2okEHBaxn5ogCUdwG_2XXc-xPEz8673DOIqx1zsDzEfSP4Sz-W2AVihqQm874y-sqivH01hFpRviBy3qWf6vBczCETeDws9eFpAXDwbgRLkYRFCHG__YYSxupRQVEQ-9D0MtDK6aSnqOac_5Z5BO56YTqp-johPHlDkw2IPCVk2LsiWZkhSLCviZUbgMvTh0F7JsqYNGKn7Lql9EzgKRio5lVkyHJQmLZu',
         traits: ['Puppy', 'Vaccinated', 'Chill']
     }
 ];

@@ -27,10 +27,6 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
             showNotification('Por favor, preencha todos os campos', 'error');
             return false;
         }
-        if (!/\S+@\S+\.\S+/.test(email)) {
-            showNotification('E-mail inválido', 'error');
-            return false;
-        }
         return true;
     };
 
@@ -60,12 +56,14 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                 const profile = await authService.getProfile(user.id);
                 onLogin();
 
-                if (profile?.role === 'user') {
-                    navigate('/walkers');
-                } else if (profile?.role === 'provider' || profile?.role === 'business') {
-                    navigate('/feed');
-                } else {
+                // Optimized role-based routing
+                // Optimized routing based on onboarding status
+                const hasCompletedOnboarding = !!(profile as any)?.latitude;
+
+                if (!hasCompletedOnboarding) {
                     navigate('/onboarding');
+                } else {
+                    navigate('/feed');
                 }
                 showNotification('Bem-vindo de volta!', 'success');
             }
@@ -131,7 +129,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                             <input
                                 className="w-full rounded-3xl border-2 border-transparent bg-white dark:bg-white/5 h-16 pl-6 pr-12 text-base font-bold transition-all outline-none focus:bg-white dark:focus:bg-black/20 focus:border-primary shadow-sm focus:shadow-xl focus:shadow-primary/5"
                                 placeholder={t('email_placeholder')}
-                                type="email"
+                                type="text"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                             />

@@ -16,8 +16,8 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
     const [step, setStep] = useState(0);
     const [selectedRole, setSelectedRole] = useState<UserRole>(UserRole.OWNER);
     const [coords, setCoords] = useState<{ lat: number, lng: number } | null>(null);
-    const [city, setCity] = useState<string>('Rio de Janeiro');
-    const [selectedCountry, setSelectedCountry] = useState<string>('BR');
+    const [city, setCity] = useState<string>('Lisboa');
+    const [selectedCountry, setSelectedCountry] = useState<string>('PT');
     const [isEurope, setIsEurope] = useState(false);
 
     React.useEffect(() => {
@@ -67,6 +67,8 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
         bio: ''
     });
 
+    const [hasShop, setHasShop] = useState(false);
+
     const [uploading, setUploading] = useState(false);
     const [uploadingDoc, setUploadingDoc] = useState(false);
 
@@ -96,7 +98,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
 
             if (type === 'pet') {
                 setDogData({ ...dogData, photo: data.publicUrl });
-            } else if (selectedRole === UserRole.BUSINESS) {
+            } else if (selectedRole === UserRole.PETSHOP || selectedRole === UserRole.GROOMING) {
                 setBusinessData({ ...businessData, doc_url: data.publicUrl });
             } else {
                 setProviderData({ ...providerData, doc_url: data.publicUrl });
@@ -116,11 +118,19 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
             setStep(1);
         } else if (step === 1) {
             setStep(2);
-        } else if (selectedRole === UserRole.WALKER && step < 4) {
-            setStep(step + 1);
-        } else if (selectedRole === UserRole.BUSINESS && step < 3) {
-            setStep(step + 1);
-        } else {
+        } else if (selectedRole === UserRole.WALKER || selectedRole === UserRole.BOARDING) {
+            if (step < 4) { // Walker/Boarding has 3 steps after country (2, 3, 4)
+                setStep(step + 1);
+            } else {
+                handleFinish();
+            }
+        } else if (selectedRole === UserRole.PETSHOP || selectedRole === UserRole.GROOMING) {
+            if (step < 3) { // Petshop/Grooming has 2 steps after country (2, 3)
+                setStep(step + 1);
+            } else {
+                handleFinish();
+            }
+        } else { // Owner
             handleFinish();
         }
     };
@@ -135,17 +145,16 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
         try {
             // Update profile
             const { error: profileError } = await (authService as any).supabase.from('profiles').update({
-                role: selectedRole === UserRole.OWNER ? 'owner' :
-                    selectedRole === UserRole.BUSINESS ? 'business' : 'walker',
-                address: selectedRole === UserRole.WALKER ? providerData.address :
-                    selectedRole === UserRole.BUSINESS ? businessData.address : null,
-                provider_services: selectedRole === UserRole.WALKER ? providerData.services : null,
-                document_url: selectedRole === UserRole.WALKER ? providerData.doc_url :
-                    selectedRole === UserRole.BUSINESS ? businessData.doc_url : null,
-                country: selectedCountry,
-                business_name: selectedRole === UserRole.BUSINESS ? businessData.name : null,
-                tax_id: selectedRole === UserRole.BUSINESS ? businessData.tax_id : null,
-                business_type: selectedRole === UserRole.BUSINESS ? businessData.type : 'none',
+                role: selectedRole,
+                address: (selectedRole === UserRole.WALKER || selectedRole === UserRole.BOARDING || selectedRole === UserRole.PETSHOP || selectedRole === UserRole.GROOMING) ? providerData.address : null,
+                provider_services: (selectedRole === UserRole.WALKER || selectedRole === UserRole.BOARDING) ? providerData.services : null,
+                document_url: (selectedRole !== UserRole.OWNER) ? providerData.doc_url : null,
+                country: 'PT',
+                business_name: (selectedRole === UserRole.PETSHOP || selectedRole === UserRole.GROOMING) ? businessData.name : null,
+                tax_id: (selectedRole === UserRole.PETSHOP || selectedRole === UserRole.GROOMING) ? businessData.tax_id : null,
+                business_type: (selectedRole === UserRole.PETSHOP || selectedRole === UserRole.GROOMING) ? businessData.type : 'none',
+                has_shop: hasShop,
+                email: user.email,
                 latitude: coords?.lat,
                 longitude: coords?.lng
             }).eq('id', user.id);
@@ -195,7 +204,9 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
     const roles = [
         { id: UserRole.OWNER, title: t('owner'), icon: 'pets' },
         { id: UserRole.WALKER, title: t('walker'), icon: 'directions_walk' },
-        { id: UserRole.BUSINESS, title: t('business'), icon: 'content_cut' }
+        { id: UserRole.BOARDING, title: t('boarding'), icon: 'home' },
+        { id: UserRole.PETSHOP, title: t('petshop'), icon: 'storefront' },
+        { id: UserRole.GROOMING, title: t('grooming'), icon: 'content_cut' }
     ];
 
     return (
@@ -210,7 +221,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                     {step === 0 ? 'Dog Drive' :
                         step === 1 ? (selectedCountry === 'BR' ? t('brazil') : t('europe')) :
                             selectedRole === UserRole.OWNER ? t('owner') :
-                                selectedRole === UserRole.BUSINESS ? t('business') : t('walker')}
+                                (selectedRole === UserRole.PETSHOP || selectedRole === UserRole.GROOMING) ? t('business') : t('walker')}
                 </div>
                 {step === 0 && <div className="w-10" />}
             </header>
@@ -249,44 +260,24 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                     </div>
                 </>
             ) : step === 1 ? (
-                // Step 1: Country Selection
+                // Step 1: Country Selection (Portugal only now)
                 <div className="space-y-6 animate-fadeIn">
                     <div className="mb-8">
-                        <h1 className="text-3xl font-black mb-2">{t('select_country')} 🌍</h1>
-                        <p className="text-gray-500 font-medium">Onde você se encontra?</p>
+                        <h1 className="text-3xl font-black mb-2">{t('select_country')} 🇵🇹</h1>
+                        <p className="text-gray-500 font-medium">Você será registrado em Portugal.</p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <button
-                            onClick={() => { setSelectedCountry('BR'); setIsEurope(false); }}
-                            className={`p-6 rounded-3xl border-2 flex flex-col items-center gap-3 transition-all ${selectedCountry === 'BR' ? 'bg-primary/10 border-primary' : 'bg-white dark:bg-surface-dark border-transparent'}`}
-                        >
-                            <span className="text-4xl">🇧🇷</span>
-                            <span className="font-bold">{t('brazil')}</span>
-                        </button>
-                        <button
-                            onClick={() => { setIsEurope(true); setSelectedCountry('PT'); }}
-                            className={`p-6 rounded-3xl border-2 flex flex-col items-center gap-3 transition-all ${isEurope ? 'bg-primary/10 border-primary' : 'bg-white dark:bg-surface-dark border-transparent'}`}
-                        >
-                            <span className="text-4xl">🇪🇺</span>
-                            <span className="font-bold">{t('europe')}</span>
-                        </button>
-                    </div>
-
-                    {isEurope && (
-                        <div className="mt-6">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">País da Europa</label>
-                            <select
-                                value={selectedCountry}
-                                onChange={(e) => setSelectedCountry(e.target.value)}
-                                className="w-full h-16 bg-white dark:bg-surface-dark rounded-3xl px-6 font-bold border-2 border-transparent focus:border-primary/30 transition-all shadow-sm appearance-none"
-                            >
-                                {Object.entries(t('countries') as any).map(([code, name]: [string, any]) => (
-                                    <option key={code} value={code}>{name}</option>
-                                ))}
-                            </select>
+                    <div className="p-8 rounded-[2.5rem] bg-primary/10 border-4 border-primary/20 flex flex-col items-center gap-4 text-center">
+                        <span className="text-6xl animate-bounce">🇵🇹</span>
+                        <div>
+                            <h2 className="text-2xl font-black uppercase tracking-tight">Portugal</h2>
+                            <p className="text-sm font-bold text-primary uppercase tracking-widest mt-1">Região Ativa</p>
                         </div>
-                    )}
+                    </div>
+
+                    <p className="text-center text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] px-8">
+                        No momento, o Dog Drive está focado em oferecer a melhor experiência para a comunidade em Portugal.
+                    </p>
                 </div>
             ) : selectedRole === UserRole.OWNER ? (
                 // Step 2: Owner (Dog Info)
@@ -377,14 +368,14 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                         </div>
                     </div>
                 </div>
-            ) : selectedRole === UserRole.BUSINESS ? (
-                // Business Flow: Vet / Grooming
+            ) : (selectedRole === UserRole.PETSHOP || selectedRole === UserRole.GROOMING) ? (
+                // Business Flow: Shop / Grooming
                 <div className="space-y-6 animate-fadeIn pb-10">
                     {step === 2 && (
                         <>
                             <div className="mb-8">
-                                <h1 className="text-3xl font-black mb-2">Tipo de Negócio 🏢</h1>
-                                <p className="text-gray-500 font-medium">Selecione o serviço que sua empresa oferece.</p>
+                                <h1 className="text-3xl font-black mb-2">{t('business_type_title')} 🏢</h1>
+                                <p className="text-gray-500 font-medium">{t('business_type_subtitle')}</p>
                             </div>
                             <div className="space-y-4">
                                 {[
@@ -428,12 +419,12 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">{selectedCountry === 'BR' ? t('tax_id_br') : t('tax_id_eu')}</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">{t('tax_id_eu')}</label>
                                     <input
                                         type="text"
                                         value={businessData.tax_id}
                                         onChange={e => setBusinessData({ ...businessData, tax_id: e.target.value })}
-                                        placeholder={selectedCountry === 'BR' ? '00.000.000/0001-00' : 'Tax ID / VAT Number'}
+                                        placeholder="Tax ID / VAT Number"
                                         className="w-full h-16 bg-white dark:bg-surface-dark rounded-3xl px-6 font-bold border-2 border-transparent focus:border-primary transition-all shadow-sm"
                                     />
                                 </div>
@@ -460,6 +451,22 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                                             </label>
                                         )}
                                     </div>
+                                </div>
+
+                                <div className="mt-8 p-6 rounded-[2.5rem] bg-white dark:bg-surface-dark border-2 border-transparent hover:border-primary/20 transition-all flex items-center gap-4">
+                                    <div className={`size-14 rounded-2xl flex items-center justify-center transition-colors ${hasShop ? 'bg-primary/20 text-primary' : 'bg-gray-100 dark:bg-white/5 text-gray-400'}`}>
+                                        <span className="material-symbols-outlined text-3xl">shopping_bag</span>
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className="font-bold">{t('shop_function')}</h3>
+                                        <p className="text-xs text-gray-500 font-medium">Permitir venda de produtos no marketplace</p>
+                                    </div>
+                                    <button
+                                        onClick={() => setHasShop(!hasShop)}
+                                        className={`w-14 h-8 rounded-full relative transition-colors ${hasShop ? 'bg-primary' : 'bg-gray-200 dark:bg-white/10'}`}
+                                    >
+                                        <div className={`absolute top-1 size-6 bg-white rounded-full transition-all ${hasShop ? 'left-7' : 'left-1'} shadow-sm`} />
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -599,7 +606,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                     disabled={uploading || uploadingDoc}
                     className="w-full h-16 bg-primary text-[#102217] text-lg font-black rounded-3xl shadow-xl shadow-primary/20 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-widest disabled:opacity-50"
                 >
-                    <span>{(step < 2 || (selectedRole === UserRole.WALKER && step < 4) || (selectedRole === UserRole.BUSINESS && step < 3)) ? t('continue') : t('finish_btn')}</span>
+                    <span>{((selectedRole === UserRole.OWNER && step === 2) || ((selectedRole === UserRole.WALKER || selectedRole === UserRole.BOARDING) && step === 4) || ((selectedRole === UserRole.PETSHOP || selectedRole === UserRole.GROOMING) && step === 3)) ? t('finish_btn') : t('continue')}</span>
                     <span className="material-symbols-outlined font-black">arrow_forward</span>
                 </button>
             </div>

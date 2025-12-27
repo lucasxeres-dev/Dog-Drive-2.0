@@ -1,7 +1,9 @@
 export enum UserRole {
-    OWNER = 'owner',      // Dono do Pet
-    WALKER = 'walker',    // Passeador
-    BUSINESS = 'business' // Petshop ou Banho e Tosa
+    OWNER = 'owner',
+    WALKER = 'walker',
+    BOARDING = 'boarding',
+    PETSHOP = 'petshop',
+    GROOMING = 'grooming'
 }
 
 export interface UserProfile {
