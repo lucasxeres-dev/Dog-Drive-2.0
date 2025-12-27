@@ -48,6 +48,7 @@ export const authService = {
     },
 
     async signOut() {
+        localStorage.removeItem('dogdrive_guest');
         return await supabase.auth.signOut();
     },
 

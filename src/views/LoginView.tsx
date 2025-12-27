@@ -80,10 +80,9 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
     const handleGuestLogin = async () => {
         setLoading(true);
         try {
-            // Simulated guest login
+            localStorage.setItem('dogdrive_guest', 'true');
             onLogin();
-            navigate('/feed');
-            showNotification('Entrando como visitante...', 'info');
+            window.location.reload(); // Force reload to ensure useAuth picks up the guest state
         } catch (err) {
             showNotification('Ops, algo deu errado. Tente novamente.', 'error');
         } finally {

@@ -2,6 +2,7 @@ import React, { lazy, Suspense } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { NotificationProvider } from './contexts/NotificationContext';
+import { AuthProvider } from './contexts/AuthContext';
 import { useAuth } from './hooks/useAuth';
 import { dogService } from './services/dogService';
 import BottomNav from './components/BottomNav';
@@ -32,44 +33,52 @@ const LoadingFallback = () => (
     </div>
 );
 
-const App: React.FC = () => {
+const MainApp: React.FC = () => {
     const { profile, loading: isLoadingAuth, isAuthenticated } = useAuth();
 
     if (isLoadingAuth) return <LoadingFallback />;
 
     return (
+        <Router>
+            <div className="min-h-screen bg-[#050705] flex justify-center items-center p-0 md:p-4">
+                <div className="w-full max-w-[440px] h-[100dvh] md:h-[850px] bg-white dark:bg-background-dark md:rounded-[3rem] shadow-2xl relative overflow-hidden flex flex-col border border-white/5 font-sans">
+                    <Suspense fallback={<LoadingFallback />}>
+                        <Routes>
+                            <Route path="/" element={isAuthenticated ? <Navigate to="/feed" /> : <LandingView />} />
+                            <Route path="/login" element={<LoginView onLogin={() => { }} />} />
+                            <Route path="/register" element={<RegisterView />} />
+                            <Route path="/onboarding" element={<OnboardingView onSelectRole={() => { }} />} />
+                            <Route path="/feed" element={<FeedCheck isAuthenticated={isAuthenticated} role={profile?.role || null} />} />
+                            <Route path="/services" element={<ServicesView />} />
+                            <Route path="/walkers" element={<WalkerListView />} />
+                            <Route path="/chats" element={<ChatListView />} />
+                            <Route path="/chat/:id" element={<ChatDetailView />} />
+                            <Route path="/dog/:id" element={<ProfileDetailView />} />
+                            <Route path="/booking/:id" element={<BookingView />} />
+                            <Route path="/emergency" element={<EmergencyView />} />
+                            <Route path="/marketplace" element={<MarketplaceView />} />
+                            <Route path="/cart" element={<CartView />} />
+                            <Route path="/wallet" element={<WalletView />} />
+                            <Route path="/settings" element={<SettingsView />} />
+                            <Route path="/register-provider" element={<ProviderRegistrationView />} />
+                            <Route path="/map" element={<MapView />} />
+                            <Route path="*" element={<Navigate to="/" />} />
+                        </Routes>
+                    </Suspense>
+                    <AuthBottomNav isAuthenticated={isAuthenticated} preferences={profile?.preferences} role={profile?.role || null} />
+                </div>
+            </div>
+        </Router>
+    );
+};
+
+const App: React.FC = () => {
+    return (
         <LanguageProvider>
             <NotificationProvider>
-                <Router>
-                    <div className="min-h-screen bg-[#050705] flex justify-center items-center p-0 md:p-4">
-                        <div className="w-full max-w-[440px] h-[100dvh] md:h-[850px] bg-white dark:bg-background-dark md:rounded-[3rem] shadow-2xl relative overflow-hidden flex flex-col border border-white/5 font-sans">
-                            <Suspense fallback={<LoadingFallback />}>
-                                <Routes>
-                                    <Route path="/" element={isAuthenticated ? <Navigate to="/feed" /> : <LandingView />} />
-                                    <Route path="/login" element={<LoginView onLogin={() => { }} />} />
-                                    <Route path="/register" element={<RegisterView />} />
-                                    <Route path="/onboarding" element={<OnboardingView onSelectRole={() => { }} />} />
-                                    <Route path="/feed" element={<FeedCheck isAuthenticated={isAuthenticated} role={profile?.role || null} />} />
-                                    <Route path="/services" element={<ServicesView />} />
-                                    <Route path="/walkers" element={<WalkerListView />} />
-                                    <Route path="/chats" element={<ChatListView />} />
-                                    <Route path="/chat/:id" element={<ChatDetailView />} />
-                                    <Route path="/dog/:id" element={<ProfileDetailView />} />
-                                    <Route path="/booking/:id" element={<BookingView />} />
-                                    <Route path="/emergency" element={<EmergencyView />} />
-                                    <Route path="/marketplace" element={<MarketplaceView />} />
-                                    <Route path="/cart" element={<CartView />} />
-                                    <Route path="/wallet" element={<WalletView />} />
-                                    <Route path="/settings" element={<SettingsView />} />
-                                    <Route path="/register-provider" element={<ProviderRegistrationView />} />
-                                    <Route path="/map" element={<MapView />} />
-                                    <Route path="*" element={<Navigate to="/" />} />
-                                </Routes>
-                            </Suspense>
-                            <AuthBottomNav isAuthenticated={isAuthenticated} preferences={profile?.preferences} role={profile?.role || null} />
-                        </div>
-                    </div>
-                </Router>
+                <AuthProvider>
+                    <MainApp />
+                </AuthProvider>
             </NotificationProvider>
         </LanguageProvider>
     );

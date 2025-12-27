@@ -1,0 +1,89 @@
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { authService } from '../services/authService';
+import { UserProfile } from '../types';
+
+interface AuthContextType {
+    user: any | null;
+    profile: UserProfile | null;
+    loading: boolean;
+    isAuthenticated: boolean;
+    refreshProfile: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+    const [user, setUser] = useState<any>(null);
+    const [profile, setProfile] = useState<UserProfile | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    const refreshProfile = async () => {
+        if (user) {
+            const userProfile = await authService.getProfile(user.id);
+            setProfile(userProfile);
+        }
+    };
+
+    useEffect(() => {
+        const initAuth = async () => {
+            try {
+                // Check for guest session in localStorage first
+                const isGuest = localStorage.getItem('dogdrive_guest') === 'true';
+                if (isGuest) {
+                    setUser({ id: 'guest-id', email: 'guest@dogdrive.com' });
+                    setProfile({ role: 'user', id: 'guest-id' } as any);
+                    setLoading(false);
+                    return;
+                }
+
+                const { data: { session } } = await authService.getSession();
+                if (session) {
+                    setUser(session.user);
+                    const userProfile = await authService.getProfile(session.user.id);
+                    setProfile(userProfile);
+                }
+            } catch (err) {
+                console.error('Auth initialization error:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        initAuth();
+
+        const { data: { subscription } } = authService.onAuthStateChange(async (event, session) => {
+            console.log('Auth state change event:', event);
+            if (session) {
+                setUser(session.user);
+                const userProfile = await authService.getProfile(session.user.id);
+                setProfile(userProfile);
+            } else if (localStorage.getItem('dogdrive_guest') !== 'true') {
+                setUser(null);
+                setProfile(null);
+            }
+            setLoading(false);
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
+
+    return (
+        <AuthContext.Provider value={{
+            user,
+            profile,
+            loading,
+            isAuthenticated: !!user,
+            refreshProfile
+        }}>
+            {children}
+        </AuthContext.Provider>
+    );
+};
+
+export const useAuthContext = () => {
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error('useAuthContext must be used within an AuthProvider');
+    }
+    return context;
+};
