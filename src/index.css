@@ -5,41 +5,47 @@
 @tailwind utilities;
 
 :root {
-  --primary: #27f17b;
-  --primary-glow: rgba(39, 241, 123, 0.3);
-  --secondary: #102217;
-  --background-light: #f8faf9;
-  --background-dark: #0a0d0b;
+  --primary: #22c55e;
+  --primary-hover: #16a34a;
+  --primary-glow: rgba(34, 197, 94, 0.3);
+  --secondary: #0f172a;
+  --background-light: #f8fafc;
+  --background-dark: #020617;
   --surface-light: #ffffff;
-  --surface-dark: #141a16;
-  --text-light: #0d110f;
-  --text-dark: #f0f7f3;
+  --surface-dark: #0f172a;
+  --text-light: #0f172a;
+  --text-dark: #f8fafc;
   --glass: rgba(255, 255, 255, 0.7);
-  --glass-dark: rgba(20, 26, 22, 0.6);
+  --glass-dark: rgba(15, 23, 42, 0.7);
+  --border-light: rgba(0, 0, 0, 0.05);
+  --border-dark: rgba(255, 255, 255, 0.1);
 }
 
 body {
-  @apply bg-[#050705] text-text-light dark:text-text-dark antialiased transition-colors duration-300;
+  @apply bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark antialiased transition-colors duration-300;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  @apply tracking-tight font-black uppercase leading-none;
+h1, h2, h3, h4, h5, h6 {
+  @apply tracking-tight font-black leading-tight;
 }
 
 @layer components {
   .btn-primary {
-    @apply h-14 bg-primary text-[#050705] font-black py-4 px-8 rounded-2xl shadow-[0_8px_30px_rgb(175, 255, 30, 0.2)] active:scale-95 transition-all duration-300 flex items-center justify-center gap-2;
+    @apply h-14 bg-primary text-white font-bold py-4 px-8 rounded-2xl shadow-lg shadow-primary/20 hover:bg-primary-hover active:scale-95 transition-all duration-300 flex items-center justify-center gap-2;
   }
 
-  .card {
-    @apply bg-white dark:bg-surface-dark p-6 rounded-3xl shadow-[0_8px_40px_rgba(0, 0, 0, 0.04)] dark:shadow-[0_8px_40px_rgba(0, 0, 0, 0.2)] border border-gray-100 dark:border-white/5;
+  .glass-card {
+    @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-[2.5rem] shadow-xl;
+  }
+
+  .premium-card {
+    @apply bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-gray-100 dark:border-white/5;
+  }
+
+  .input-premium {
+    @apply w-full h-14 px-6 rounded-2xl bg-gray-50 dark:bg-slate-800/50 border border-gray-100 dark:border-white/5 focus:ring-2 focus:ring-primary/50 outline-none transition-all;
   }
 }
 
@@ -52,43 +58,20 @@ h6 {
   scrollbar-width: none;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.98);
-  }
-
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+@keyframes slide-up {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
-@keyframes slideUp {
-  from {
-    transform: translateY(30px);
-    opacity: 0;
-  }
-
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.animate-fadeIn {
-  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.animate-slideUp {
-  animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.animate-slide-up {
+  animation: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* Custom range input styling */
 input[type='range'] {
-  @apply appearance-none h-2 bg-gray-100 dark:bg-white/5 rounded-full outline-none;
+  @apply appearance-none h-2 bg-gray-200 dark:bg-white/10 rounded-full outline-none;
 }
 
 input[type='range']::-webkit-slider-thumb {
-  @apply appearance-none w-6 h-6 bg-primary border-4 border-white dark:border-surface-dark rounded-full shadow-lg transition-transform active:scale-125;
+  @apply appearance-none w-6 h-6 bg-primary border-4 border-white dark:border-slate-900 rounded-full shadow-lg transition-transform active:scale-125;
 }

@@ -4,73 +4,25 @@ import { useTranslation } from '../contexts/LanguageContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useAuth } from '../hooks/useAuth';
 import { authService } from '../services/authService';
-import { dogService } from '../services/dogService';
-import FilterModal from '../components/FilterModal';
+import SwipeCard from '../components/SwipeCard';
 import { Dog } from '../types';
+import { MapPin, SlidersHorizontal, Heart, X, Info } from 'lucide-react';
+import FilterModal from '../components/FilterModal';
+import { AnimatePresence, motion } from 'framer-motion';
 
 const FeedView: React.FC = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
     const { showNotification } = useNotification();
-    const { user, profile } = useAuth();
+    const { user } = useAuth();
     const [dogs, setDogs] = useState<Dog[]>([]);
     const [loading, setLoading] = useState(true);
     const [showFilters, setShowFilters] = useState(false);
     const [maxDistance, setMaxDistance] = useState(10);
-    const [location, setLocation] = useState<{ lat: number, lng: number } | null>(null);
-    const [locationName, setLocationName] = useState<string>(t('loading_location') || 'Rio de Janeiro');
-
-    const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-        const R = 6371; // Radius of the earth in km
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a =
-            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon / 2) * Math.sin(dLon / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return R * c;
-    };
-
-    const reverseGeocode = async (lat: number, lng: number) => {
-        try {
-            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10`);
-            const data = await response.json();
-            const city = data.address.city || data.address.town || data.address.village || data.address.suburb || 'Local Desconhecido';
-            setLocationName(city);
-        } catch (error) {
-            setLocationName('Rio de Janeiro');
-        }
-    };
+    const [locationName, setLocationName] = useState<string>('Rio de Janeiro');
+    const [currentIndex, setCurrentIndex] = useState(0);
 
     useEffect(() => {
-        // Fetch current position
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                async (position) => {
-                    const { latitude: lat, longitude: lng } = position.coords;
-                    setLocation({ lat, lng });
-                    reverseGeocode(lat, lng);
-
-                    // Update profile location if authenticated
-                    if (user) {
-                        try {
-                            await (authService as any).supabase.from('profiles').update({
-                                latitude: lat,
-                                longitude: lng,
-                                last_active: new Date().toISOString()
-                            }).eq('id', user.id);
-                        } catch (e) {
-                            console.error('Failed to update profile location', e);
-                        }
-                    }
-                },
-                () => {
-                    setLocationName('Rio de Janeiro');
-                }
-            );
-        }
-
         const fetchDogsData = async () => {
             setLoading(true);
             try {
@@ -80,24 +32,13 @@ const FeedView: React.FC = () => {
                     .order('created_at', { ascending: false });
 
                 if (error) throw error;
-
                 if (data) {
-                    setDogs(data.map((d: any) => {
-                        let distanceStr = 'Calculando...';
-                        if (location && d.latitude && d.longitude) {
-                            const dist = calculateDistance(location.lat, location.lng, d.latitude, d.longitude);
-                            distanceStr = dist < 1 ? `${Math.round(dist * 1000)}m` : `${dist.toFixed(1)}km`;
-                        } else if (d.distance) {
-                            distanceStr = d.distance;
-                        }
-
-                        return {
-                            ...d,
-                            imageUrl: d.image_url,
-                            distance: distanceStr,
-                            match: d.match_percentage || 95
-                        };
-                    }) as Dog[]);
+                    setDogs(data.map((d: any) => ({
+                        ...d,
+                        imageUrl: d.image_url,
+                        distance: '2.5km',
+                        match: d.match_percentage || 95
+                    })) as Dog[]);
                 }
             } catch (err: any) {
                 showNotification(err.message || 'Erro ao carregar feeds', 'error');
@@ -107,97 +48,143 @@ const FeedView: React.FC = () => {
         };
 
         fetchDogsData();
-    }, [user, location]); // Depend on location for dynamic distance recalculation
+    }, [user]);
+
+    const handleSwipe = (direction: 'left' | 'right') => {
+        if (direction === 'right') {
+            showNotification('Matched! ❤️', 'success');
+        }
+        setCurrentIndex(prev => prev + 1);
+    };
 
     if (loading) {
         return (
             <div className="flex-1 flex flex-col items-center justify-center bg-background-light dark:bg-background-dark">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                <div className="size-12 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
             </div>
         );
     }
 
+    const currentDogs = dogs.slice(currentIndex, currentIndex + 3).reverse();
+
     return (
-        <div className="flex-1 flex flex-col bg-background-light dark:bg-background-dark font-display h-screen overflow-hidden">
-            <header className="sticky top-0 z-50 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md px-6 pt-6 pb-4 shrink-0">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-black tracking-tight text-primary">DOG DRIVE</h1>
-                        <div className="flex items-center gap-1 text-[10px] uppercase font-bold tracking-widest opacity-50">
-                            <span className="material-symbols-outlined text-[12px]">location_on</span>
-                            {locationName}
-                        </div>
+        <div className="flex-1 flex flex-col bg-background-light dark:bg-background-dark h-screen overflow-hidden">
+            <header className="px-6 pt-8 pb-4 flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-black text-primary tracking-tighter">Dog-Drive</h1>
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">
+                        <MapPin size={12} className="text-primary" />
+                        {locationName}
                     </div>
-                    <button
-                        onClick={() => setShowFilters(true)}
-                        className="flex size-11 items-center justify-center rounded-2xl bg-white dark:bg-surface-dark shadow-sm border border-gray-100 dark:border-white/5 active:scale-90 transition-transform"
-                    >
-                        <span className="material-symbols-outlined text-2xl">tune</span>
-                    </button>
                 </div>
+                <button
+                    onClick={() => setShowFilters(true)}
+                    className="size-12 rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-gray-100 dark:border-white/5 flex items-center justify-center active:scale-90 transition-transform"
+                >
+                    <SlidersHorizontal size={20} className="text-slate-600 dark:text-slate-300" />
+                </button>
             </header>
 
-            <main className="flex-1 overflow-y-auto no-scrollbar px-4 pb-24 pt-2">
-                <div className="grid grid-cols-1 gap-6">
-                    {dogs.map((dog) => (
-                        <div
-                            key={dog.id}
-                            onClick={() => navigate(`/dog/${dog.id}`)}
-                            className="group relative w-full aspect-[4/5] bg-white dark:bg-surface-dark rounded-[2.5rem] shadow-xl shadow-black/5 overflow-hidden border border-gray-100 dark:border-white/5"
+            <main className="flex-1 relative px-4 mt-4 flex items-center justify-center">
+                <AnimatePresence>
+                    {currentDogs.length > 0 ? (
+                        currentDogs.map((dog, index) => (
+                            <SwipeCard
+                                key={dog.id}
+                                onSwipeLeft={() => handleSwipe('left')}
+                                onSwipeRight={() => handleSwipe('right')}
+                                className="z-[index]"
+                            >
+                                <div className="relative w-full h-[65vh] rounded-[3rem] overflow-hidden shadow-2xl">
+                                    <img
+                                        src={dog.imageUrl}
+                                        alt={dog.name}
+                                        className="absolute inset-0 w-full h-full object-cover"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+
+                                    <div className="absolute top-6 right-6">
+                                        <div className="glass-card !bg-white/20 !rounded-full px-4 py-1.5 text-[10px] font-black text-white uppercase tracking-wider">
+                                            {dog.match}% Match
+                                        </div>
+                                    </div>
+
+                                    <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
+                                        <div className="flex items-end justify-between">
+                                            <div>
+                                                <h2 className="text-4xl font-black tracking-tight leading-none">
+                                                    {dog.name}, <span className="font-light opacity-80">{dog.age}</span>
+                                                </h2>
+                                                <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary mt-2">{dog.breed}</p>
+                                            </div>
+                                            <button
+                                                onClick={() => navigate(`/dog/${dog.id}`)}
+                                                className="size-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/20 active:scale-90 transition-transform"
+                                            >
+                                                <Info size={24} />
+                                            </button>
+                                        </div>
+
+                                        <div className="flex items-center gap-6 mt-6 pt-6 border-t border-white/10">
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] uppercase font-black opacity-40">Distance</span>
+                                                <span className="text-sm font-bold tracking-tight">{dog.distance}</span>
+                                            </div>
+                                            <div className="w-px h-8 bg-white/10" />
+                                            <div className="flex flex-col grow">
+                                                <span className="text-[10px] uppercase font-black opacity-40">Location</span>
+                                                <span className="text-sm font-bold tracking-tight truncate">{dog.location}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </SwipeCard>
+                        ))
+                    ) : (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="flex flex-col items-center justify-center text-center p-8"
                         >
-                            <div className="absolute inset-0 bg-cover bg-center group-hover:scale-105 transition-transform duration-700" style={{ backgroundImage: `url(${dog.image_url})` }}></div>
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
-
-                            <div className="absolute top-4 right-4 flex flex-col gap-2">
-                                <div className="px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-white text-[10px] font-black uppercase tracking-wider">
-                                    {dog.match}% Match
-                                </div>
+                            <div className="size-20 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-6">
+                                <Heart size={40} className="text-slate-300 dark:text-slate-600" />
                             </div>
-
-                            <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-                                <div className="flex items-end justify-between mb-2">
-                                    <div>
-                                        <h2 className="text-3xl font-black leading-tight tracking-tight">
-                                            {dog.name}, <span className="font-light opacity-80">{dog.age}</span>
-                                        </h2>
-                                        <p className="text-xs font-bold uppercase tracking-widest opacity-60 mt-1">{dog.breed}</p>
-                                    </div>
-                                    <div className="size-12 rounded-2xl bg-primary flex items-center justify-center text-[#102217] shadow-lg shadow-primary/20">
-                                        <span className="material-symbols-outlined fill-current text-2xl">favorite</span>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-4 mt-4 py-4 border-t border-white/10">
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] uppercase font-black opacity-40">Distance</span>
-                                        <span className="text-sm font-bold tracking-tight">{dog.distance}</span>
-                                    </div>
-                                    <div className="w-px h-8 bg-white/10"></div>
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] uppercase font-black opacity-40">Location</span>
-                                        <span className="text-sm font-bold tracking-tight">{dog.location}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-                {dogs.length === 0 && !loading && (
-                    <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
-                        <span className="material-symbols-outlined text-6xl mb-4">pets</span>
-                        <p className="text-lg font-bold">Nenhum pet encontrado por perto.</p>
-                        <p className="text-sm">Tente ajustar seus filtros de distância.</p>
-                    </div>
-                )}
+                            <h3 className="text-xl font-black mb-2">Sem mais pets por perto</h3>
+                            <p className="text-sm text-slate-500 max-w-[200px]">Aumente sua distância nas configurações para ver mais!</p>
+                            <button
+                                onClick={() => setMaxDistance(50)}
+                                className="mt-8 px-8 py-3 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/20"
+                            >
+                                Recarregar
+                            </button>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </main>
 
-            {/* Filter Modal */}
+            {currentDogs.length > 0 && (
+                <div className="flex items-center justify-center gap-8 py-10">
+                    <button
+                        onClick={() => handleSwipe('left')}
+                        className="size-16 rounded-full bg-white dark:bg-slate-900 shadow-xl border border-gray-100 dark:border-white/5 flex items-center justify-center text-red-500 active:scale-90 transition-transform"
+                    >
+                        <X size={32} strokeWidth={3} />
+                    </button>
+                    <button
+                        onClick={() => handleSwipe('right')}
+                        className="size-20 rounded-full bg-primary shadow-2xl shadow-primary/40 flex items-center justify-center text-white active:scale-90 transition-transform"
+                    >
+                        <Heart size={40} fill="currentColor" strokeWidth={0} />
+                    </button>
+                </div>
+            )}
+
             <FilterModal
                 isOpen={showFilters}
                 onClose={() => setShowFilters(false)}
                 initialDistance={maxDistance}
                 onApply={(filters) => {
                     setMaxDistance(filters.maxDistance);
-                    // Handle location filtering if needed
                     setShowFilters(false);
                 }}
             />

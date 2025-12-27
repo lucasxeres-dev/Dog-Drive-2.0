@@ -24,6 +24,7 @@ const CartView = lazy(() => import('./views/CartView'));
 const WalletView = lazy(() => import('./views/WalletView'));
 const SettingsView = lazy(() => import('./views/SettingsView'));
 const ProviderRegistrationView = lazy(() => import('./views/ProviderRegistrationView'));
+const MapView = lazy(() => import('./views/MapView'));
 
 const LoadingFallback = () => (
     <div className="flex-1 flex items-center justify-center bg-background-light dark:bg-background-dark">
@@ -61,6 +62,7 @@ const App: React.FC = () => {
                                     <Route path="/wallet" element={<WalletView />} />
                                     <Route path="/settings" element={<SettingsView />} />
                                     <Route path="/register-provider" element={<ProviderRegistrationView />} />
+                                    <Route path="/map" element={<MapView />} />
                                     <Route path="*" element={<Navigate to="/" />} />
                                 </Routes>
                             </Suspense>
