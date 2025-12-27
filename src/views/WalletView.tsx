@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../contexts/LanguageContext';
-import { supabase } from '../lib/supabaseClient';
+import { useNotification } from '../contexts/NotificationContext';
+import { useAuth } from '../hooks/useAuth';
+import { authService } from '../services/authService';
 
 const WalletView: React.FC = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const { showNotification } = useNotification();
+    const { user } = useAuth();
     const [balance, setBalance] = useState(0);
     const [loading, setLoading] = useState(true);
     const [showBankForm, setShowBankForm] = useState(false);
@@ -13,71 +17,76 @@ const WalletView: React.FC = () => {
     const [transactions, setTransactions] = useState<any[]>([]);
 
     useEffect(() => {
-        fetchWalletData();
-    }, []);
+        if (user) {
+            fetchWalletData();
+        }
+    }, [user]);
 
     const fetchWalletData = async () => {
+        if (!user) return;
         setLoading(true);
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            navigate('/login');
-            return;
+
+        try {
+            // Fetch Wallet Balance
+            const { data: walletData, error: walletError } = await (authService as any).supabase
+                .from('wallets')
+                .select('balance')
+                .eq('user_id', user.id)
+                .single();
+
+            if (!walletError && walletData) {
+                setBalance(walletData.balance);
+            } else {
+                setBalance(1250.00); // Demo fallback
+            }
+
+            // Fetch Bank Details
+            const { data: bankResult, error: bankError } = await (authService as any).supabase
+                .from('bank_details')
+                .select('bank_name, account_type')
+                .eq('user_id', user.id)
+                .single();
+
+            if (!bankError && bankResult) {
+                setBankData({
+                    bank: bankResult.bank_name,
+                    account: '**** **** **** 7789', // Masked for demo
+                    type: bankResult.account_type
+                });
+            }
+
+            setTransactions([
+                { id: 1, title: 'Walk with Thor', date: 'Dec 24', amount: -45.00, type: 'payment' },
+                { id: 2, title: 'Store Deposit', date: 'Dec 22', amount: 500.00, type: 'deposit' },
+                { id: 3, title: 'Pet Toy Purchase', date: 'Dec 20', amount: -62.50, type: 'payment' }
+            ]);
+        } catch (err: any) {
+            showNotification(err.message || 'Erro ao carregar carteira', 'error');
+        } finally {
+            setLoading(false);
         }
-
-        // Fetch Wallet Balance
-        const { data: walletData, error: walletError } = await supabase
-            .from('wallets')
-            .select('balance')
-            .eq('user_id', user.id)
-            .single();
-
-        if (!walletError && walletData) {
-            setBalance(walletData.balance);
-        } else {
-            console.warn('No wallet found, setting default');
-            setBalance(1250.00); // Demo fallback
-        }
-
-        // Fetch Bank Details
-        const { data: bankResult, error: bankError } = await supabase
-            .from('bank_details')
-            .select('bank_name, account_type')
-            .eq('user_id', user.id)
-            .single();
-
-        if (!bankError && bankResult) {
-            setBankData({
-                bank: bankResult.bank_name,
-                account: '**** **** **** 7789', // Masked for demo
-                type: bankResult.account_type
-            });
-        }
-
-        setTransactions([
-            { id: 1, title: 'Walk with Thor', date: 'Dec 24', amount: -45.00, type: 'payment' },
-            { id: 2, title: 'Store Deposit', date: 'Dec 22', amount: 500.00, type: 'deposit' },
-            { id: 3, title: 'Pet Toy Purchase', date: 'Dec 20', amount: -62.50, type: 'payment' }
-        ]);
-
-        setLoading(false);
     };
 
     const saveBankDetails = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        const { error } = await supabase
-            .from('bank_details')
-            .upsert({
-                user_id: user.id,
-                bank_name: bankData.bank,
-                account_type: bankData.type,
-                encrypted_data: 'encrypted_placeholder' // Real encryption would go here
-            });
+        try {
+            const { error } = await (authService as any).supabase
+                .from('bank_details')
+                .upsert({
+                    user_id: user.id,
+                    bank_name: bankData.bank,
+                    account_type: bankData.type,
+                    encrypted_data: 'encrypted_placeholder'
+                });
 
-        if (!error) {
+            if (error) throw error;
+
+            showNotification('Dados bancários salvos!', 'success');
             setShowBankForm(false);
             fetchWalletData();
+        } catch (err: any) {
+            showNotification(err.message || 'Erro ao salvar dados bancários', 'error');
         }
     };
 

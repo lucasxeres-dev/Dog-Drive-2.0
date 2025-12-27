@@ -2,35 +2,44 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
+
 :root {
-  --primary: #afff1e;
-  --primary-glow: rgba(175, 255, 30, 0.4);
-  --secondary: #111814;
-  --background-light: #f8faf8;
-  --background-dark: #080a08;
+  --primary: #27f17b;
+  --primary-glow: rgba(39, 241, 123, 0.3);
+  --secondary: #102217;
+  --background-light: #f8faf9;
+  --background-dark: #0a0d0b;
   --surface-light: #ffffff;
-  --surface-dark: #111311;
+  --surface-dark: #141a16;
   --text-light: #0d110f;
   --text-dark: #f0f7f3;
+  --glass: rgba(255, 255, 255, 0.7);
+  --glass-dark: rgba(20, 26, 22, 0.6);
 }
 
 body {
   @apply bg-[#050705] text-text-light dark:text-text-dark antialiased transition-colors duration-300;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Plus Jakarta Sans', sans-serif;
   overflow: hidden;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   @apply tracking-tight font-black uppercase leading-none;
 }
 
 @layer components {
   .btn-primary {
-    @apply h-14 bg-primary text-[#050705] font-black py-4 px-8 rounded-2xl shadow-[0_8px_30px_rgb(175,255,30,0.2)] active:scale-95 transition-all duration-300 flex items-center justify-center gap-2;
+    @apply h-14 bg-primary text-[#050705] font-black py-4 px-8 rounded-2xl shadow-[0_8px_30px_rgb(175, 255, 30, 0.2)] active:scale-95 transition-all duration-300 flex items-center justify-center gap-2;
   }
 
   .card {
-    @apply bg-white dark:bg-surface-dark p-6 rounded-3xl shadow-[0_8px_40px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.2)] border border-gray-100 dark:border-white/5;
+    @apply bg-white dark:bg-surface-dark p-6 rounded-3xl shadow-[0_8px_40px_rgba(0, 0, 0, 0.04)] dark:shadow-[0_8px_40px_rgba(0, 0, 0, 0.2)] border border-gray-100 dark:border-white/5;
   }
 }
 

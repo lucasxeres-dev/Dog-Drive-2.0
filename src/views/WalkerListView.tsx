@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../contexts/LanguageContext';
-import { supabase } from '../lib/supabaseClient';
+import { useNotification } from '../contexts/NotificationContext';
+import { authService } from '../services/authService';
 import FilterModal from '../components/FilterModal';
 import { useLocation as useRouterLocation } from 'react-router-dom';
 
@@ -12,6 +13,7 @@ const WalkerListView: React.FC = () => {
     const serviceFilter = query.get('service') || 'walking';
 
     const { t } = useTranslation();
+    const { showNotification } = useNotification();
     const [sortBy, setSortBy] = useState<'nearby' | 'top_rated' | 'lowest_price'>('nearby');
     const [walkers, setWalkers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -58,45 +60,52 @@ const WalkerListView: React.FC = () => {
 
         const fetchWalkers = async () => {
             setLoading(true);
-            let query = supabase.from('profiles').select('*');
+            try {
+                let queryBuilder = (authService as any).supabase.from('profiles').select('*');
 
-            if (serviceFilter === 'walking') {
-                query = query.eq('role', 'provider').contains('provider_services', ['Passeador']);
-            } else if (serviceFilter === 'boarding') {
-                query = query.eq('role', 'provider').contains('provider_services', ['Hospedagem']);
-            } else if (serviceFilter === 'grooming') {
-                query = query.eq('role', 'business').eq('business_type', 'grooming');
-            } else if (serviceFilter === 'clinic') {
-                query = query.eq('role', 'business').eq('business_type', 'clinic');
+                if (serviceFilter === 'walking') {
+                    queryBuilder = queryBuilder.eq('role', 'provider').contains('provider_services', ['Passeador']);
+                } else if (serviceFilter === 'boarding') {
+                    queryBuilder = queryBuilder.eq('role', 'provider').contains('provider_services', ['Hospedagem']);
+                } else if (serviceFilter === 'grooming') {
+                    queryBuilder = queryBuilder.eq('role', 'business').eq('business_type', 'grooming');
+                } else if (serviceFilter === 'clinic') {
+                    queryBuilder = queryBuilder.eq('role', 'business').eq('business_type', 'clinic');
+                }
+
+                const { data, error } = await queryBuilder;
+
+                if (error) throw error;
+
+                if (data) {
+                    const enhanced = data.map((w: any) => {
+                        let dist = 999;
+                        if (location && w.latitude && w.longitude) {
+                            dist = calculateDistance(location.lat, location.lng, w.latitude, w.longitude);
+                        }
+
+                        return {
+                            ...w,
+                            name: w.business_name || w.full_name,
+                            specialty: w.business_type === 'clinic' ? 'Hospital Veterinário 24h' :
+                                w.business_type === 'grooming' ? 'Estética e Bem-estar' :
+                                    w.bio?.substring(0, 30) + '...' || 'Pet Specialist',
+                            price: w.business_type !== 'none' ? 120 : 35, // Mock price
+                            dist: dist,
+                            rating: 4.8 + (Math.random() * 0.2), // Still mock rating
+                            img: w.avatar_url || (w.business_type === 'clinic' ? 'https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?w=200' : 'https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg')
+                        };
+                    });
+                    setWalkers(enhanced);
+                }
+            } catch (err: any) {
+                showNotification(err.message || 'Erro ao carregar profissionais', 'error');
+            } finally {
+                setLoading(false);
             }
-
-            const { data, error } = await query;
-
-            if (!error && data) {
-                const enhanced = data.map(w => {
-                    let dist = 999;
-                    if (location && w.latitude && w.longitude) {
-                        dist = calculateDistance(location.lat, location.lng, w.latitude, w.longitude);
-                    }
-
-                    return {
-                        ...w,
-                        name: w.business_name || w.full_name,
-                        specialty: w.business_type === 'clinic' ? 'Hospital Veterinário 24h' :
-                            w.business_type === 'grooming' ? 'Estética e Bem-estar' :
-                                w.bio?.substring(0, 30) + '...' || 'Pet Specialist',
-                        price: w.business_type !== 'none' ? 120 : 35, // Mock price for now as we don't have price field in schema yet
-                        dist: dist,
-                        rating: 4.8 + (Math.random() * 0.2), // Still mock rating
-                        img: w.avatar_url || (w.business_type === 'clinic' ? 'https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?w=200' : 'https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg')
-                    };
-                });
-                setWalkers(enhanced);
-            }
-            setLoading(false);
         };
         fetchWalkers();
-    }, [location]); // Re-fetch when location is found to calculate distances correctly
+    }, [location]);
 
     const sortedWalkers = useMemo(() => {
         const list = [...walkers];

@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../contexts/LanguageContext';
+import { useNotification } from '../contexts/NotificationContext';
 import LocationSelector from '../components/LocationSelector';
-import { supabase } from '../lib/supabaseClient';
+import { authService } from '../services/authService';
 
 const ProviderRegistrationView: React.FC = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const { showNotification } = useNotification();
     const [step, setStep] = useState(1);
     const [type, setType] = useState<'worker' | 'store'>('worker');
     const [formData, setFormData] = useState({ name: '', bio: '', location: '' });
@@ -14,30 +16,34 @@ const ProviderRegistrationView: React.FC = () => {
 
     const handleComplete = async () => {
         setLoading(true);
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            navigate('/login');
-            return;
-        }
+        try {
+            const { data: { user } } = await (authService as any).supabase.auth.getUser();
+            if (!user) {
+                navigate('/login');
+                return;
+            }
 
-        const { error } = await supabase
-            .from('stores')
-            .insert({
-                owner_id: user.id,
-                name: formData.name,
-                description: formData.bio,
-                city: formData.location.split(',')[0]?.trim(),
-                state: formData.location.split(',')[1]?.trim() || 'MS',
-                rating: 5.0
-            });
+            const { error } = await (authService as any).supabase
+                .from('stores')
+                .insert({
+                    owner_id: user.id,
+                    name: formData.name,
+                    description: formData.bio,
+                    city: formData.location.split(',')[0]?.trim(),
+                    state: formData.location.split(',')[1]?.trim() || 'MS',
+                    rating: 5.0
+                });
 
-        setLoading(false);
-        if (!error) {
+            if (error) throw error;
+            showNotification('Registro concluído!', 'success');
             navigate('/feed');
-        } else {
-            console.error('Registration error:', error);
-            // Fallback for demo
+        } catch (err: any) {
+            console.error('Registration error:', err);
+            showNotification(err.message || 'Erro ao registrar', 'error');
+            // Fallback for demo UX
             navigate('/feed');
+        } finally {
+            setLoading(false);
         }
     };
 

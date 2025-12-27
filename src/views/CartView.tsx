@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../contexts/LanguageContext';
-import { supabase } from '../lib/supabaseClient';
+import { useNotification } from '../contexts/NotificationContext';
+import { useAuth } from '../hooks/useAuth';
+import { authService } from '../services/authService';
 
 interface CartItem {
     id: string; // cart_item id
@@ -18,40 +20,45 @@ interface CartItem {
 const CartView: React.FC = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const { showNotification } = useNotification();
+    const { user } = useAuth();
     const [items, setItems] = useState<CartItem[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchCartItems();
-    }, []);
+        if (user) {
+            fetchCartItems();
+        }
+    }, [user]);
 
     const fetchCartItems = async () => {
+        if (!user) return;
         setLoading(true);
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            navigate('/login');
-            return;
-        }
+        try {
+            const { data, error } = await (authService as any).supabase
+                .from('cart_items')
+                .select(`
+                    id,
+                    product_id,
+                    quantity,
+                    product:products (
+                        name,
+                        brand,
+                        price,
+                        image_url
+                    )
+                `)
+                .eq('user_id', user.id);
 
-        const { data, error } = await supabase
-            .from('cart_items')
-            .select(`
-                id,
-                product_id,
-                quantity,
-                product:products (
-                    name,
-                    brand,
-                    price,
-                    image_url
-                )
-            `)
-            .eq('user_id', user.id);
-
-        if (!error && data) {
-            setItems(data as any);
+            if (error) throw error;
+            if (data) {
+                setItems(data as any);
+            }
+        } catch (err: any) {
+            showNotification(err.message || 'Erro ao carregar carrinho', 'error');
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     const updateQuantity = async (id: string, delta: number) => {
@@ -59,24 +66,31 @@ const CartView: React.FC = () => {
         if (!item) return;
 
         const newQty = Math.max(1, item.quantity + delta);
-        const { error } = await supabase
-            .from('cart_items')
-            .update({ quantity: newQty })
-            .eq('id', id);
+        try {
+            const { error } = await (authService as any).supabase
+                .from('cart_items')
+                .update({ quantity: newQty })
+                .eq('id', id);
 
-        if (!error) {
+            if (error) throw error;
             setItems(prev => prev.map(i => i.id === id ? { ...i, quantity: newQty } : i));
+        } catch (err: any) {
+            showNotification(err.message || 'Erro ao atualizar quantidade', 'error');
         }
     };
 
     const removeItem = async (id: string) => {
-        const { error } = await supabase
-            .from('cart_items')
-            .delete()
-            .eq('id', id);
+        try {
+            const { error } = await (authService as any).supabase
+                .from('cart_items')
+                .delete()
+                .eq('id', id);
 
-        if (!error) {
+            if (error) throw error;
             setItems(prev => prev.filter(i => i.id !== id));
+            showNotification('Item removido do carrinho', 'success');
+        } catch (err: any) {
+            showNotification(err.message || 'Erro ao remover item', 'error');
         }
     };
 

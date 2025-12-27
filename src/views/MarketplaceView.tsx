@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../contexts/LanguageContext';
-import { supabase } from '../lib/supabaseClient';
+import { useNotification } from '../contexts/NotificationContext';
+import { authService } from '../services/authService';
 
 interface Product {
     id: string;
@@ -16,6 +17,7 @@ interface Product {
 const MarketplaceView: React.FC = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const { showNotification } = useNotification();
     const [filter, setFilter] = useState<'all' | 'food' | 'toys' | 'promo'>('all');
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
@@ -30,45 +32,46 @@ const MarketplaceView: React.FC = () => {
 
     const fetchProducts = async () => {
         setLoading(true);
-        const { data, error } = await supabase
-            .from('products')
-            .select('*');
+        try {
+            const { data, error } = await (authService as any).supabase
+                .from('products')
+                .select('*');
 
-        if (error) {
-            console.error('Error fetching products:', error);
-            // Fallback to minimal mock if error/no tables
+            if (error) throw error;
+            if (data) setProducts(data);
+        } catch (err) {
+            // Fallback mock data
             setProducts([
                 { id: 'p1', name: 'Premium Adult Dog Food', brand: 'Pedigree', price: 45.00, image_url: 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?q=80&w=300&auto=format&fit=crop', category: 'food' },
                 { id: 'p2', name: 'Durable Rubber Bone Toy', brand: 'Kong', price: 12.50, image_url: 'https://images.unsplash.com/photo-1576201836106-db1758fd1c97?q=80&w=300&auto=format&fit=crop', category: 'toys', is_promo: true }
             ]);
-        } else if (data) {
-            setProducts(data);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     };
 
     const fetchCartCount = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        const { data: { session } } = await authService.getSession();
+        if (!session) return;
 
-        const { count, error } = await supabase
+        const { count, error } = await (authService as any).supabase
             .from('cart_items')
             .select('*', { count: 'exact', head: true })
-            .eq('user_id', user.id);
+            .eq('user_id', session.user.id);
 
         if (!error && count !== null) setCartCount(count);
     };
 
     const fetchFavorites = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        const { data: { session } } = await authService.getSession();
+        if (!session) return;
 
-        const { data, error } = await supabase
+        const { data, error } = await (authService as any).supabase
             .from('favorites')
             .select('product_id')
-            .eq('user_id', user.id);
+            .eq('user_id', session.user.id);
 
-        if (!error && data) setFavorites(data.map(f => f.product_id));
+        if (!error && data) setFavorites(data.map((f: any) => f.product_id));
     };
 
     const filteredProducts = useMemo(() => {
@@ -78,36 +81,48 @@ const MarketplaceView: React.FC = () => {
     }, [filter, products]);
 
     const toggleFavorite = async (productId: string) => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
+        const { data: { session } } = await authService.getSession();
+        if (!session) {
             navigate('/login');
             return;
         }
 
         const isFav = favorites.includes(productId);
-        if (isFav) {
-            await supabase.from('favorites').delete().match({ user_id: user.id, product_id: productId });
-            setFavorites(prev => prev.filter(id => id !== productId));
-        } else {
-            await supabase.from('favorites').insert({ user_id: user.id, product_id: productId });
-            setFavorites(prev => [...prev, productId]);
+        try {
+            if (isFav) {
+                await (authService as any).supabase.from('favorites').delete().match({ user_id: session.user.id, product_id: productId });
+                setFavorites(prev => prev.filter(id => id !== productId));
+                showNotification('Removido dos favoritos', 'info');
+            } else {
+                await (authService as any).supabase.from('favorites').insert({ user_id: session.user.id, product_id: productId });
+                setFavorites(prev => [...prev, productId]);
+                showNotification('Adicionado aos favoritos', 'success');
+            }
+        } catch (err) {
+            showNotification('Erro ao atualizar favorito', 'error');
         }
     };
 
     const addToCart = async (productId: string) => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
+        const { data: { session } } = await authService.getSession();
+        if (!session) {
             navigate('/login');
             return;
         }
 
-        const { error } = await supabase.from('cart_items').insert({
-            user_id: user.id,
-            product_id: productId,
-            quantity: 1
-        });
+        try {
+            const { error } = await (authService as any).supabase.from('cart_items').insert({
+                user_id: session.user.id,
+                product_id: productId,
+                quantity: 1
+            });
 
-        if (!error) setCartCount(prev => prev + 1);
+            if (error) throw error;
+            setCartCount(prev => prev + 1);
+            showNotification('Adicionado ao carrinho!', 'success');
+        } catch (err) {
+            showNotification('Erro ao adicionar ao carrinho', 'error');
+        }
     };
 
     return (

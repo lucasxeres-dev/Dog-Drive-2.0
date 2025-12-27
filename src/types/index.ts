@@ -1,8 +1,17 @@
-
 export enum UserRole {
-    OWNER = 'OWNER',
-    WALKER = 'WALKER',
-    BUSINESS = 'BUSINESS'
+    USER = 'user',
+    OWNER = 'user',
+    PROVIDER = 'provider',
+    WALKER = 'provider',
+    BUSINESS = 'business'
+}
+
+export interface UserProfile {
+    id: string;
+    role: UserRole;
+    preferences: any;
+    created_at?: string;
+    // Add other fields as needed
 }
 
 export interface Dog {

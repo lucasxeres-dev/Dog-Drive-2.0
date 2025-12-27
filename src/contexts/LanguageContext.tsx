@@ -540,7 +540,17 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [language, setLanguage] = useState<Language>(() => {
     const saved = localStorage.getItem('dog_drive_lang');
-    return (saved && Object.keys(translations).includes(saved)) ? saved as Language : 'pt';
+    if (saved && Object.keys(translations).includes(saved)) {
+      return saved as Language;
+    }
+
+    // Auto-detect from browser
+    const browserLang = navigator.language.split('-')[0];
+    if (Object.keys(translations).includes(browserLang)) {
+      return browserLang as Language;
+    }
+
+    return 'en'; // Default to English if not detected or not supported
   });
 
   useEffect(() => {

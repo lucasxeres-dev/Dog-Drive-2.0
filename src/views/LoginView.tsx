@@ -1,8 +1,8 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../contexts/LanguageContext';
-import { supabase } from '../lib/supabaseClient';
+import { useNotification } from '../contexts/NotificationContext';
+import { authService } from '../services/authService';
 
 interface LoginViewProps {
     onLogin: () => void;
@@ -11,43 +11,41 @@ interface LoginViewProps {
 const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const { showNotification } = useNotification();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
     // Forgot password modal state
     const [showForgotPassword, setShowForgotPassword] = useState(false);
     const [resetEmail, setResetEmail] = useState('');
     const [resetLoading, setResetLoading] = useState(false);
 
-    const handleSocialLogin = async (provider: 'google' | 'apple') => {
-        try {
-            const { error } = await supabase.auth.signInWithOAuth({
-                provider,
-                options: {
-                    redirectTo: window.location.origin
-                }
-            });
-            if (error) throw error;
-        } catch (err: any) {
-            setError(err.message || `Error signing in with ${provider}`);
+    const validateForm = () => {
+        if (!email || !password) {
+            showNotification('Por favor, preencha todos os campos', 'error');
+            return false;
         }
+        if (!/\S+@\S+\.\S+/.test(email)) {
+            showNotification('E-mail inválido', 'error');
+            return false;
+        }
+        return true;
     };
 
     const handleLogin = async () => {
+        if (!validateForm()) return;
+
         setLoading(true);
-        setError(null);
         try {
-            const { data: { user, session }, error: authError } = await supabase.auth.signInWithPassword({
+            const { data: { user, session }, error: authError } = await (authService as any).supabase.auth.signInWithPassword({
                 email,
                 password,
             });
             if (authError) throw authError;
 
             if (user && session) {
-                const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+                const profile = await authService.getProfile(user.id);
                 onLogin();
 
                 if (profile?.role === 'user') {
@@ -57,34 +55,34 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                 } else {
                     navigate('/onboarding');
                 }
+                showNotification('Bem-vindo de volta!', 'success');
             }
         } catch (err: any) {
-            setError(err.message || 'Error signing in');
+            showNotification(err.message || 'Erro ao entrar', 'error');
+        } finally {
             setLoading(false);
         }
     };
 
     const handleForgotPassword = async () => {
         if (!resetEmail) {
-            setError('Por favor, insira seu e-mail');
+            showNotification('Por favor, insira seu e-mail', 'error');
             return;
         }
 
         setResetLoading(true);
-        setError(null);
-
         try {
-            const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+            const { error } = await (authService as any).supabase.auth.resetPasswordForEmail(resetEmail, {
                 redirectTo: `${window.location.origin}/#/settings?tab=password`,
             });
 
             if (error) throw error;
 
-            setSuccessMessage('E-mail de recuperação enviado! Verifique sua caixa de entrada.');
+            showNotification('E-mail de recuperação enviado!', 'success');
             setShowForgotPassword(false);
             setResetEmail('');
         } catch (err: any) {
-            setError(err.message || 'Erro ao enviar e-mail de recuperação');
+            showNotification(err.message || 'Erro ao enviar e-mail', 'error');
         } finally {
             setResetLoading(false);
         }
@@ -100,20 +98,6 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                     <h2 className="text-[#111814] dark:text-white text-3xl font-black uppercase text-center">{t('login_title')}</h2>
                     <p className="text-gray-400 text-sm font-medium mt-2 text-center lowercase">{t('login_subtitle')}</p>
                 </div>
-
-                {error && (
-                    <div className="mb-6 p-4 rounded-3xl bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 flex items-center gap-3 animate-shake">
-                        <span className="material-symbols-outlined text-red-500">error</span>
-                        <p className="text-red-500 text-[10px] font-black uppercase tracking-tight">{error}</p>
-                    </div>
-                )}
-
-                {successMessage && (
-                    <div className="mb-6 p-4 rounded-3xl bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-900/20 flex items-center gap-3">
-                        <span className="material-symbols-outlined text-green-500">check_circle</span>
-                        <p className="text-green-600 dark:text-green-400 text-[10px] font-black uppercase tracking-tight">{successMessage}</p>
-                    </div>
-                )}
 
                 <div className="space-y-6">
                     <div className="space-y-2">
@@ -157,7 +141,6 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                         </button>
                     </div>
 
-                    {/* Green, larger ENTRAR button */}
                     <button
                         onClick={handleLogin}
                         disabled={loading}
@@ -174,32 +157,6 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                     </button>
                 </div>
 
-                <div className="relative my-10">
-                    <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-gray-100 dark:border-white/5"></div>
-                    </div>
-                    <div className="relative flex justify-center text-[10px]">
-                        <span className="px-6 bg-background-light dark:bg-background-dark text-gray-400 font-black uppercase tracking-[0.2em]">{t('or_continue')}</span>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                    <button
-                        onClick={() => handleSocialLogin('google')}
-                        className="h-16 rounded-3xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/5 hover:border-primary/30 flex items-center justify-center transition-all shadow-sm hover:shadow-md"
-                    >
-                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-6 h-6" alt="Google" />
-                        <span className="ml-2 font-black text-[10px] uppercase tracking-wider">Google</span>
-                    </button>
-                    <button
-                        onClick={() => handleSocialLogin('apple')}
-                        className="h-16 rounded-3xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/5 hover:border-primary/30 flex items-center justify-center transition-all shadow-sm hover:shadow-md"
-                    >
-                        <img src="https://www.svgrepo.com/show/511330/apple-173.svg" className="w-6 h-6 dark:invert" alt="Apple" />
-                        <span className="ml-2 font-black text-[10px] uppercase tracking-wider">Apple</span>
-                    </button>
-                </div>
-
                 <p className="text-center mt-8 text-gray-400 text-[10px] font-black uppercase tracking-wider">
                     {t('no_account')} <button onClick={() => navigate('/register')} className="text-primary hover:underline ml-1">{t('signup_action')}</button>
                 </p>
@@ -208,7 +165,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
             {/* Forgot Password Modal */}
             {showForgotPassword && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-                    <div className="bg-white dark:bg-surface-dark rounded-3xl p-8 w-full max-w-md shadow-2xl animate-fadeIn">
+                    <div className="bg-white dark:bg-[#111814] rounded-3xl p-8 w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-300">
                         <div className="flex items-center justify-between mb-6">
                             <h3 className="text-xl font-black uppercase text-[#111814] dark:text-white">Recuperar Senha</h3>
                             <button

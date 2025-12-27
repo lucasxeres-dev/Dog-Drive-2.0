@@ -2,46 +2,45 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../contexts/LanguageContext';
-import { supabase } from '../lib/supabaseClient';
+import { useNotification } from '../contexts/NotificationContext';
+import { useAuth } from '../hooks/useAuth';
+import { authService } from '../services/authService';
+import { dogService } from '../services/dogService';
 import { Dog } from '../types';
 
 // Password Change Component
 const PasswordChangeSection: React.FC = () => {
-    const [currentPassword, setCurrentPassword] = useState('');
+    const { showNotification } = useNotification();
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [isExpanded, setIsExpanded] = useState(false);
 
     const handleChangePassword = async () => {
         if (newPassword !== confirmPassword) {
-            setMessage({ type: 'error', text: 'As senhas não coincidem' });
+            showNotification('As senhas não coincidem', 'error');
             return;
         }
 
         if (newPassword.length < 6) {
-            setMessage({ type: 'error', text: 'A senha deve ter pelo menos 6 caracteres' });
+            showNotification('A senha deve ter pelo menos 6 caracteres', 'error');
             return;
         }
 
         setLoading(true);
-        setMessage(null);
-
         try {
-            const { error } = await supabase.auth.updateUser({
+            const { error } = await (authService as any).supabase.auth.updateUser({
                 password: newPassword
             });
 
             if (error) throw error;
 
-            setMessage({ type: 'success', text: 'Senha alterada com sucesso!' });
-            setCurrentPassword('');
+            showNotification('Senha alterada com sucesso!', 'success');
             setNewPassword('');
             setConfirmPassword('');
             setIsExpanded(false);
         } catch (err: any) {
-            setMessage({ type: 'error', text: err.message || 'Erro ao alterar senha' });
+            showNotification(err.message || 'Erro ao alterar senha', 'error');
         } finally {
             setLoading(false);
         }
@@ -72,18 +71,6 @@ const PasswordChangeSection: React.FC = () => {
                 </button>
             ) : (
                 <div className="space-y-4 animate-fadeIn">
-                    {message && (
-                        <div className={`p-3 rounded-xl flex items-center gap-2 ${message.type === 'success'
-                                ? 'bg-green-50 dark:bg-green-900/10 text-green-600'
-                                : 'bg-red-50 dark:bg-red-900/10 text-red-500'
-                            }`}>
-                            <span className="material-symbols-outlined text-sm">
-                                {message.type === 'success' ? 'check_circle' : 'error'}
-                            </span>
-                            <span className="text-xs font-bold">{message.text}</span>
-                        </div>
-                    )}
-
                     <div>
                         <label className="text-[10px] font-black uppercase text-gray-400 ml-4 mb-1 block">Nova Senha</label>
                         <input
@@ -131,6 +118,8 @@ const PasswordChangeSection: React.FC = () => {
 const SettingsView: React.FC = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const { showNotification } = useNotification();
+    const { user, profile: authProfile } = useAuth();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [profile, setProfile] = useState<any>(null);
@@ -148,45 +137,54 @@ const SettingsView: React.FC = () => {
     const [uploading, setUploading] = useState(false);
 
     useEffect(() => {
-        fetchData();
-    }, []);
-
-    const fetchData = async () => {
-        setLoading(true);
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            navigate('/login');
-            return;
+        if (authProfile) {
+            setProfile(authProfile);
+            setPreferences(authProfile.preferences || {});
+            fetchDogs();
+            setLoading(false);
         }
+    }, [authProfile]);
 
-        const { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-        const { data: dogsData } = await supabase.from('dogs').select('*').eq('owner_id', user.id);
-
-        setProfile(profileData);
-        setPreferences(profileData?.preferences || {});
-        setDogs(dogsData || []);
-        setLoading(false);
+    const fetchDogs = async () => {
+        if (!user) return;
+        try {
+            const { data } = await (authService as any).supabase.from('dogs').select('*').eq('owner_id', user.id);
+            if (data) setDogs(data);
+        } catch (e) {
+            console.error('Error fetching dogs', e);
+        }
     };
 
     const handleSaveProfile = async () => {
+        if (!profile) return;
         setSaving(true);
-        const { error } = await supabase.from('profiles').update({
-            full_name: profile.full_name,
-            address: profile.address,
-            phone: profile.phone
-        }).eq('id', profile.id);
+        try {
+            const { error } = await (authService as any).supabase.from('profiles').update({
+                full_name: profile.full_name,
+                address: profile.address,
+                phone: profile.phone
+            }).eq('id', profile.id);
 
-        if (!error) alert('Perfil atualizado!');
-        setSaving(false);
+            if (error) throw error;
+            showNotification('Perfil atualizado!', 'success');
+        } catch (err: any) {
+            showNotification(err.message || 'Erro ao atualizar perfil', 'error');
+        } finally {
+            setSaving(false);
+        }
     };
 
     const handleTogglePreference = async (key: string) => {
         const newPreferences = { ...preferences, [key]: !preferences[key] };
         setPreferences(newPreferences);
 
-        await supabase.from('profiles').update({
-            preferences: newPreferences
-        }).eq('id', profile.id);
+        try {
+            await (authService as any).supabase.from('profiles').update({
+                preferences: newPreferences
+            }).eq('id', profile.id);
+        } catch (e) {
+            showNotification('Erro ao salvar preferência', 'error');
+        }
     };
 
     // ... (rest of upload/profile logic same) ...
@@ -201,16 +199,17 @@ const SettingsView: React.FC = () => {
             const fileName = `${Math.random()}.${fileExt}`;
             const filePath = `${profile.id}/${fileName}`;
 
-            const { error: uploadError } = await supabase.storage
+            const { error: uploadError } = await (authService as any).supabase.storage
                 .from('pet-photos')
                 .upload(filePath, file);
 
             if (uploadError) throw uploadError;
 
-            const { data } = supabase.storage.from('pet-photos').getPublicUrl(filePath);
+            const { data } = (authService as any).supabase.storage.from('pet-photos').getPublicUrl(filePath);
             setNewDog({ ...newDog, photo: data.publicUrl });
-        } catch (e) {
+        } catch (e: any) {
             console.error(e);
+            showNotification('Erro ao fazer upload da foto', 'error');
         } finally {
             setUploading(false);
         }
@@ -219,23 +218,31 @@ const SettingsView: React.FC = () => {
     const handleAddDog = async () => {
         if (!newDog.name || !newDog.age) return;
 
-        const { error } = await supabase.from('dogs').insert({
-            owner_id: profile.id,
-            name: newDog.name,
-            age: newDog.age,
-            traits: newDog.traits,
-            image_url: newDog.photo,
-            location: profile.address?.split(',').pop()?.trim() || 'Brasil'
-        });
+        try {
+            const { error } = await (authService as any).supabase.from('dogs').insert({
+                owner_id: profile.id,
+                name: newDog.name,
+                age: newDog.age,
+                traits: newDog.traits,
+                image_url: newDog.photo,
+                location: profile.address?.split(',').pop()?.trim() || 'Brasil'
+            });
 
-        if (!error) {
+            if (error) {
+                if (error.code === '23505') {
+                    showNotification('Você já possui um cão cadastrado!', 'error');
+                } else {
+                    throw error;
+                }
+                return;
+            }
+
             setShowAddDog(false);
             setNewDog({ name: '', age: '', traits: '', photo: '' });
-            fetchData();
-        } else {
-            if (error.code === '23505') {
-                alert('Você já possui um cão cadastrado!');
-            }
+            fetchDogs();
+            showNotification('Cão cadastrado com sucesso!', 'success');
+        } catch (err: any) {
+            showNotification(err.message || 'Erro ao cadastrar cão', 'error');
         }
     };
 

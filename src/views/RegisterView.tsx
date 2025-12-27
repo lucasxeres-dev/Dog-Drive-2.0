@@ -1,29 +1,15 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../contexts/LanguageContext';
-import { supabase } from '../lib/supabaseClient';
+import { useNotification } from '../contexts/NotificationContext';
+import { authService } from '../services/authService';
 
 const RegisterView: React.FC = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const { showNotification } = useNotification();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
-    const handleSocialLogin = async (provider: 'google' | 'apple') => {
-        try {
-            const { error } = await supabase.auth.signInWithOAuth({
-                provider,
-                options: {
-                    redirectTo: window.location.origin
-                }
-            });
-            if (error) throw error;
-        } catch (err: any) {
-            setError(err.message || `Error signing in with ${provider}`);
-        }
-    };
 
     // Form State
     const [formData, setFormData] = useState({
@@ -33,7 +19,7 @@ const RegisterView: React.FC = () => {
         cpfRg: '',
         password: '',
         confirmPassword: '',
-        securityCode: '' // Mock security code or 2FA
+        securityCode: ''
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,29 +27,36 @@ const RegisterView: React.FC = () => {
     };
 
     const handleNextStep = () => {
-        if (step === 1 && (!formData.fullName || !formData.email || !formData.phone)) {
-            setError('Por favor, preencha todos os campos obrigatórios.');
-            return;
+        if (step === 1) {
+            if (!formData.fullName || !formData.email || !formData.phone) {
+                showNotification('Por favor, preencha todos os campos obrigatórios.', 'error');
+                return;
+            }
+            if (!/\S+@\S+\.\S+/.test(formData.email)) {
+                showNotification('E-mail inválido', 'error');
+                return;
+            }
         }
         if (step === 2 && !formData.cpfRg) {
-            setError('O CPF ou RG é obrigatório para sua segurança.');
+            showNotification('O CPF ou RG é obrigatório para sua segurança.', 'error');
             return;
         }
-        setError(null);
         setStep(step + 1);
     };
 
     const handleRegister = async () => {
         if (formData.password !== formData.confirmPassword) {
-            setError('As senhas não coincidem.');
+            showNotification('As senhas não coincidem.', 'error');
+            return;
+        }
+        if (formData.password.length < 6) {
+            showNotification('A senha deve ter pelo menos 6 caracteres.', 'error');
             return;
         }
 
         setLoading(true);
-        setError(null);
-
         try {
-            const { data, error: signUpError } = await supabase.auth.signUp({
+            const { error: signUpError } = await (authService as any).supabase.auth.signUp({
                 email: formData.email,
                 password: formData.password,
                 options: {
@@ -78,12 +71,10 @@ const RegisterView: React.FC = () => {
 
             if (signUpError) throw signUpError;
 
-            // In a real scenario, we'd update the profile table here if the trigger didn't handle everything
-            // But our trigger 'handle_new_user' should catch this.
-
-            navigate('/login', { state: { message: 'Cadastro realizado! Verifique seu email para login.' } });
+            showNotification('Cadastro realizado! Verifique seu email.', 'success');
+            navigate('/login');
         } catch (err: any) {
-            setError(err.message || 'Erro ao registrar usuário');
+            showNotification(err.message || 'Erro ao registrar usuário', 'error');
         } finally {
             setLoading(false);
         }
@@ -105,12 +96,6 @@ const RegisterView: React.FC = () => {
                     </div>
                 </div>
 
-                {error && (
-                    <div className="mb-6 p-4 rounded-3xl bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/20 flex items-center gap-3 animate-shake">
-                        <span className="material-symbols-outlined text-red-500">error</span>
-                        <p className="text-red-500 text-[10px] font-black uppercase tracking-tight">{error}</p>
-                    </div>
-                )}
 
                 <div className="flex-1 flex flex-col">
                     {step === 1 && (
@@ -234,31 +219,6 @@ const RegisterView: React.FC = () => {
                         </button>
                     </div>
 
-                    <div className="relative my-10">
-                        <div className="absolute inset-0 flex items-center">
-                            <div className="w-full border-t border-gray-100 dark:border-white/5"></div>
-                        </div>
-                        <div className="relative flex justify-center text-[10px]">
-                            <span className="px-6 bg-background-light dark:bg-background-dark text-gray-400 font-black uppercase tracking-[0.2em]">ou continuar com</span>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <button
-                            onClick={() => handleSocialLogin('google')}
-                            className="h-16 rounded-3xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/5 hover:border-primary/30 flex items-center justify-center transition-all shadow-sm hover:shadow-md"
-                        >
-                            <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-6 h-6" alt="Google" />
-                            <span className="ml-2 font-black text-[10px] uppercase tracking-wider">Google</span>
-                        </button>
-                        <button
-                            onClick={() => handleSocialLogin('apple')}
-                            className="h-16 rounded-3xl bg-white dark:bg-white/5 border border-gray-100 dark:border-white/5 hover:border-primary/30 flex items-center justify-center transition-all shadow-sm hover:shadow-md"
-                        >
-                            <img src="https://www.svgrepo.com/show/511330/apple-173.svg" className="w-6 h-6 dark:invert" alt="Apple" />
-                            <span className="ml-2 font-black text-[10px] uppercase tracking-wider">Apple</span>
-                        </button>
-                    </div>
 
                     <p className="text-center mt-6 text-gray-400 text-[10px] font-black uppercase tracking-wider">
                         Já tem conta? <button onClick={() => navigate('/login')} className="text-primary hover:underline ml-1">Fazer Login</button>

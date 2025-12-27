@@ -1,13 +1,14 @@
-
 import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
+import { authService } from '../services/authService';
 import { Dog } from '../types';
 import { useTranslation } from '../contexts/LanguageContext';
+import { useNotification } from '../contexts/NotificationContext';
 
 const ProfileDetailView: React.FC = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const { showNotification } = useNotification();
     const { id } = useParams();
     const [dog, setDog] = React.useState<Dog | null>(null);
     const [loading, setLoading] = React.useState(true);
@@ -15,14 +16,21 @@ const ProfileDetailView: React.FC = () => {
     React.useEffect(() => {
         const fetchDog = async () => {
             if (!id) return;
-            const { data, error } = await supabase
-                .from('dogs')
-                .select('*')
-                .eq('id', id)
-                .single();
+            setLoading(true);
+            try {
+                const { data, error } = await (authService as any).supabase
+                    .from('dogs')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
 
-            if (data) setDog(data as Dog);
-            setLoading(false);
+                if (error) throw error;
+                if (data) setDog(data as Dog);
+            } catch (err: any) {
+                showNotification(err.message || 'Erro ao carregar perfil do dog', 'error');
+            } finally {
+                setLoading(false);
+            }
         };
         fetchDog();
     }, [id]);

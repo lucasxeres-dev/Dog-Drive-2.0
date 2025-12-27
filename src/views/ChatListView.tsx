@@ -1,54 +1,52 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { useTranslation } from '../contexts/LanguageContext';
+import { useNotification } from '../contexts/NotificationContext';
+import { useAuth } from '../hooks/useAuth';
+import { authService } from '../services/authService';
 import { ChatPreview, Dog } from '../types';
-import { MOCK_CHATS, MOCK_DOGS } from '../constants';
 
 const ChatListView: React.FC = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const { showNotification } = useNotification();
+    const { user } = useAuth();
     const [chats, setChats] = useState<ChatPreview[]>([]);
     const [matches, setMatches] = useState<Dog[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
-            setLoading(true);
-
-            if (!isSupabaseConfigured) {
-                setChats(MOCK_CHATS);
-                setMatches(MOCK_DOGS.slice(0, 5));
+            if (!user) {
                 setLoading(false);
                 return;
             }
 
+            setLoading(true);
+
             try {
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) return;
+                // Fetch dogs for "New Matches" section (simulated for now)
+                const { data: matchData } = await (authService as any).supabase.from('dogs').select('*').limit(10);
 
-                // Fetch real matches (dogs that might belong to providers or potential matches)
-                // For now, just show active dogs in the area
-                const { data: matchData } = await supabase.from('dogs').select('*').limit(10);
-
-                // Fetch real chats where the user is a participant
-                const { data: chatData } = await supabase
+                // Fetch chats where the user is a participant
+                const { data: chatData, error: chatError } = await (authService as any).supabase
                     .from('chats')
                     .select('*')
                     .or(`user_id_1.eq.${user.id},user_id_2.eq.${user.id}`);
 
+                if (chatError) throw chatError;
+
                 if (chatData) {
                     const enhancedChats = await Promise.all(chatData.map(async (c: any) => {
                         const otherUserId = c.user_id_1 === user.id ? c.user_id_2 : c.user_id_1;
-                        const { data: otherProfile } = await supabase.from('profiles').select('*').eq('id', otherUserId).single();
+                        const { data: otherProfile } = await (authService as any).supabase.from('profiles').select('*').eq('id', otherUserId).single();
 
                         return {
                             id: c.id,
                             name: otherProfile?.full_name || 'User',
                             avatar: otherProfile?.avatar_url || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop',
                             lastMessage: c.last_message || 'Inicie a conversa!',
-                            time: new Date(c.last_message_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                            time: c.last_message_time ? new Date(c.last_message_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
                             unreadCount: 0,
                             online: true
                         };
@@ -57,33 +55,31 @@ const ChatListView: React.FC = () => {
                 }
 
                 if (matchData) {
-                    setMatches(matchData.map(d => ({
+                    setMatches(matchData.map((d: any) => ({
                         ...d,
                         imageUrl: d.image_url
                     })) as Dog[]);
                 }
-            } catch (err) {
-                console.error('Supabase fetch failed', err);
+            } catch (err: any) {
+                showNotification(err.message || 'Erro ao carregar mensagens', 'error');
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
 
         fetchData();
 
-        // Subscription for real-time messages
-        let channel: any;
-        if (isSupabaseConfigured) {
-            channel = supabase.channel('chats-channel')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
-                    fetchData();
-                })
-                .subscribe();
-        }
+        // Real-time subscription
+        const channel = (authService as any).supabase.channel('chats-channel')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
+                fetchData();
+            })
+            .subscribe();
 
         return () => {
-            if (channel) supabase.removeChannel(channel);
+            (authService as any).supabase.removeChannel(channel);
         };
-    }, []);
+    }, [user]);
 
     if (loading) {
         return (

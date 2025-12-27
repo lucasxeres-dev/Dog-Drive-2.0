@@ -1,36 +1,122 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { MOCK_CHATS } from '../constants';
 import { useTranslation } from '../contexts/LanguageContext';
+import { useNotification } from '../contexts/NotificationContext';
+import { useAuth } from '../hooks/useAuth';
+import { authService } from '../services/authService';
 
 const ChatDetailView: React.FC = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const { showNotification } = useNotification();
+    const { user } = useAuth();
     const { id } = useParams();
-    const chat = MOCK_CHATS.find(c => c.id === id) || MOCK_CHATS[0];
-    const [messages, setMessages] = useState([
-        { id: '1', text: 'Hi! Is your dog friendly? 🐕', sender: 'them', time: '10:42 AM' },
-        { id: '2', text: 'Yes! He loves playing. Are you free this weekend?', sender: 'me', time: '10:45 AM' }
-    ]);
+    const [messages, setMessages] = useState<any[]>([]);
+    const [chat, setChat] = useState<any>(null);
     const [input, setInput] = useState('');
     const [showSettings, setShowSettings] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
+    const [loading, setLoading] = useState(true);
 
-    const sendMessage = () => {
-        if (!input.trim()) return;
-        setMessages([...messages, { id: Date.now().toString(), text: input, sender: 'me', time: 'Just now' }]);
+    useEffect(() => {
+        if (!user || !id) return;
+
+        const fetchChatDetails = async () => {
+            setLoading(true);
+            try {
+                // Fetch chat metadata
+                const { data: chatData, error: chatError } = await (authService as any).supabase
+                    .from('chats')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
+
+                if (chatError) throw chatError;
+
+                const otherUserId = chatData.user_id_1 === user.id ? chatData.user_id_2 : chatData.user_id_1;
+                const { data: otherProfile } = await (authService as any).supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', otherUserId)
+                    .single();
+
+                setChat({
+                    ...chatData,
+                    name: otherProfile?.full_name || 'User',
+                    avatar: otherProfile?.avatar_url || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop',
+                    role: otherProfile?.role || 'User'
+                });
+
+                // Fetch messages
+                const { data: msgData, error: msgError } = await (authService as any).supabase
+                    .from('messages')
+                    .select('*')
+                    .eq('chat_id', id)
+                    .order('created_at', { ascending: true });
+
+                if (msgError) throw msgError;
+                setMessages(msgData || []);
+            } catch (err: any) {
+                showNotification(err.message || 'Erro ao carregar chat', 'error');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchChatDetails();
+
+        // Subscribe to new messages
+        const channel = (authService as any).supabase.channel(`chat-${id}`)
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'messages',
+                filter: `chat_id=eq.${id}`
+            }, (payload: any) => {
+                setMessages(prev => [...prev, payload.new]);
+            })
+            .subscribe();
+
+        return () => {
+            (authService as any).supabase.removeChannel(channel);
+        };
+    }, [id, user]);
+
+    const sendMessage = async () => {
+        if (!input.trim() || !user || !id) return;
+
+        const newMessage = {
+            chat_id: id,
+            sender_id: user.id,
+            text: input,
+            created_at: new Date().toISOString()
+        };
+
         setInput('');
+
+        try {
+            const { error } = await (authService as any).supabase.from('messages').insert([newMessage]);
+            if (error) throw error;
+        } catch (err: any) {
+            showNotification('Erro ao enviar mensagem', 'error');
+            console.error(err);
+        }
     };
 
     const clearChat = () => {
+        // In a real app, this might just clear local state or call an API
         setMessages([]);
         setShowSettings(false);
+        showNotification('Conversa limpa localmente', 'success');
     };
 
     const blockUser = () => {
-        alert("User Blocked");
+        showNotification('Usuário bloqueado', 'success');
         navigate('/chats');
     };
+
+    if (loading) return <div className="flex-1 flex items-center justify-center">Carregando...</div>;
+    if (!chat) return <div className="flex-1 flex items-center justify-center">Chat não encontrado</div>;
 
     return (
         <div className="flex-1 flex flex-col bg-background-light dark:bg-background-dark h-screen overflow-hidden">
@@ -54,14 +140,14 @@ const ChatDetailView: React.FC = () => {
                     <div className="h-px w-20 bg-primary/30"></div>
                 </div>
                 {messages.length === 0 ? (
-                    <div className="flex-1 flex items-center justify-center opacity-20 italic text-sm">Conversation cleared</div>
+                    <div className="flex-1 flex items-center justify-center opacity-20 italic text-sm">No messages yet</div>
                 ) : (
                     messages.map((m) => (
-                        <div key={m.id} className={`flex flex-col max-w-[85%] animate-fadeIn ${m.sender === 'me' ? 'self-end items-end' : 'self-start items-start'}`}>
-                            <div className={`p-4 rounded-[1.5rem] shadow-xl shadow-black/5 text-sm font-bold ${m.sender === 'me' ? 'bg-[#111814] text-primary rounded-br-none' : 'bg-white dark:bg-surface-dark text-gray-800 dark:text-gray-200 rounded-bl-none border border-gray-100 dark:border-white/5'}`}>
+                        <div key={m.id || m.created_at} className={`flex flex-col max-w-[85%] animate-fadeIn ${m.sender_id === user?.id ? 'self-end items-end' : 'self-start items-start'}`}>
+                            <div className={`p-4 rounded-[1.5rem] shadow-xl shadow-black/5 text-sm font-bold ${m.sender_id === user?.id ? 'bg-[#111814] text-primary rounded-br-none' : 'bg-white dark:bg-surface-dark text-gray-800 dark:text-gray-200 rounded-bl-none border border-gray-100 dark:border-white/5'}`}>
                                 {m.text}
                             </div>
-                            <span className="text-[10px] font-black text-gray-400 mt-2 uppercase tracking-tight">{m.time}</span>
+                            <span className="text-[10px] font-black text-gray-400 mt-2 uppercase tracking-tight">{new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                         </div>
                     ))
                 )}

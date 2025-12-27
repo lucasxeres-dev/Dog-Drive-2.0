@@ -1,15 +1,18 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { useTranslation } from '../contexts/LanguageContext';
+import { useNotification } from '../contexts/NotificationContext';
+import { useAuth } from '../hooks/useAuth';
+import { authService } from '../services/authService';
+import { dogService } from '../services/dogService';
 import FilterModal from '../components/FilterModal';
 import { Dog } from '../types';
-import { MOCK_DOGS } from '../constants';
 
 const FeedView: React.FC = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const { showNotification } = useNotification();
+    const { user, profile } = useAuth();
     const [dogs, setDogs] = useState<Dog[]>([]);
     const [loading, setLoading] = useState(true);
     const [showFilters, setShowFilters] = useState(false);
@@ -36,7 +39,6 @@ const FeedView: React.FC = () => {
             const city = data.address.city || data.address.town || data.address.village || data.address.suburb || 'Local Desconhecido';
             setLocationName(city);
         } catch (error) {
-            console.error('Reverse geocoding failed:', error);
             setLocationName('Rio de Janeiro');
         }
     };
@@ -51,39 +53,36 @@ const FeedView: React.FC = () => {
                     reverseGeocode(lat, lng);
 
                     // Update profile location if authenticated
-                    const { data: { user } } = await supabase.auth.getUser();
                     if (user) {
-                        await supabase.from('profiles').update({
-                            latitude: lat,
-                            longitude: lng,
-                            last_active: new Date().toISOString()
-                        }).eq('id', user.id);
+                        try {
+                            await (authService as any).supabase.from('profiles').update({
+                                latitude: lat,
+                                longitude: lng,
+                                last_active: new Date().toISOString()
+                            }).eq('id', user.id);
+                        } catch (e) {
+                            console.error('Failed to update profile location', e);
+                        }
                     }
                 },
-                (error) => {
-                    console.error('Geolocation error:', error);
+                () => {
                     setLocationName('Rio de Janeiro');
                 }
             );
         }
 
-        const fetchDogs = async () => {
+        const fetchDogsData = async () => {
             setLoading(true);
-
-            if (!isSupabaseConfigured) {
-                setDogs([]);
-                setLoading(false);
-                return;
-            }
-
             try {
-                const { data, error } = await supabase
+                const { data, error } = await (authService as any).supabase
                     .from('dogs')
                     .select('*')
                     .order('created_at', { ascending: false });
 
-                if (!error && data) {
-                    setDogs(data.map(d => {
+                if (error) throw error;
+
+                if (data) {
+                    setDogs(data.map((d: any) => {
                         let distanceStr = 'Calculando...';
                         if (location && d.latitude && d.longitude) {
                             const dist = calculateDistance(location.lat, location.lng, d.latitude, d.longitude);
@@ -100,14 +99,15 @@ const FeedView: React.FC = () => {
                         };
                     }) as Dog[]);
                 }
-            } catch (err) {
-                console.error('Supabase fetch failed', err);
+            } catch (err: any) {
+                showNotification(err.message || 'Erro ao carregar feeds', 'error');
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
 
-        fetchDogs();
-    }, []);
+        fetchDogsData();
+    }, [user, location]); // Depend on location for dynamic distance recalculation
 
     if (loading) {
         return (
