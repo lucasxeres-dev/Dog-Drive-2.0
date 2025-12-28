@@ -50,8 +50,10 @@ const CheckoutView: React.FC = () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error('Não autorizado');
 
+            const orderNumber = `DD-${Math.random().toString(36).toUpperCase().substring(2, 10)}`;
+
+            // 1. Process Payment if Wallet
             if (selectedMethod === 'wallet') {
-                // 1. Deduct from wallet via RPC
                 const { error: rpcError } = await supabase.rpc('update_wallet_balance', {
                     p_user_id: user.id,
                     p_amount: finalTotal,
@@ -60,23 +62,63 @@ const CheckoutView: React.FC = () => {
 
                 if (rpcError) throw rpcError;
 
-                // 2. Record transaction
                 await supabase.from('wallet_transactions').insert({
                     user_id: user.id,
                     type: 'payment',
                     amount: finalTotal,
                     status: 'completed',
-                    description: 'Pagamento de pedido no Marketplace'
+                    description: `Pagamento do pedido ${orderNumber}`
                 });
             }
 
-            // Simulate order creation
-            setTimeout(() => {
-                setProcessing(false);
-                setStep('confirm');
-                cartStore.clearCart();
-                showNotification('Pedido confirmado com sucesso!', 'success');
-            }, 1500);
+            // 2. Create Order
+            const { data: orderData, error: orderError } = await supabase
+                .from('orders')
+                .insert({
+                    user_id: user.id,
+                    order_number: orderNumber,
+                    status: 'processing',
+                    subtotal: total,
+                    shipping_cost: shipping,
+                    total: finalTotal,
+                    payment_method: selectedMethod,
+                    payment_status: selectedMethod === 'wallet' ? 'paid' : 'pending',
+                    shipping_address: {
+                        label: 'Casa',
+                        street: 'Rua das Flores, 123',
+                        city: 'Lisboa',
+                        zip: '1200-001',
+                        country: 'Portugal'
+                    }
+                })
+                .select()
+                .single();
+
+            if (orderError) throw orderError;
+
+            // 3. Create Order Items
+            const orderItems = cartStore.items.map(item => ({
+                order_id: orderData.id,
+                product_id: item.product.id,
+                variant_id: item.variant?.id || null,
+                quantity: item.quantity,
+                unit_price: item.product.sale_price || item.product.base_price,
+                total_price: (item.product.sale_price || item.product.base_price) * item.quantity,
+                product_snapshot: item.product
+            }));
+
+            const { error: itemsError } = await supabase
+                .from('order_items')
+                .insert(orderItems);
+
+            if (itemsError) throw itemsError;
+
+            // Success
+            setProcessing(false);
+            setStep('confirm');
+            cartStore.clearCart();
+            showNotification(`Pedido ${orderNumber} confirmado!`, 'success');
+
         } catch (err: any) {
             console.error('Payment error:', err);
             showNotification(err.message || 'Erro ao processar pagamento', 'error');

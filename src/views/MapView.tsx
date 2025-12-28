@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSupabase } from '../hooks/useSupabase';
+import { Skeleton } from '../components/UIComponents';
 
 // Fix for default marker icons
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';

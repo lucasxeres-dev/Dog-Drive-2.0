@@ -26,6 +26,9 @@ const MarketplaceView = lazy(() => import('./views/MarketplaceView'));
 const ProductDetailView = lazy(() => import('./views/ProductDetailView'));
 const CartView = lazy(() => import('./views/CartView'));
 const CheckoutView = lazy(() => import('./views/CheckoutView'));
+const ProviderDashboard = lazy(() => import('./views/ProviderDashboard'));
+const ChatList = lazy(() => import('./views/ChatList'));
+const ChatView = lazy(() => import('./views/ChatView'));
 const MyBookingsView = lazy(() => import('./views/MyBookingsView'));
 const BookingDetailView = lazy(() => import('./views/BookingDetailView'));
 const WalletView = lazy(() => import('./views/WalletView'));
@@ -66,6 +69,9 @@ const MainApp: React.FC = () => {
                             <Route path="/product/:slug" element={<ProductDetailView />} />
                             <Route path="/cart" element={<CartView />} />
                             <Route path="/checkout" element={<CheckoutView />} />
+                            <Route path="/provider-dashboard" element={<ProviderDashboard />} />
+                            <Route path="/chats" element={<ChatList />} />
+                            <Route path="/chat/:chatId" element={<ChatView />} />
                             <Route path="/bookings" element={<MyBookingsView />} />
                             <Route path="/bookings/:id" element={<BookingDetailView />} />
                             <Route path="/wallet" element={<WalletView />} />

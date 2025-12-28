@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useSupabase } from '../hooks/useSupabase';
+import { Skeleton, EmptyState } from '../components/UIComponents';
 import SwipeCard from '../components/SwipeCard';
 import FilterModal from '../components/FilterModal';
 import {
     Dog as DogIcon, X, Heart, Star,
     RotateCcw, Bone, Sparkles, Filter,
-    MessageCircle, MapPin
+    MessageCircle, MapPin, Search, Info
 } from 'lucide-react';
 
 const FeedView: React.FC = () => {
