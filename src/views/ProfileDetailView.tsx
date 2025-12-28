@@ -72,7 +72,10 @@ const ProfileDetailView: React.FC = () => {
                             <div className="flex items-center gap-2 mt-2">
                                 <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider">{dog.breed}</span>
                                 {dog.is_castrated && (
-                                    <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-500 text-[10px] font-bold uppercase tracking-wider ml-2">Castrated</span>
+                                    <span className="px-3 py-1 rounded-full bg-primary/20 text-primary border border-primary/20 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 ml-2">
+                                        <span className="material-symbols-outlined text-[14px]">vaccines</span>
+                                        Castrado
+                                    </span>
                                 )}
                                 <div className="flex items-center gap-1 text-slate-500 text-sm">
                                     <span className="material-symbols-outlined text-[16px]">location_on</span>

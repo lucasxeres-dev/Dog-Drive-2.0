@@ -430,20 +430,28 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-4 bg-white dark:bg-surface-dark p-6 rounded-3xl shadow-sm border-2 border-transparent hover:border-primary/20 transition-all">
-                            <div className={`size-12 rounded-2xl flex items-center justify-center transition-colors ${dogData.is_castrated ? 'bg-primary/20 text-primary' : 'bg-gray-100 dark:bg-white/5 text-gray-400'}`}>
-                                <span className="material-symbols-outlined text-2xl font-black">vaccines</span>
+                        <div>
+                            <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">Cão Castrado?</label>
+                            <div className="grid grid-cols-2 gap-4">
+                                <button
+                                    onClick={() => setDogData({ ...dogData, is_castrated: true })}
+                                    className={`p-6 rounded-3xl border-2 flex flex-col items-center gap-2 transition-all ${dogData.is_castrated ? 'bg-primary/20 border-primary shadow-lg shadow-primary/10' : 'bg-white dark:bg-surface-dark border-transparent shadow-sm'}`}
+                                >
+                                    <div className={`size-12 rounded-2xl flex items-center justify-center transition-colors ${dogData.is_castrated ? 'bg-primary text-[#050705]' : 'bg-gray-100 dark:bg-white/5 text-gray-400'}`}>
+                                        <span className="material-symbols-outlined text-2xl font-black">check_circle</span>
+                                    </div>
+                                    <span className={`font-black uppercase tracking-widest text-xs ${dogData.is_castrated ? 'text-white' : 'text-gray-500'}`}>Sim</span>
+                                </button>
+                                <button
+                                    onClick={() => setDogData({ ...dogData, is_castrated: false })}
+                                    className={`p-6 rounded-3xl border-2 flex flex-col items-center gap-2 transition-all ${!dogData.is_castrated ? 'bg-white/10 border-white/20' : 'bg-white dark:bg-surface-dark border-transparent shadow-sm'}`}
+                                >
+                                    <div className={`size-12 rounded-2xl flex items-center justify-center transition-colors ${!dogData.is_castrated ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-white/5 text-gray-400'}`}>
+                                        <span className="material-symbols-outlined text-2xl font-black">cancel</span>
+                                    </div>
+                                    <span className={`font-black uppercase tracking-widest text-xs ${!dogData.is_castrated ? 'text-white' : 'text-gray-500'}`}>Não</span>
+                                </button>
                             </div>
-                            <div className="flex-1">
-                                <h3 className="font-bold">Castrado?</h3>
-                                <p className="text-xs text-gray-500 font-medium">Marque se seu cão já foi castrado</p>
-                            </div>
-                            <button
-                                onClick={() => setDogData({ ...dogData, is_castrated: !dogData.is_castrated })}
-                                className={`w-14 h-8 rounded-full relative transition-colors ${dogData.is_castrated ? 'bg-primary' : 'bg-gray-200 dark:bg-white/10'}`}
-                            >
-                                <div className={`absolute top-1 size-6 bg-white rounded-full transition-all ${dogData.is_castrated ? 'left-7' : 'left-1'} shadow-sm`} />
-                            </button>
                         </div>
 
                         <div>
@@ -560,7 +568,10 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                                     <div className="flex items-center gap-2 mt-2">
                                         <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider">{dogData.breed || 'SRD'}</span>
                                         {dogData.is_castrated && (
-                                            <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-500 text-[10px] font-bold uppercase tracking-wider ml-2">Castrado</span>
+                                            <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+                                                <span className="material-symbols-outlined text-[14px]">vaccines</span>
+                                                Castrado
+                                            </span>
                                         )}
                                         <div className="flex items-center gap-1 text-slate-500 text-sm">
                                             <span className="material-symbols-outlined text-[16px]">location_on</span>
