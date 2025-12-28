@@ -7,45 +7,68 @@
 :root {
   --primary: #22c55e;
   --primary-hover: #16a34a;
-  --primary-glow: rgba(34, 197, 94, 0.3);
+  --primary-shadow: rgba(34, 197, 94, 0.4);
   --secondary: #0f172a;
-  --background-light: #f8fafc;
-  --background-dark: #020617;
-  --surface-light: #ffffff;
-  --surface-dark: #0f172a;
-  --text-light: #0f172a;
-  --text-dark: #f8fafc;
-  --glass: rgba(255, 255, 255, 0.7);
-  --glass-dark: rgba(15, 23, 42, 0.7);
-  --border-light: rgba(0, 0, 0, 0.05);
-  --border-dark: rgba(255, 255, 255, 0.1);
+  --accent: #27f17b;
+  
+  --bg-main: #050705;
+  --bg-card: #111814;
+  --bg-input: rgba(255, 255, 255, 0.03);
+  
+  --text-main: #ffffff;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  
+  --border-dim: rgba(255, 255, 255, 0.05);
+  --border-focus: rgba(34, 197, 94, 0.5);
+  
+  --glass: rgba(17, 24, 20, 0.8);
+  --radius-xl: 2rem;
+  --radius-2xl: 3rem;
 }
 
 body {
-  @apply bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark antialiased transition-colors duration-300;
+  @apply bg-[#050705] text-white antialiased transition-colors duration-300;
   font-family: 'Plus Jakarta Sans', sans-serif;
   overflow-x: hidden;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  @apply tracking-tight font-black leading-tight;
+  @apply tracking-tight font-black uppercase leading-tight;
 }
 
 @layer components {
-  .btn-primary {
-    @apply h-14 bg-primary text-white font-bold py-4 px-8 rounded-2xl shadow-lg shadow-primary/20 hover:bg-primary-hover active:scale-95 transition-all duration-300 flex items-center justify-center gap-2;
+  .btn-premium {
+    @apply h-16 px-8 rounded-3xl font-black uppercase tracking-widest transition-all duration-300 
+           flex items-center justify-center gap-3 active:scale-[0.97] disabled:opacity-50;
   }
 
-  .glass-card {
-    @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/20 dark:border-white/10 rounded-[2.5rem] shadow-xl;
+  .btn-primary-premium {
+    @apply btn-premium bg-primary text-[#050705] shadow-[0_10px_30px_rgba(34,197,94,0.3)] 
+           hover:shadow-[0_15px_40px_rgba(34,197,94,0.4)] hover:-translate-y-0.5;
   }
 
-  .premium-card {
-    @apply bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.05)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-gray-100 dark:border-white/5;
+  .btn-ghost-premium {
+    @apply btn-premium bg-white/5 border border-white/10 hover:bg-white/10 text-white;
   }
 
   .input-premium {
-    @apply w-full h-14 px-6 rounded-2xl bg-gray-50 dark:bg-slate-800/50 border border-gray-100 dark:border-white/5 focus:ring-2 focus:ring-primary/50 outline-none transition-all;
+    @apply w-full h-16 px-6 rounded-3xl bg-white/5 border-2 border-transparent 
+           text-base font-bold transition-all outline-none 
+           focus:bg-black/40 focus:border-primary shadow-sm 
+           placeholder:text-gray-600;
+  }
+
+  .label-premium {
+    @apply text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] ml-2 mb-2 leading-none block;
+  }
+
+  .premium-card {
+    @apply bg-[#111814] p-8 rounded-[3rem] shadow-2xl border border-white/5;
+  }
+
+  .glass-premium {
+    @apply backdrop-blur-2xl bg-black/40 border border-white/10;
   }
 }
 
@@ -67,11 +90,10 @@ h1, h2, h3, h4, h5, h6 {
   animation: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Custom range input styling */
 input[type='range'] {
-  @apply appearance-none h-2 bg-gray-200 dark:bg-white/10 rounded-full outline-none;
+  @apply appearance-none h-2 bg-white/10 rounded-full outline-none;
 }
 
 input[type='range']::-webkit-slider-thumb {
-  @apply appearance-none w-6 h-6 bg-primary border-4 border-white dark:border-slate-900 rounded-full shadow-lg transition-transform active:scale-125;
+  @apply appearance-none w-6 h-6 bg-primary border-4 border-slate-900 rounded-full shadow-lg transition-transform active:scale-125;
 }
