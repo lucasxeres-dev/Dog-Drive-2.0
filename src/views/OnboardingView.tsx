@@ -211,7 +211,8 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                 has_shop: hasShop,
                 email: user.email,
                 latitude: coords?.lat,
-                longitude: coords?.lng
+                longitude: coords?.lng,
+                wallet_balance: 0.00 // Defensive initialization
             }).eq('id', user.id);
 
             if (profileError) throw profileError;
