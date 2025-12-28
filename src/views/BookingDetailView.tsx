@@ -5,14 +5,30 @@ import {
     MessageCircle, Navigation, ShieldCheck, Star, XCircle
 } from 'lucide-react';
 import { useTranslation } from '../contexts/LanguageContext';
+import { useNotification } from '../contexts/NotificationContext';
+import ServiceReviewModal from '../components/ServiceReviewModal';
 import { Booking } from '../types';
 
 const BookingDetailView: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const { showNotification } = useNotification();
     const [booking, setBooking] = useState<Booking | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isReviewOpen, setIsReviewOpen] = useState(false);
+
+    const handleReviewSubmit = (rating: number, comment: string) => {
+        // Logic to save review would go here (Supabase)
+        console.log({ rating, comment, bookingId: booking?.id });
+
+        // Update local state to reflect reviewed status
+        if (booking) {
+            setBooking({ ...booking, is_reviewed: true });
+        }
+
+        showNotification('Avaliação enviada com sucesso!', 'success');
+    };
 
     useEffect(() => {
         // Mock fetch based on ID
@@ -157,14 +173,39 @@ const BookingDetailView: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Cancel Button */}
-                    {booking.status === 'confirmed' || booking.status === 'pending' ? (
-                        <button className="w-full h-14 bg-rose-50 text-rose-500 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-rose-100 transition-colors">
-                            <XCircle size={18} /> Cancelar Reserva
-                        </button>
-                    ) : null}
+                    {/* Actions */}
+                    <div className="space-y-3">
+                        {booking.status === 'completed' && !booking.is_reviewed && (
+                            <button
+                                onClick={() => setIsReviewOpen(true)}
+                                className="w-full h-14 bg-[#22eb7e] text-[#102217] rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-[#1fd672] transition-colors shadow-lg shadow-[#22eb7e]/20 active:scale-95"
+                            >
+                                <Star size={18} className="fill-[#102217]" /> Avaliar Serviço
+                            </button>
+                        )}
+
+                        {booking.status === 'completed' && booking.is_reviewed && (
+                            <div className="w-full h-14 bg-slate-100 text-slate-400 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2">
+                                <CheckCircle size={18} /> Serviço Avaliado
+                            </div>
+                        )}
+
+                        {(booking.status === 'confirmed' || booking.status === 'pending') && (
+                            <button className="w-full h-14 bg-rose-50 text-rose-500 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-rose-100 transition-colors">
+                                <XCircle size={18} /> Cancelar Reserva
+                            </button>
+                        )}
+                    </div>
                 </div>
             </main>
+
+            <ServiceReviewModal
+                isOpen={isReviewOpen}
+                onClose={() => setIsReviewOpen(false)}
+                onSubmit={handleReviewSubmit}
+                providerName={booking.provider.name}
+                providerAvatar={booking.provider.avatar || ''}
+            />
         </div>
     );
 };
