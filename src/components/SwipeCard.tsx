@@ -44,25 +44,25 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ dog, onSwipe, isTop, index }) => 
       animate={{ scale: 1, opacity: 1 }}
       exit={{ x: x.get() < 0 ? -500 : 500, opacity: 0, transition: { duration: 0.3 } }}
     >
-      <div className="relative h-full w-full rounded-[3rem] overflow-hidden bg-white shadow-2xl shadow-slate-200/50 border border-slate-50 group">
+      <div className="relative h-full w-full rounded-[2.5rem] overflow-hidden bg-white shadow-2xl shadow-slate-200/40 border-4 border-white group">
         {/* Image */}
-        <div className="absolute inset-0 bg-slate-100">
+        <div className="absolute inset-0 bg-slate-50">
           <img
             src={safeImage}
             alt={safeName}
-            className="h-full w-full object-cover transition-transform duration-[10s] group-hover:scale-110"
+            className="h-full w-full object-cover transition-transform duration-[15s] group-hover:scale-110"
           />
         </div>
 
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent pointer-events-none" />
+        {/* Gradient Overlay - Deeper for better text readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
 
-        {/* Overlays */}
+        {/* Swipe Indicators */}
         <motion.div
           style={{ opacity: likeOpacity }}
           className="absolute top-12 left-12 px-6 py-2 border-4 border-[#22eb7e] rounded-2xl transform -rotate-12 z-20 pointer-events-none"
         >
-          <span className="text-4xl font-black text-[#22eb7e] uppercase tracking-tighter">SIM!</span>
+          <span className="text-4xl font-black text-[#22eb7e] uppercase tracking-tighter shadow-glow">SIM!</span>
         </motion.div>
 
         <motion.div
@@ -72,39 +72,43 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ dog, onSwipe, isTop, index }) => 
           <span className="text-4xl font-black text-rose-500 uppercase tracking-tighter">NOPE</span>
         </motion.div>
 
-        {/* Badge */}
+        {/* Feature Badge */}
         {index < 3 && (
-          <div className="absolute top-8 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 flex items-center gap-2 z-10">
+          <motion.div
+            animate={{ y: [0, -5, 0] }}
+            transition={{ duration: 4, repeat: Infinity }}
+            className="absolute top-8 left-1/2 -translate-x-1/2 glass px-4 py-2 rounded-full flex items-center gap-2 z-10"
+          >
             <Sparkles size={14} className="text-[#22eb7e]" />
-            <span className="text-[10px] font-black text-white uppercase tracking-widest">Destaque</span>
-          </div>
+            <span className="text-[10px] font-black text-slate-900 uppercase tracking-[0.2em]">Destaque</span>
+          </motion.div>
         )}
 
-        {/* Bottom Info */}
-        <div className="absolute inset-x-0 bottom-0 p-10 text-white pointer-events-none">
-          <div className="flex items-end justify-between mb-4">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <h2 className="text-4xl font-black tracking-tight">{safeName}</h2>
-                <span className="text-2xl font-bold opacity-70">{safeAge}</span>
+        {/* Bottom Info Section */}
+        <div className="absolute inset-x-0 bottom-0 p-8 text-white pointer-events-none">
+          <div className="flex items-end justify-between mb-6">
+            <div className="space-y-1">
+              <div className="flex items-baseline gap-3">
+                <h2 className="text-5xl font-black tracking-tighter drop-shadow-lg">{safeName}</h2>
+                <span className="text-2xl font-bold opacity-80 decoration-[#22eb7e] decoration-4 underline underline-offset-4">{safeAge}</span>
               </div>
-              <div className="flex items-center gap-1.5 text-white/60 text-xs font-bold uppercase tracking-wider">
-                <MapPin size={12} className="text-[#22eb7e]" />
+              <div className="flex items-center gap-2 text-white/80 text-[10px] font-black uppercase tracking-[0.2em] drop-shadow">
+                <MapPin size={14} className="text-[#22eb7e]" />
                 <span>{safeLocation}</span>
               </div>
             </div>
-            <div className="w-14 h-14 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center text-white border border-white/20">
-              <Info size={24} />
+            <div className="size-14 glass rounded-2xl flex items-center justify-center text-slate-900 shadow-xl pointer-events-auto active:scale-95 transition-transform cursor-pointer">
+              <Info size={24} strokeWidth={2.5} />
             </div>
           </div>
 
           <div className="flex flex-wrap gap-2 mb-6">
-            <div className="px-4 py-1.5 rounded-xl bg-white/15 backdrop-blur-md text-[10px] font-black uppercase tracking-widest border border-white/10">
+            <div className="px-4 py-2 glass !bg-[#102217]/60 rounded-xl text-[10px] font-black uppercase tracking-widest text-white border border-white/20">
               {safeBreed}
             </div>
             {dog?.is_castrated && (
-              <div className="px-4 py-1.5 rounded-xl bg-[#22eb7e]/20 backdrop-blur-md text-[#22eb7e] border border-[#22eb7e]/30 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
-                <ShieldCheck size={12} />
+              <div className="px-4 py-2 glass !bg-[#22eb7e]/20 rounded-xl text-[#22eb7e] border border-[#22eb7e]/40 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                <ShieldCheck size={14} />
                 Castrado
               </div>
             )}
@@ -113,7 +117,7 @@ const SwipeCard: React.FC<SwipeCardProps> = ({ dog, onSwipe, isTop, index }) => 
           {dog?.traits && (
             <div className="flex flex-wrap gap-2">
               {(Array.isArray(dog.traits) ? dog.traits : dog.traits.split(',')).slice(0, 3).map((trait: string) => (
-                <span key={trait} className="px-3 py-1 bg-black/40 rounded-lg text-[10px] font-bold text-white/80 border border-white/5 backdrop-blur-sm">
+                <span key={trait} className="px-3 py-1.5 bg-white/10 backdrop-blur-md rounded-lg text-[10px] font-black text-white/90 border border-white/10 tracking-widest uppercase">
                   {trait.trim()}
                 </span>
               ))}

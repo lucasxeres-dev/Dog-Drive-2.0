@@ -1,10 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Clock, MapPin, ChevronRight, Dog, Calendar } from 'lucide-react';
-import { Booking } from '../types';
 
 interface BookingCardProps {
-    booking: Booking;
+    booking: any;
 }
 
 const BookingCard: React.FC<BookingCardProps> = ({ booking }) => {
@@ -37,13 +36,11 @@ const BookingCard: React.FC<BookingCardProps> = ({ booking }) => {
         >
             <div className="flex justify-between items-start mb-4 relative z-10">
                 <div className="flex items-center gap-3">
-                    <img
-                        src={booking.provider.avatar || 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=200'}
-                        alt={booking.provider.name}
-                        className="w-12 h-12 rounded-2xl object-cover bg-slate-100"
-                    />
+                    <div className="size-12 rounded-2xl bg-slate-50 flex items-center justify-center text-[#22eb7e]">
+                        <Dog size={24} />
+                    </div>
                     <div>
-                        <h3 className="font-bold text-slate-900 leading-tight">{booking.provider.name}</h3>
+                        <h3 className="font-bold text-slate-900 leading-tight">{booking.provider?.name || 'Serviço'}</h3>
                         <p className="text-[10px] uppercase font-black tracking-widest text-[#22eb7e] mt-0.5">{booking.service_type}</p>
                     </div>
                 </div>
@@ -57,10 +54,12 @@ const BookingCard: React.FC<BookingCardProps> = ({ booking }) => {
                     <Calendar size={12} className="text-[#22eb7e]" />
                     <span>{booking.date}</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                    <Clock size={12} className="text-[#22eb7e]" />
-                    <span>{booking.time}</span>
-                </div>
+                {booking.time && (
+                    <div className="flex items-center gap-1.5">
+                        <Clock size={12} className="text-[#22eb7e]" />
+                        <span>{booking.time}</span>
+                    </div>
+                )}
             </div>
 
             <div className="flex justify-between items-end border-t border-slate-50 pt-3 relative z-10">
@@ -68,7 +67,7 @@ const BookingCard: React.FC<BookingCardProps> = ({ booking }) => {
                     <MapPin size={12} />
                     <span className="text-[10px] font-bold truncate max-w-[150px]">{booking.location}</span>
                 </div>
-                <p className="font-black text-slate-900">€{booking.price.toFixed(2)}</p>
+                <p className="font-black text-slate-900">€{(booking.price || 0).toFixed(2)}</p>
             </div>
 
             {/* Background decoration */}

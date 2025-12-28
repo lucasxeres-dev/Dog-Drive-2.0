@@ -5,10 +5,11 @@ import { useTranslation } from '../contexts/LanguageContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { authService } from '../services/authService';
 import { useSupabase } from '../hooks/useSupabase';
+import { PremiumButton } from '../components/UIComponents';
 import {
     Dog, Store, Briefcase, User, Mail, Lock,
     Check, ArrowRight, ArrowLeft, Building2,
-    FileText, Phone
+    FileText, Phone, Sparkles
 } from 'lucide-react';
 
 const RegisterView: React.FC = () => {
@@ -111,40 +112,57 @@ const RegisterView: React.FC = () => {
     const prevStep = () => setStep(s => s - 1);
 
     const containerVariants = {
-        hidden: { opacity: 0, x: 20 },
-        visible: { opacity: 1, x: 0 },
-        exit: { opacity: 0, x: -20 }
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0 },
+        exit: { opacity: 0, scale: 0.95 }
     };
 
     return (
-        <div className="flex-1 flex flex-col bg-[#f8fafc] overflow-hidden h-screen">
-            {/* Header / Progress */}
-            <header className="pt-12 pb-6 px-8 flex flex-col items-center bg-white border-b border-slate-100">
-                <div className="flex gap-2 mb-6">
+        <div className="flex-1 flex flex-col bg-[#f8fafc] overflow-hidden h-screen pb-24 lg:pb-0">
+            {/* Header / Premium Progress */}
+            <header className="pt-14 pb-8 px-8 flex flex-col items-center glass sticky top-0 z-50 border-b border-white">
+                <div className="flex gap-4 mb-6">
                     {[1, 2, 3].map((s) => (
-                        <div
-                            key={s}
-                            className={`h-1.5 rounded-full transition-all duration-700 ${step >= s ? 'w-8 bg-[#22eb7e]' : 'w-4 bg-slate-100'}`}
-                        />
+                        <div key={s} className="relative">
+                            <motion.div
+                                initial={false}
+                                animate={{
+                                    width: step >= s ? 40 : 12,
+                                    backgroundColor: step >= s ? '#22eb7e' : '#e2e8f0'
+                                }}
+                                className="h-2 rounded-full shadow-sm"
+                            />
+                            {step === s && (
+                                <motion.div
+                                    layoutId="step-glow"
+                                    className="absolute inset-0 bg-[#22eb7e] rounded-full blur-sm opacity-50"
+                                />
+                            )}
+                        </div>
                     ))}
                 </div>
-                <h2 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em]">
-                    {step === 1 ? 'Perfil' : step === 2 ? 'Identidade' : 'Negócio'}
-                </h2>
+                <div className="flex items-center gap-3">
+                    <Sparkles size={16} className="text-[#22eb7e]" />
+                    <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">
+                        {step === 1 ? 'Tipo de Perfil' : step === 2 ? 'Identidade' : 'Configuração Profissional'}
+                    </h2>
+                </div>
             </header>
 
-            <main className="flex-1 overflow-y-auto px-8 py-10 no-scrollbar">
+            <main className="flex-1 overflow-y-auto px-8 py-12 no-scrollbar">
                 <AnimatePresence mode="wait">
                     {step === 1 && (
                         <motion.div
                             key="step1"
                             variants={containerVariants}
                             initial="hidden" animate="visible" exit="exit"
-                            className="space-y-6 max-w-md mx-auto"
+                            className="space-y-10 max-w-md mx-auto"
                         >
-                            <div className="mb-8">
-                                <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-2">Como você quer <span className="text-[#22eb7e]">começar</span>?</h1>
-                                <p className="text-slate-500 font-bold">Selecione seu tipo de perfil no Dog Drive.</p>
+                            <div className="text-center md:text-left">
+                                <h1 className="text-4xl font-black text-slate-900 tracking-tighter leading-tight mb-4">
+                                    Como você quer <span className="text-[#22eb7e] relative">começar<div className="absolute -bottom-1 left-0 w-full h-2 bg-[#22eb7e]/20 -rotate-1" /></span>?
+                                </h1>
+                                <p className="text-slate-500 font-bold leading-relaxed">Selecione seu tipo de perfil no ecossistema Dog Drive.</p>
                             </div>
 
                             <div className="space-y-4">
@@ -166,7 +184,7 @@ const RegisterView: React.FC = () => {
                                     active={role === 'provider'}
                                     onClick={() => { setRole('provider'); nextStep(); }}
                                     icon={Briefcase}
-                                    title="Sou Provedor"
+                                    title="Sou Colaborador"
                                     subtitle="Passeadores, Groomers e Dog Sitters"
                                 />
                             </div>
@@ -178,63 +196,75 @@ const RegisterView: React.FC = () => {
                             key="step2"
                             variants={containerVariants}
                             initial="hidden" animate="visible" exit="exit"
-                            className="space-y-6 max-w-md mx-auto"
+                            className="space-y-10 max-w-md mx-auto"
                         >
-                            <div className="mb-8">
-                                <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-2">Suas <span className="text-[#22eb7e]">Credenciais</span></h1>
-                                <p className="text-slate-500 font-bold">Dados básicos para seu acesso seguro.</p>
+                            <div className="text-center md:text-left">
+                                <h1 className="text-4xl font-black text-slate-900 tracking-tighter leading-tight mb-4">
+                                    Suas <span className="text-[#22eb7e]">Credenciais</span>
+                                </h1>
+                                <p className="text-slate-500 font-bold leading-relaxed">Dados fundamentais para o seu acesso seguro.</p>
                             </div>
 
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <label className="label-premium ml-4">Nome Completo</label>
+                            <div className="space-y-6">
+                                <div className="space-y-2 group">
+                                    <label className="label-premium ml-5 group-focus-within:text-[#22eb7e] transition-colors">Nome Completo</label>
                                     <div className="relative">
-                                        <User size={18} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" />
-                                        <input className="input-premium !pl-14" placeholder="João Silva" value={formData.fullName} onChange={e => setFormData({ ...formData, fullName: e.target.value })} />
+                                        <div className="absolute left-6 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-slate-50 text-slate-400 group-focus-within:text-[#22eb7e] group-focus-within:bg-[#22eb7e]/10 transition-all">
+                                            <User size={20} strokeWidth={2.5} />
+                                        </div>
+                                        <input className="input-premium !pl-20" placeholder="João Silva" value={formData.fullName} onChange={e => setFormData({ ...formData, fullName: e.target.value })} />
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label className="label-premium ml-4">Nome de Usuário</label>
+                                <div className="space-y-2 group">
+                                    <label className="label-premium ml-5 group-focus-within:text-[#22eb7e] transition-colors">Nome de Usuário</label>
                                     <div className="relative">
-                                        <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 font-black text-lg">@</span>
-                                        <input className="input-premium !pl-12" placeholder="joaosilva" value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value })} />
+                                        <div className="absolute left-6 top-1/2 -translate-y-1/2 size-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 group-focus-within:text-[#22eb7e] group-focus-within:bg-[#22eb7e]/10 transition-all">
+                                            <span className="font-black text-xl leading-none">@</span>
+                                        </div>
+                                        <input className="input-premium !pl-20" placeholder="joaosilva" value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value })} />
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label className="label-premium ml-4">E-mail</label>
+                                <div className="space-y-2 group">
+                                    <label className="label-premium ml-5 group-focus-within:text-[#22eb7e] transition-colors">E-mail</label>
                                     <div className="relative">
-                                        <Mail size={18} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" />
-                                        <input className="input-premium !pl-14" placeholder="exemplo@gmail.com" type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                                        <div className="absolute left-6 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-slate-50 text-slate-400 group-focus-within:text-[#22eb7e] group-focus-within:bg-[#22eb7e]/10 transition-all">
+                                            <Mail size={20} strokeWidth={2.5} />
+                                        </div>
+                                        <input className="input-premium !pl-20" placeholder="exemplo@gmail.com" type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 gap-4">
-                                    <div className="space-y-2">
-                                        <label className="label-premium ml-4">Senha</label>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2 group">
+                                        <label className="label-premium ml-5 group-focus-within:text-[#22eb7e] transition-colors">Senha</label>
                                         <div className="relative">
-                                            <Lock size={18} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" />
-                                            <input className="input-premium !pl-14" placeholder="••••••••" type="password" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} />
+                                            <div className="absolute left-6 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-slate-50 text-slate-400 group-focus-within:text-[#22eb7e] group-focus-within:bg-[#22eb7e]/10 transition-all">
+                                                <Lock size={20} strokeWidth={2.5} />
+                                            </div>
+                                            <input className="input-premium !pl-20" placeholder="••••••••" type="password" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} />
                                         </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="label-premium ml-4">Confirmar Senha</label>
+                                    <div className="space-y-2 group">
+                                        <label className="label-premium ml-5 group-focus-within:text-[#22eb7e] transition-colors">Confirmar</label>
                                         <div className="relative">
-                                            <Lock size={18} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" />
-                                            <input className="input-premium !pl-14" placeholder="••••••••" type="password" value={formData.confirmPassword} onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })} />
+                                            <div className="absolute left-6 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-slate-50 text-slate-400 group-focus-within:text-[#22eb7e] group-focus-within:bg-[#22eb7e]/10 transition-all">
+                                                <Lock size={20} strokeWidth={2.5} />
+                                            </div>
+                                            <input className="input-premium !pl-20" placeholder="••••••••" type="password" value={formData.confirmPassword} onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })} />
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="pt-6 flex gap-4">
-                                <button onClick={prevStep} className="btn-ghost-premium flex-1">
-                                    <ArrowLeft size={18} className="mr-2" /> Voltar
-                                </button>
-                                <button onClick={isBusinessRole ? nextStep : handleRegister} className="btn-primary-premium flex-1">
-                                    {isBusinessRole ? 'Próximo' : 'Finalizar'} <ArrowRight size={18} className="ml-2" />
-                                </button>
+                            <div className="pt-8 flex flex-col md:flex-row gap-4">
+                                <PremiumButton variant="ghost" onClick={prevStep} className="flex-1 py-6">
+                                    <ArrowLeft size={18} className="mr-3" /> Voltar
+                                </PremiumButton>
+                                <PremiumButton onClick={isBusinessRole ? nextStep : handleRegister} className="flex-1 py-6">
+                                    {isBusinessRole ? 'Continuar Configuração' : 'Finalizar Registro'} <ArrowRight size={18} className="ml-3" />
+                                </PremiumButton>
                             </div>
                         </motion.div>
                     )}
@@ -244,87 +274,120 @@ const RegisterView: React.FC = () => {
                             key="step3"
                             variants={containerVariants}
                             initial="hidden" animate="visible" exit="exit"
-                            className="space-y-6 max-w-md mx-auto"
+                            className="space-y-10 max-w-md mx-auto"
                         >
-                            <div className="mb-8">
-                                <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-2">Dados do <span className="text-[#22eb7e]">Negócio</span></h1>
-                                <p className="text-slate-500 font-bold">Informações fiscais e de contato.</p>
+                            <div className="text-center md:text-left">
+                                <h1 className="text-4xl font-black text-slate-900 tracking-tighter leading-tight mb-4">
+                                    Dados do <span className="text-[#22eb7e]">Negócio</span>
+                                </h1>
+                                <p className="text-slate-500 font-bold leading-relaxed">Informações comerciais e fiscais para Portugal.</p>
                             </div>
 
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <label className="label-premium ml-4">NIF (Portugal)</label>
+                            <div className="space-y-6">
+                                <div className="space-y-2 group">
+                                    <label className="label-premium ml-5 group-focus-within:text-[#22eb7e] transition-colors">NIF (Portugal)</label>
                                     <div className="relative">
-                                        <FileText size={18} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" />
-                                        <input className="input-premium !pl-14" placeholder="123 456 789" value={formData.nif} onChange={e => setFormData({ ...formData, nif: e.target.value })} />
+                                        <div className="absolute left-6 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-slate-50 text-slate-400 group-focus-within:text-[#102217] group-focus-within:bg-[#22eb7e] transition-all">
+                                            <FileText size={20} strokeWidth={2.5} />
+                                        </div>
+                                        <input className="input-premium !pl-20" placeholder="123 456 789" value={formData.nif} onChange={e => setFormData({ ...formData, nif: e.target.value })} />
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label className="label-premium ml-4">Nome Comercial</label>
+                                <div className="space-y-2 group">
+                                    <label className="label-premium ml-5 group-focus-within:text-[#22eb7e] transition-colors">Nome Comercial</label>
                                     <div className="relative">
-                                        <Building2 size={18} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" />
-                                        <input className="input-premium !pl-14" placeholder="Minha Loja Pet" value={formData.companyName} onChange={e => setFormData({ ...formData, companyName: e.target.value })} />
+                                        <div className="absolute left-6 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-slate-50 text-slate-400 group-focus-within:text-[#102217] group-focus-within:bg-[#22eb7e] transition-all">
+                                            <Building2 size={20} strokeWidth={2.5} />
+                                        </div>
+                                        <input className="input-premium !pl-20" placeholder="Minha Loja Pet" value={formData.companyName} onChange={e => setFormData({ ...formData, companyName: e.target.value })} />
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label className="label-premium ml-4">Endereço Comercial</label>
+                                <div className="space-y-2 group">
+                                    <label className="label-premium ml-5 group-focus-within:text-[#22eb7e] transition-colors">Endereço Principal</label>
                                     <div className="relative">
-                                        <Building2 size={18} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" />
-                                        <input className="input-premium !pl-14" placeholder="Rua, Cidade, Portugal" value={formData.businessAddress} onChange={e => setFormData({ ...formData, businessAddress: e.target.value })} />
+                                        <div className="absolute left-6 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-slate-50 text-slate-400 group-focus-within:text-[#102217] group-focus-within:bg-[#22eb7e] transition-all">
+                                            <Phone size={20} strokeWidth={2.5} />
+                                        </div>
+                                        <input className="input-premium !pl-20" placeholder="Rua, Cidade, Portugal" value={formData.businessAddress} onChange={e => setFormData({ ...formData, businessAddress: e.target.value })} />
                                     </div>
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label className="label-premium ml-4">Telemóvel de Contato</label>
+                                <div className="space-y-2 group">
+                                    <label className="label-premium ml-5 group-focus-within:text-[#22eb7e] transition-colors">Telemóvel de Contato</label>
                                     <div className="relative">
-                                        <Phone size={18} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" />
-                                        <input className="input-premium !pl-14" placeholder="+351 000 000 000" value={formData.businessPhone} onChange={e => setFormData({ ...formData, businessPhone: e.target.value })} />
+                                        <div className="absolute left-6 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-slate-50 text-slate-400 group-focus-within:text-[#102217] group-focus-within:bg-[#22eb7e] transition-all">
+                                            <Phone size={20} strokeWidth={2.5} />
+                                        </div>
+                                        <input className="input-premium !pl-20" placeholder="+351 9xx xxx xxx" value={formData.businessPhone} onChange={e => setFormData({ ...formData, businessPhone: e.target.value })} />
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="pt-6 flex gap-4">
-                                <button onClick={prevStep} className="btn-ghost-premium flex-1">
-                                    <ArrowLeft size={18} /> Voltar
-                                </button>
-                                <button onClick={handleRegister} className="btn-primary-premium flex-1" disabled={loading}>
-                                    {loading ? <div className="size-6 border-2 border-slate-900/10 border-t-[#22eb7e] rounded-full animate-spin" /> : 'Finalizar'}
-                                </button>
+                            <div className="pt-8 flex flex-col md:flex-row gap-4">
+                                <PremiumButton variant="ghost" onClick={prevStep} className="flex-1 py-6">
+                                    <ArrowLeft size={18} className="mr-3" /> Voltar
+                                </PremiumButton>
+                                <PremiumButton onClick={handleRegister} isLoading={loading} className="flex-1 py-6">
+                                    Finalizar e Entrar <ArrowRight size={18} className="ml-3" />
+                                </PremiumButton>
                             </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
 
-                <p className="mt-12 text-center text-slate-400 font-bold text-sm">
-                    Já possui conta? <button onClick={() => navigate('/login')} className="text-[#22eb7e] hover:text-[#19c765] font-black transition-colors">Entrar agora</button>
-                </p>
+                <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.5 }}
+                    className="mt-16 text-center text-slate-400 font-bold text-sm"
+                >
+                    Já possui conta? <button onClick={() => navigate('/login')} className="text-[#22eb7e] hover:text-[#19c765] font-black transition-colors underline underline-offset-4 decoration-2">Entrar agora</button>
+                </motion.p>
             </main>
         </div>
     );
 };
 
 const RoleButton: React.FC<{ active: boolean, onClick: () => void, icon: any, title: string, subtitle: string }> = ({ active, onClick, icon: Icon, title, subtitle }) => (
-    <button
+    <motion.button
+        whileHover={{ scale: 1.02, y: -2 }}
+        whileTap={{ scale: 0.98 }}
         onClick={onClick}
-        className={`w-full p-6 rounded-[2.5rem] border-2 text-left transition-all duration-300 group relative overflow-hidden ${active ? 'bg-[#22eb7e]/5 border-[#22eb7e] shadow-2xl shadow-[#22eb7e]/10' : 'bg-white border-slate-100 hover:border-slate-200'}`}
+        className={`w-full p-8 rounded-[3rem] border-4 text-left transition-all duration-500 group relative overflow-hidden ${active
+            ? 'bg-[#102217] border-[#22eb7e] shadow-2xl shadow-[#22eb7e]/20'
+            : 'bg-white border-white shadow-xl shadow-slate-200/40 hover:border-slate-100'
+            }`}
     >
-        <div className="relative z-10 flex items-center gap-6">
-            <div className={`size-16 rounded-3xl flex items-center justify-center transition-all ${active ? 'bg-[#22eb7e] text-[#102217]' : 'bg-slate-50 text-slate-300 group-hover:bg-[#22eb7e]/10 group-hover:text-[#22eb7e]'}`}>
-                <Icon size={32} strokeWidth={2.5} />
+        {active && (
+            <motion.div
+                layoutId="active-bg-accent"
+                className="absolute top-0 right-0 w-32 h-32 bg-[#22eb7e]/10 rounded-full -mr-16 -mt-16 blur-3xl"
+            />
+        )}
+        <div className="relative z-10 flex items-center gap-8">
+            <div className={`size-20 rounded-[2rem] flex items-center justify-center transition-all duration-500 ${active
+                ? 'bg-[#22eb7e] text-[#102217] rotate-3 shadow-glow'
+                : 'bg-slate-50 text-slate-300 group-hover:bg-[#22eb7e]/10 group-hover:text-[#22eb7e]'
+                }`}>
+                <Icon size={36} strokeWidth={2.5} />
             </div>
             <div className="flex-1">
-                <h4 className={`text-xl font-black transition-colors ${active ? 'text-slate-900' : 'text-slate-500 group-hover:text-slate-900'}`}>{title}</h4>
-                <p className="text-slate-400 text-xs font-bold leading-tight mt-1">{subtitle}</p>
+                <h4 className={`text-2xl font-black transition-colors duration-500 tracking-tight ${active ? 'text-white' : 'text-slate-900'}`}>{title}</h4>
+                <p className={`text-[11px] font-bold leading-relaxed mt-1 tracking-wide uppercase ${active ? 'text-[#22eb7e]/60' : 'text-slate-400'}`}>{subtitle}</p>
             </div>
             {active && (
-                <div className="size-8 rounded-full bg-[#22eb7e] flex items-center justify-center">
-                    <Check size={18} className="text-[#102217] stroke-[4]" />
-                </div>
+                <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="size-10 rounded-2xl bg-[#22eb7e] flex items-center justify-center shadow-lg"
+                >
+                    <Check size={22} className="text-[#102217] stroke-[4]" />
+                </motion.div>
             )}
         </div>
-    </button>
+    </motion.button>
 );
 
 export default RegisterView;

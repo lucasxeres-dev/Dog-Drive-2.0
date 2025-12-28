@@ -41,10 +41,17 @@ const BottomNav: React.FC<BottomNavProps> = ({ preferences = {}, role }) => {
                     <div className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[8px] font-bold text-white ring-2 ring-white dark:ring-slate-900">2</div>
                 </NavLink>
 
-                <NavLink to="/settings" className={({ isActive }) => `flex flex-col items-center gap-1 transition-all duration-300 ${isActive ? 'text-primary scale-110' : 'text-slate-400 hover:text-slate-600'}`}>
-                    <Settings size={24} />
-                    <span className="text-[9px] font-black uppercase tracking-wider">Ajustes</span>
-                </NavLink>
+                {(role === 'grooming' || role === 'petshop') ? (
+                    <NavLink to="/groomer-dashboard" className={({ isActive }) => `flex flex-col items-center gap-1 transition-all duration-300 ${isActive ? 'text-primary scale-110' : 'text-slate-400 hover:text-slate-600'}`}>
+                        <LayoutGrid size={24} />
+                        <span className="text-[9px] font-black uppercase tracking-wider">Painel</span>
+                    </NavLink>
+                ) : (
+                    <NavLink to="/settings" className={({ isActive }) => `flex flex-col items-center gap-1 transition-all duration-300 ${isActive ? 'text-primary scale-110' : 'text-slate-400 hover:text-slate-600'}`}>
+                        <Settings size={24} />
+                        <span className="text-[9px] font-black uppercase tracking-wider">Ajustes</span>
+                    </NavLink>
+                )}
             </div>
         </nav>
     );

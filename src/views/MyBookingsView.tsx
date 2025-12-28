@@ -5,65 +5,55 @@ import { useTranslation } from '../contexts/LanguageContext';
 import BookingCard from '../components/BookingCard';
 import { Booking } from '../types';
 import { useSupabase } from '../hooks/useSupabase';
+import { useAuth } from '../hooks/useAuth';
+import { Skeleton } from '../components/UIComponents';
 
 const MyBookingsView: React.FC = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
-    const supabase = useSupabase(); // For future DB integration
+    const supabase = useSupabase();
+    const { user } = useAuth();
+
     const [activeTab, setActiveTab] = useState<'scheduled' | 'history'>('scheduled');
-    const [bookings, setBookings] = useState<Booking[]>([]);
+    const [bookings, setBookings] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Simulating data fetch
-        setLoading(true);
-        setTimeout(() => {
-            const mockBookings: Booking[] = [
-                {
-                    id: '1',
-                    service_type: 'walk',
-                    status: 'confirmed',
-                    date: '05 Set',
-                    time: '14:00',
-                    price: 15.00,
-                    provider: { id: 'p1', name: 'Pedro Santos', role: 'Walker', avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=200' },
-                    client_id: 'u1',
-                    location: 'Parque Eduardo VII',
-                },
-                {
-                    id: '2',
-                    service_type: 'boarding',
-                    status: 'pending',
-                    date: '12 Set',
-                    time: '09:00',
-                    price: 45.00,
-                    provider: { id: 'p2', name: 'Ana Silva', role: 'Sitter', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200' },
-                    client_id: 'u1',
-                    location: 'Casa do Anfitrião',
-                },
-                {
-                    id: '3',
-                    service_type: 'walk',
-                    status: 'completed',
-                    date: '28 Ago',
-                    time: '10:00',
-                    price: 15.00,
-                    provider: { id: 'p1', name: 'Pedro Santos', role: 'Walker', avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=200' },
-                    client_id: 'u1',
-                    location: 'Jardim da Estrela',
-                }
-            ];
-            setBookings(mockBookings);
-            setLoading(false);
-        }, 800);
-    }, []);
-
-    const filteredBookings = bookings.filter(b => {
-        if (activeTab === 'scheduled') {
-            return b.status === 'confirmed' || b.status === 'pending';
+        if (user) {
+            fetchBookings();
         }
-        return b.status === 'completed' || b.status === 'cancelled';
-    });
+    }, [user, activeTab]);
+
+    const fetchBookings = async () => {
+        try {
+            setLoading(true);
+
+            let query = supabase
+                .from('bookings')
+                .select(`
+                    *,
+                    location:business_locations(name, address),
+                    dog:dogs(name, image_url)
+                `)
+                .eq('user_id', user?.id)
+                .order('date', { ascending: true });
+
+            if (activeTab === 'scheduled') {
+                query = query.in('status', ['pending', 'confirmed']);
+            } else {
+                query = query.in('status', ['completed', 'cancelled']);
+            }
+
+            const { data, error } = await query;
+
+            if (error) throw error;
+            setBookings(data || []);
+        } catch (error) {
+            console.error('Error fetching bookings:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="flex-1 flex flex-col bg-[#f8fafc] h-screen overflow-hidden">
@@ -100,10 +90,10 @@ const MyBookingsView: React.FC = () => {
                 {loading ? (
                     <div className="space-y-4">
                         {[1, 2, 3].map(i => (
-                            <div key={i} className="h-32 bg-slate-100 rounded-[2rem] animate-pulse" />
+                            <Skeleton key={i} className="h-32 w-full rounded-[2rem]" />
                         ))}
                     </div>
-                ) : filteredBookings.length === 0 ? (
+                ) : bookings.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20 text-center opacity-60">
                         <div className="size-20 bg-slate-100 rounded-full flex items-center justify-center mb-4 text-slate-400">
                             <ClipboardList size={32} />
@@ -118,8 +108,21 @@ const MyBookingsView: React.FC = () => {
                     </div>
                 ) : (
                     <div className="space-y-4 animate-fade-in">
-                        {filteredBookings.map(booking => (
-                            <BookingCard key={booking.id} booking={booking} />
+                        {bookings.map(booking => (
+                            <BookingCard
+                                key={booking.id}
+                                booking={{
+                                    ...booking,
+                                    date: new Date(booking.date).toLocaleDateString(),
+                                    time: new Date(booking.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                                    price: booking.amount,
+                                    location: booking.location?.name || 'Local',
+                                    provider: {
+                                        name: booking.location?.name || 'Workshop',
+                                        avatar: booking.dog?.image_url // Simplified for UI
+                                    }
+                                }}
+                            />
                         ))}
                     </div>
                 )}

@@ -74,8 +74,8 @@ const ProviderDashboard: React.FC = () => {
             {/* Header */}
             <header className="px-6 pt-12 pb-6 flex items-center justify-between bg-white shadow-sm">
                 <div>
-                    <h1 className="text-xl font-black text-slate-900 leading-tight">Olá, {profile?.business_name || 'Provedor'}</h1>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">Painel do Profissional</p>
+                    <h1 className="text-xl font-black text-slate-900 leading-tight">Olá, {profile?.business_name || 'Colaborador'}</h1>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">Painel do Colaborador</p>
                 </div>
                 <button
                     onClick={toggleOnline}

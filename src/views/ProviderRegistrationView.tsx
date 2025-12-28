@@ -84,7 +84,7 @@ const ProviderRegistrationView: React.FC = () => {
 
                         <div className="grid gap-4">
                             {[
-                                { id: 'worker', title: 'Profissional Autônomo', sub: 'Passeadores, Groomers, Dog Sitters', icon: Briefcase },
+                                { id: 'worker', title: 'Colaborador Autônomo', sub: 'Passeadores, Groomers, Dog Sitters', icon: Briefcase },
                                 { id: 'store', title: 'Pet Shop / Loja', sub: 'Venda produtos e suprimentos', icon: Store }
                             ].map(item => (
                                 <button
@@ -112,7 +112,7 @@ const ProviderRegistrationView: React.FC = () => {
                     <div className="space-y-10 animate-slide-up max-w-md mx-auto">
                         <div>
                             <h2 className="text-4xl font-black text-slate-900 tracking-tight leading-[1.1] mb-4">Fale sobre <span className="text-[#22eb7e]">Você</span></h2>
-                            <p className="text-slate-500 font-bold">Vamos construir o seu perfil profissional.</p>
+                            <p className="text-slate-500 font-bold">Vamos construir o seu perfil de colaborador.</p>
                         </div>
 
                         <div className="space-y-6">

@@ -1,9 +1,57 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export const Skeleton: React.FC<{ className?: string }> = ({ className }) => (
-    <div className={`bg-slate-200 animate-pulse rounded-xl ${className}`} />
+    <div className={`shimmer rounded-xl ${className}`} />
 );
+
+export const PremiumButton: React.FC<{
+    onClick?: () => void;
+    variant?: 'primary' | 'dark' | 'ghost';
+    children: React.ReactNode;
+    className?: string;
+    disabled?: boolean;
+    loading?: boolean;
+    type?: 'button' | 'submit' | 'reset';
+}> = ({ onClick, variant = 'primary', children, className = '', disabled, loading, type = 'button' }) => {
+    const variantClass = variant === 'primary' ? 'btn-primary-premium' : variant === 'dark' ? 'btn-dark-premium' : 'btn-ghost-premium';
+
+    return (
+        <motion.button
+            type={type}
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={onClick}
+            disabled={disabled || loading}
+            className={`${variantClass} ${className} relative overflow-hidden group`}
+        >
+            <AnimatePresence mode="wait">
+                {loading ? (
+                    <motion.div
+                        key="loading"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="flex items-center justify-center"
+                    >
+                        <div className="size-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    </motion.div>
+                ) : (
+                    <motion.div
+                        key="content"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="flex items-center justify-center gap-2"
+                    >
+                        {children}
+                    </motion.div>
+                )}
+            </AnimatePresence>
+            <div className="absolute inset-0 bg-white/10 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 pointer-events-none" />
+        </motion.button>
+    );
+};
 
 export const EmptyState: React.FC<{
     icon: React.ReactNode;
@@ -19,18 +67,36 @@ export const EmptyState: React.FC<{
         animate={{ opacity: 1, scale: 1 }}
         className="flex flex-col items-center justify-center p-12 text-center"
     >
-        <div className="size-24 bg-slate-50 rounded-[3rem] flex items-center justify-center text-slate-300 mb-6 shadow-inner">
+        <div className="size-28 bg-[#22eb7e]/5 rounded-[3.5rem] flex items-center justify-center text-[#22eb7e] mb-8 shadow-inner border border-[#22eb7e]/10">
             {icon}
         </div>
-        <h3 className="text-xl font-black text-slate-900 mb-2">{title}</h3>
-        <p className="text-sm text-slate-500 max-w-[240px] leading-relaxed mb-8">{description}</p>
+        <h3 className="text-2xl font-black text-slate-900 mb-3">{title}</h3>
+        <p className="text-sm text-slate-500 max-w-[280px] leading-relaxed mb-10">{description}</p>
         {action && (
-            <button
-                onClick={action.onClick}
-                className="px-8 h-12 bg-[#102217] text-[#22eb7e] rounded-2xl font-black uppercase tracking-widest text-[10px] active:scale-95 transition-all shadow-xl shadow-[#102217]/10"
-            >
+            <PremiumButton onClick={action.onClick} variant="dark" className="!w-auto px-10">
                 {action.label}
-            </button>
+            </PremiumButton>
         )}
+    </motion.div>
+);
+
+export const LoadingOverlay: React.FC = () => (
+    <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[1000] bg-white/80 backdrop-blur-2xl flex flex-col items-center justify-center"
+    >
+        <div className="relative">
+            <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                className="size-16 border-4 border-[#22eb7e]/10 border-t-[#22eb7e] rounded-full"
+            />
+            <div className="absolute inset-0 flex items-center justify-center">
+                <div className="size-8 bg-[#22eb7e] rounded-xl animate-pulse" />
+            </div>
+        </div>
+        <p className="mt-6 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Dog Drive</p>
     </motion.div>
 );

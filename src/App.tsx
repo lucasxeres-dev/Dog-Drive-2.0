@@ -29,10 +29,12 @@ const CheckoutView = lazy(() => import('./views/CheckoutView'));
 const ProviderDashboard = lazy(() => import('./views/ProviderDashboard'));
 const ChatList = lazy(() => import('./views/ChatList'));
 const ChatView = lazy(() => import('./views/ChatView'));
+const GroomerDashboard = lazy(() => import('./views/GroomerDashboard'));
 const MyBookingsView = lazy(() => import('./views/MyBookingsView'));
 const BookingDetailView = lazy(() => import('./views/BookingDetailView'));
 const WalletView = lazy(() => import('./views/WalletView'));
 const SettingsView = lazy(() => import('./views/SettingsView'));
+const PublicStoreView = lazy(() => import('./views/PublicStoreView'));
 const ProviderRegistrationView = lazy(() => import('./views/ProviderRegistrationView'));
 const MapView = lazy(() => import('./views/MapView'));
 
@@ -75,6 +77,8 @@ const MainApp: React.FC = () => {
                             <Route path="/bookings" element={<MyBookingsView />} />
                             <Route path="/bookings/:id" element={<BookingDetailView />} />
                             <Route path="/wallet" element={<WalletView />} />
+                            <Route path="/groomer-dashboard" element={<GroomerDashboard />} />
+                            <Route path="/store/:id" element={<PublicStoreView />} />
 
                             <Route path="/settings" element={<SettingsView />} />
                             <Route path="/register-provider" element={<ProviderRegistrationView />} />

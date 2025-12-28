@@ -11,7 +11,8 @@ import {
     Footprints,
     Home,
     Scissors,
-    ShoppingBag
+    ShoppingBag,
+    X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSupabase } from '../hooks/useSupabase';
@@ -29,13 +30,15 @@ Icon.Default.mergeOptions({
     shadowUrl: markerShadow,
 });
 
-interface Provider {
+interface ServicePoint {
     id: string;
     name: string;
+    business_id: string;
     role: string;
     latitude: number;
     longitude: number;
     rating: number;
+    address: string;
 }
 
 // Component to get user location
@@ -62,44 +65,50 @@ const MapView: React.FC = () => {
     const navigate = useNavigate();
     const supabase = useSupabase();
     const [selectedId, setSelectedId] = useState<string | null>(null);
-    const [providers, setProviders] = useState<Provider[]>([]);
+    const [locations, setLocations] = useState<ServicePoint[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
 
     useEffect(() => {
-        const fetchProviders = async () => {
+        const fetchLocations = async () => {
             try {
-                const { data } = await supabase
-                    .from('business_profiles')
-                    .select('id, business_name, service_type, latitude, longitude');
+                // Fetch from business_locations joined with business_profiles
+                const { data, error } = await supabase
+                    .from('business_locations')
+                    .select('*, business_profiles(id, company_name, service_type)')
+                    .eq('is_active', true);
+
+                if (error) throw error;
 
                 const mapped = (data || [])
-                    .filter((p: any) => p.latitude && p.longitude) // Only show providers with coordinates
-                    .map((p: any) => ({
-                        id: p.id,
-                        name: p.business_name || 'Provedor',
-                        role: p.service_type || 'walker',
-                        latitude: parseFloat(p.latitude),
-                        longitude: parseFloat(p.longitude),
-                        rating: 4.7 // Mock for now
+                    .filter((l: any) => l.latitude && l.longitude)
+                    .map((l: any) => ({
+                        id: l.id,
+                        business_id: l.business_id,
+                        name: l.name || l.business_profiles?.company_name || 'Local',
+                        role: l.business_profiles?.service_type || 'grooming',
+                        latitude: parseFloat(l.latitude),
+                        longitude: parseFloat(l.longitude),
+                        rating: 4.8,
+                        address: l.address
                     }));
 
-                setProviders(mapped);
+                setLocations(mapped);
             } catch (err) {
-                console.error('Error fetching providers:', err);
+                console.error('Error fetching map locations:', err);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchProviders();
+        fetchLocations();
     }, [supabase]);
 
-    const filteredProviders = filter === 'all'
-        ? providers
-        : providers.filter(p => p.role === filter);
+    const filteredLocations = filter === 'all'
+        ? locations
+        : locations.filter(l => l.role === filter);
 
-    const selectedProvider = providers.find(p => p.id === selectedId);
+    const selectedPoint = locations.find(l => l.id === selectedId);
 
     const getIconForRole = (role: string) => {
         switch (role) {
@@ -121,34 +130,33 @@ const MapView: React.FC = () => {
 
     return (
         <div className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-900 relative">
-            {/* Map Container */}
             <div className="absolute inset-0 z-0">
                 {!loading && (
                     <MapContainer
-                        center={providers[0] ? [providers[0].latitude, providers[0].longitude] : [38.7223, -9.1393]}
+                        center={locations[0] ? [locations[0].latitude, locations[0].longitude] : [38.7223, -9.1393]}
                         zoom={13}
                         style={{ height: '100%', width: '100%' }}
                         zoomControl={false}
                     >
                         <TileLayer
-                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                            attribution='&copy; OpenStreetMap'
                             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                         />
 
                         <UserLocationMarker />
 
-                        {filteredProviders.map((provider) => (
+                        {filteredLocations.map((loc) => (
                             <Marker
-                                key={provider.id}
-                                position={[provider.latitude, provider.longitude]}
+                                key={loc.id}
+                                position={[loc.latitude, loc.longitude]}
                                 eventHandlers={{
-                                    click: () => setSelectedId(provider.id)
+                                    click: () => setSelectedId(loc.id)
                                 }}
                             >
                                 <Popup>
                                     <div className="text-center">
-                                        <p className="font-bold text-sm">{provider.name}</p>
-                                        <p className="text-xs text-slate-500 uppercase">{provider.role}</p>
+                                        <p className="font-bold text-sm">{loc.name}</p>
+                                        <p className="text-[10px] text-slate-500 uppercase">{loc.role}</p>
                                     </div>
                                 </Popup>
                             </Marker>
@@ -157,20 +165,19 @@ const MapView: React.FC = () => {
                 )}
             </div>
 
-            {/* Header / Search */}
             <div className="absolute top-0 left-0 right-0 p-6 z-20">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => navigate(-1)}
-                        className="size-12 rounded-2xl bg-white shadow-lg flex items-center justify-center text-slate-600 active:scale-90 transition-transform"
+                        className="size-12 rounded-2xl bg-white shadow-lg flex items-center justify-center text-slate-600"
                     >
                         <ChevronLeft size={24} />
                     </button>
                     <div className="flex-1 relative">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                         <input
-                            placeholder="Buscar serviços próximos..."
-                            className="w-full h-12 pl-12 pr-4 rounded-2xl bg-white shadow-lg text-slate-900 placeholder-slate-400 outline-none focus:ring-2 focus:ring-[#22eb7e]/50 transition-all font-bold"
+                            placeholder="Buscar no Dog Drive..."
+                            className="w-full h-12 pl-12 pr-4 rounded-2xl bg-white shadow-lg text-slate-900 outline-none font-bold"
                         />
                     </div>
                 </div>
@@ -179,14 +186,14 @@ const MapView: React.FC = () => {
                     {[
                         { label: 'Todos', value: 'all' },
                         { label: 'Passeios', value: 'walker' },
-                        { label: 'Lojas', value: 'petshop' },
+                        { label: 'Lojas Pet', value: 'petshop' },
                         { label: 'Hospedagem', value: 'boarding' },
-                        { label: 'Grooming', value: 'grooming' }
+                        { label: 'Banho & Tosa', value: 'grooming' }
                     ].map((cat) => (
                         <button
                             key={cat.value}
                             onClick={() => setFilter(cat.value)}
-                            className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${filter === cat.value ? 'bg-[#22eb7e] text-[#102217] shadow-lg shadow-[#22eb7e]/30' : 'bg-white text-slate-600 shadow-md'}`}
+                            className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${filter === cat.value ? 'bg-[#22eb7e] text-[#102217]' : 'bg-white text-slate-600'}`}
                         >
                             {cat.label}
                         </button>
@@ -194,46 +201,44 @@ const MapView: React.FC = () => {
                 </div>
             </div>
 
-            {/* Floating Selection Card */}
             <AnimatePresence>
-                {selectedProvider && (
+                {selectedPoint && (
                     <motion.div
                         initial={{ y: 100, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         exit={{ y: 100, opacity: 0 }}
                         className="absolute bottom-10 left-6 right-6 z-30"
                     >
-                        <div className="bg-white rounded-[2rem] p-5 flex items-center gap-4 shadow-2xl border border-slate-100">
-                            <div className={`size-16 rounded-[1.5rem] ${getColorForRole(selectedProvider.role)} flex items-center justify-center text-white shadow-lg`}>
-                                {React.createElement(getIconForRole(selectedProvider.role), { size: 32 })}
+                        <div className="bg-white rounded-[2rem] p-5 flex items-center gap-4 shadow-2xl border border-slate-100 relative">
+                            <div className={`size-16 rounded-[1.5rem] ${getColorForRole(selectedPoint.role)} flex items-center justify-center text-white shadow-lg`}>
+                                {React.createElement(getIconForRole(selectedPoint.role), { size: 32 })}
                             </div>
                             <div className="flex-1">
-                                <h3 className="text-slate-900 font-black tracking-tight">{selectedProvider.name}</h3>
+                                <h3 className="text-slate-900 font-black tracking-tight">{selectedPoint.name}</h3>
                                 <div className="flex items-center gap-1.5 mt-1">
                                     <Star size={12} className="text-amber-400 fill-amber-400" />
-                                    <span className="text-slate-600 text-xs font-bold">{selectedProvider.rating}</span>
-                                    <span className="text-slate-400 text-[10px]">• Próximo</span>
+                                    <span className="text-slate-600 text-xs font-bold">{selectedPoint.rating}</span>
+                                    <span className="text-slate-400 text-[10px]">• {selectedPoint.address.split(',')[0]}</span>
                                 </div>
                                 <button
-                                    onClick={() => navigate('/services')}
-                                    className="mt-3 text-[#22eb7e] text-[10px] font-black uppercase tracking-widest flex items-center gap-1 hover:gap-2 transition-all"
+                                    onClick={() => navigate(`/store/${selectedPoint.business_id}`)}
+                                    className="mt-3 text-[#22eb7e] text-[10px] font-black uppercase tracking-widest"
                                 >
-                                    Agendar Agora <ChevronLeft size={10} className="rotate-180" />
+                                    Ver Perfil Completo
                                 </button>
                             </div>
                             <button
                                 onClick={() => setSelectedId(null)}
-                                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+                                className="absolute top-4 right-4 text-slate-300"
                             >
-                                <ChevronLeft size={20} className="rotate-90" />
+                                <X size={20} />
                             </button>
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            {/* GPS FAB */}
-            <button className="absolute bottom-10 right-6 size-14 rounded-[1.5rem] bg-[#22eb7e] shadow-2xl shadow-[#22eb7e]/40 flex items-center justify-center text-[#102217] z-20 active:scale-95 transition-transform">
+            <button className="absolute bottom-10 right-6 size-14 rounded-[1.5rem] bg-[#22eb7e] shadow-2xl flex items-center justify-center text-[#102217] z-20">
                 <Navigation size={24} fill="currentColor" />
             </button>
         </div>

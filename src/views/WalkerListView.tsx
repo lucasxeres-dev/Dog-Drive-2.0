@@ -103,7 +103,7 @@ const WalkerListView: React.FC = () => {
                     setWalkers(enhanced);
                 }
             } catch (err: any) {
-                showNotification(err.message || 'Erro ao carregar profissionais', 'error');
+                showNotification(err.message || 'Erro ao carregar colaboradores', 'error');
             } finally {
                 setLoading(false);
             }
@@ -172,14 +172,14 @@ const WalkerListView: React.FC = () => {
                 {loading ? (
                     <div className="flex flex-col items-center justify-center py-20 gap-4">
                         <div className="w-12 h-12 border-4 border-[#22eb7e] border-t-transparent rounded-full animate-spin"></div>
-                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest animate-pulse">Buscando profissionais...</p>
+                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest animate-pulse">Buscando colaboradores...</p>
                     </div>
                 ) : sortedWalkers.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20 text-center">
                         <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6">
                             <Search size={40} className="text-slate-200" />
                         </div>
-                        <h3 className="text-xl font-black text-slate-900 mb-2">Nenhum profissional encontrado</h3>
+                        <h3 className="text-xl font-black text-slate-900 mb-2">Nenhum colaborador encontrado</h3>
                         <p className="text-sm font-bold text-slate-400 max-w-[200px]">Tente ajustar seus filtros ou mudar de localização.</p>
                     </div>
                 ) : sortedWalkers.map(walker => (

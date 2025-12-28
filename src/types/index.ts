@@ -55,20 +55,22 @@ export type BookingStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled';
 
 export interface Booking {
     id: string;
-    service_type: 'walk' | 'boarding' | 'petshop' | 'grooming';
+    service_type: string;
     status: BookingStatus;
     date: string;
-    time: string;
-    duration?: number; // minutes
-    price: number;
+    time?: string;
+    duration_minutes?: number;
+    amount: number;
     provider: {
         id: string;
         name: string;
         avatar?: string;
         role: string;
     };
-    client_id: string;
-    location: string;
+    user_id: string;
+    location_id: string;
+    location_name?: string;
+    dog_id?: string;
     is_reviewed?: boolean;
 }
 
