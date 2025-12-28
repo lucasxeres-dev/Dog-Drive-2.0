@@ -31,9 +31,10 @@ export const authService = {
             if (data?.email) {
                 email = data.email;
             } else {
-                // If username not found, let it fail at Supabase auth anyway
-                // or we could throw a custom error.
-                console.warn('Username not found in profiles, attempting login with raw identifier');
+                return {
+                    data: { user: null, session: null },
+                    error: { message: 'Usuário não encontrado. Verifique se digitou corretamente ou use seu e-mail.', status: 404 } as any
+                };
             }
         }
 

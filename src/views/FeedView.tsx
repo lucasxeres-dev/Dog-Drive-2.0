@@ -1,224 +1,184 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { useAuth } from '../hooks/useAuth';
-import { authService } from '../services/authService';
-import SwipeCard from '../components/SwipeCard';
-import { Dog } from '../types';
-import { MapPin, SlidersHorizontal, Heart, X, Info } from 'lucide-react';
-import FilterModal from '../components/FilterModal';
-import { AnimatePresence, motion } from 'framer-motion';
 import { useSupabase } from '../hooks/useSupabase';
+import SwipeCard from '../components/SwipeCard';
+import FilterModal from '../components/FilterModal';
+import {
+    Dog as DogIcon, X, Heart, Star,
+    RotateCcw, Bone, Sparkles, Filter
+} from 'lucide-react';
 
 const FeedView: React.FC = () => {
-    const navigate = useNavigate();
     const { t } = useTranslation();
     const { showNotification } = useNotification();
-    const { user } = useAuth();
     const supabase = useSupabase();
-    const [dogs, setDogs] = useState<Dog[]>([]);
+    const [dogs, setDogs] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [showFilters, setShowFilters] = useState(false);
-    const [maxDistance, setMaxDistance] = useState(10);
-    const [locationName, setLocationName] = useState<string>('Rio de Janeiro');
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [hasMore, setHasMore] = useState(true);
-    const PAGE_SIZE = 20; // Load 20 dogs at a time
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [filters, setFilters] = useState({
+        breed: '',
+        size: '',
+        maxDistance: 50
+    });
 
-    const fetchDogsData = async (isLoadMore = false) => {
-        if (!isLoadMore) setLoading(true);
+    useEffect(() => {
+        fetchDogs();
+    }, [filters]);
+
+    const fetchDogs = async () => {
+        setLoading(true);
         try {
-            const query = supabase
-                .from('dogs')
-                .select('*')
-                .order('created_at', { ascending: false })
-                .range(isLoadMore ? dogs.length : 0, (isLoadMore ? dogs.length : 0) + PAGE_SIZE - 1);
+            const { data: { user } } = await supabase.auth.getUser();
 
-            const { data, error } = await query;
+            let query = supabase
+                .from('dogs')
+                .select(`
+                    *,
+                    owner:profiles(full_name, avatar_url)
+                `);
+
+            if (user) {
+                query = query.neq('owner_id', user.id);
+            }
+
+            if (filters.breed) query = query.ilike('breed', `%${filters.breed}%`);
+            if (filters.size) query = query.eq('size', filters.size);
+
+            const { data, error } = await query.limit(20);
 
             if (error) throw error;
-            if (data) {
-                const formattedDogs = data.map((d: any) => ({
-                    ...d,
-                    imageUrl: d.image_url,
-                    distance: '2.5km',
-                    match: d.match_percentage || 95
-                })) as Dog[];
-
-                if (isLoadMore) {
-                    setDogs(prev => [...prev, ...formattedDogs]);
-                } else {
-                    setDogs(formattedDogs);
-                    setCurrentIndex(0);
-                }
-                setHasMore(data.length === PAGE_SIZE);
-            }
-        } catch (err: any) {
-            showNotification(err.message || 'Erro ao carregar feeds', 'error');
+            setDogs(data || []);
+            setCurrentIndex(0);
+        } catch (error: any) {
+            console.error('Error fetching dogs:', error);
+            showNotification('Erro ao carregar os pets', 'error');
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => {
-        fetchDogsData();
-    }, [user, supabase]);
-
-    useEffect(() => {
-        // Load more when we are near the end of the current buffer
-        if (hasMore && dogs.length > 0 && currentIndex >= dogs.length - 5) {
-            fetchDogsData(true);
-        }
-    }, [currentIndex, dogs.length, hasMore]);
-
-    const handleSwipe = async (direction: 'left' | 'right') => {
-        if (!user || currentDogs.length === 0) return;
-
-        const swipedDog = currentDogs[currentDogs.length - 1]; // Top card
+    const handleSwipe = async (direction: 'left' | 'right', dogId: string) => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
 
         try {
-            // Save swipe to Supabase
-            const { error } = await supabase.from('matches').insert({
-                user_id: user.id,
-                target_dog_id: swipedDog.id,
-                status: direction === 'right' ? 'like' : 'pass'
-            });
-
-            if (error) {
-                console.error('Error saving swipe:', error);
-            }
-
             if (direction === 'right') {
-                showNotification(`Você curtiu ${swipedDog.name}! ❤️`, 'success');
-
-                // For MVP: Create a chat if it doesn't exist (Simulating a match)
-                // In a real app, logic would check if the other user also liked the current user/dog
-                const { data: existingChat } = await (authService as any).supabase
-                    .from('chats')
-                    .select('*')
-                    .or(`user_id_1.eq.${user.id},user_id_2.eq.${user.id}`) // Check if chat exists with this user (simplified)
-                // Note: Ideally we need the dog's owner ID here. 
-                // Let's fetch the dog owner first to be accurate.
-                // .eq('user_id_2', swipedDog.owner_id);
-
-                // Simplified MVP: Just Notify
+                await supabase.from('matches').insert({
+                    user_id: user.id,
+                    target_dog_id: dogId,
+                    status: 'liked'
+                });
+                showNotification('Match! ❤️', 'success');
             }
-
-        } catch (e) {
-            console.error(e);
+            setCurrentIndex(prev => prev + 1);
+        } catch (err) {
+            console.error('Swipe error:', err);
         }
-
-        setCurrentIndex(prev => prev + 1);
     };
 
-    if (loading) {
-        return (
-            <div className="flex-1 flex flex-col bg-background-light dark:bg-background-dark p-6">
-                <div className="h-10 w-48 bg-gray-200 dark:bg-white/5 rounded-xl animate-pulse mb-8" />
-                <div className="flex-1 rounded-[40px] bg-gray-200 dark:bg-white/5 animate-pulse" />
-                <div className="flex justify-center gap-8 mt-10">
-                    <div className="size-16 rounded-full bg-gray-200 dark:bg-white/5 animate-pulse" />
-                    <div className="size-20 rounded-full bg-gray-200 dark:bg-white/5 animate-pulse" />
-                </div>
-            </div>
-        );
-    }
-
-    const currentDogs = dogs.slice(currentIndex, currentIndex + 3).reverse();
-
     return (
-        <div className="flex-1 flex flex-col bg-background-light dark:bg-background-dark h-screen overflow-hidden">
-            <header className="px-6 pt-8 pb-4 flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-black text-primary tracking-tighter">Dog-Drive</h1>
-                    <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">
-                        <MapPin size={12} className="text-primary" />
-                        {locationName}
+        <div className="flex-1 flex flex-col bg-[#f8fafc] h-screen overflow-hidden pb-24">
+            {/* Header */}
+            <header className="px-6 pt-12 pb-6 flex items-center justify-between bg-white shadow-sm shadow-slate-100">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-[#22eb7e] rounded-xl flex items-center justify-center shadow-lg shadow-[#22eb7e]/20">
+                        <DogIcon size={22} className="text-[#102217]" strokeWidth={2.5} />
+                    </div>
+                    <div>
+                        <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none">Dog Drive</h1>
+                        <div className="flex items-center gap-1.5 mt-1">
+                            <Sparkles size={10} className="text-[#2e9c60]" />
+                            <p className="text-[10px] font-black text-[#2e9c60] uppercase tracking-widest leading-none">Community</p>
+                        </div>
                     </div>
                 </div>
+
                 <button
-                    onClick={() => setShowFilters(true)}
-                    className="size-12 rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-gray-100 dark:border-white/5 flex items-center justify-center active:scale-90 transition-transform"
+                    onClick={() => setIsFilterOpen(true)}
+                    className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-600 active:scale-95 transition-all border border-slate-200/50 shadow-sm"
                 >
-                    <SlidersHorizontal size={20} className="text-slate-600 dark:text-slate-300" />
+                    <Filter size={20} />
                 </button>
             </header>
 
-            <main className="flex-1 relative px-4 mt-4 flex items-center justify-center">
-                <AnimatePresence>
-                    {currentDogs.length > 0 ? (
-                        currentDogs.map((dog, index) => {
-                            const isFront = index === currentDogs.length - 1;
-                            return (
-                                <SwipeCard
-                                    key={dog.id}
-                                    dog={dog}
-                                    onSwipeLeft={() => handleSwipe('left')}
-                                    onSwipeRight={() => handleSwipe('right')}
-                                    isFront={isFront}
-                                />
-                            );
-                        })
-                    ) : (
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="flex flex-col items-center justify-center text-center p-8"
+            {/* Swipe Area */}
+            <div className="flex-1 relative flex items-center justify-center p-4">
+                {loading ? (
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="w-14 h-14 border-4 border-[#22eb7e] border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-xs font-black text-slate-400 uppercase tracking-widest animate-pulse">Buscando pets...</p>
+                    </div>
+                ) : dogs.length > 0 && currentIndex < dogs.length ? (
+                    <div className="w-full max-w-md h-[70vh] relative">
+                        <AnimatePresence>
+                            {dogs.slice(currentIndex, currentIndex + 2).reverse().map((dog, idx) => {
+                                const isTop = idx === 1 || (dogs.length - currentIndex === 1);
+                                return (
+                                    <SwipeCard
+                                        key={dog.id}
+                                        dog={dog}
+                                        onSwipe={(dir) => handleSwipe(dir, dog.id)}
+                                        isTop={isTop}
+                                    />
+                                );
+                            })}
+                        </AnimatePresence>
+                    </div>
+                ) : (
+                    <div className="flex flex-col items-center text-center px-10">
+                        <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                            <Bone size={48} className="text-slate-200" />
+                        </div>
+                        <h3 className="text-2xl font-black text-slate-900 mb-2 tracking-tight">Sem mais amiguinhos</h3>
+                        <p className="text-slate-400 font-bold mb-8 text-sm">Não encontramos mais cães por perto com os teus filtros atuais.</p>
+                        <button
+                            onClick={fetchDogs}
+                            className="h-16 px-10 bg-[#22eb7e] text-[#102217] rounded-full font-black uppercase text-xs tracking-widest shadow-xl shadow-[#22eb7e]/30 active:scale-95 transition-all flex items-center gap-3"
                         >
-                            <div className="size-20 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-6">
-                                <Heart size={40} className="text-slate-300 dark:text-slate-600" />
-                            </div>
-                            <h3 className="text-xl font-black mb-2">Sem mais pets por perto</h3>
-                            <p className="text-sm text-slate-500 max-w-[200px]">Aumente sua distância ou altere os filtros para ver mais!</p>
-                            <div className="flex flex-col gap-3 mt-8 w-full max-w-[200px]">
-                                <button
-                                    onClick={() => {
-                                        setCurrentIndex(0);
-                                        fetchDogsData();
-                                    }}
-                                    className="px-8 py-3 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/20 active:scale-95 transition-all"
-                                >
-                                    Tentar Novamente
-                                </button>
-                                <button
-                                    onClick={() => setShowFilters(true)}
-                                    className="px-8 py-3 bg-white dark:bg-slate-800 rounded-2xl font-bold shadow-sm active:scale-95 transition-all border border-gray-100 dark:border-white/5"
-                                >
-                                    Ajustar Filtros
-                                </button>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </main>
+                            <RotateCcw size={18} />
+                            Ver novamente
+                        </button>
+                    </div>
+                )}
+            </div>
 
-            {currentDogs.length > 0 && (
-                <div className="flex items-center justify-center gap-8 py-10">
+            {/* Bottom Controls */}
+            {dogs.length > 0 && currentIndex < dogs.length && (
+                <div className="px-6 pb-12 flex items-center justify-center gap-6">
                     <button
-                        onClick={() => handleSwipe('left')}
-                        className="size-16 rounded-full bg-white dark:bg-slate-900 shadow-xl border border-gray-100 dark:border-white/5 flex items-center justify-center text-red-500 active:scale-90 transition-transform"
+                        onClick={() => handleSwipe('left', dogs[currentIndex].id)}
+                        className="w-16 h-16 rounded-full bg-white shadow-xl shadow-slate-200/50 flex items-center justify-center text-rose-500 active:scale-90 transition-all border border-slate-50"
                     >
                         <X size={32} strokeWidth={3} />
                     </button>
                     <button
-                        onClick={() => handleSwipe('right')}
-                        className="size-20 rounded-full bg-primary shadow-2xl shadow-primary/40 flex items-center justify-center text-white active:scale-90 transition-transform"
+                        onClick={() => handleSwipe('right', dogs[currentIndex].id)}
+                        className="w-20 h-20 rounded-full bg-[#22eb7e] shadow-xl shadow-[#22eb7e]/30 flex items-center justify-center text-[#102217] active:scale-90 transition-all"
                     >
-                        <Heart size={40} fill="currentColor" strokeWidth={0} />
+                        <Heart size={36} strokeWidth={2.5} />
+                    </button>
+                    <button
+                        className="w-16 h-16 rounded-full bg-white shadow-xl shadow-slate-200/50 flex items-center justify-center text-amber-500 active:scale-90 transition-all border border-slate-50"
+                    >
+                        <Star size={32} strokeWidth={2.5} />
                     </button>
                 </div>
             )}
 
-            <FilterModal
-                isOpen={showFilters}
-                onClose={() => setShowFilters(false)}
-                initialDistance={maxDistance}
-                onApply={(filters) => {
-                    setMaxDistance(filters.maxDistance);
-                    setShowFilters(false);
-                }}
-            />
+            {isFilterOpen && (
+                <FilterModal
+                    isOpen={isFilterOpen}
+                    onClose={() => setIsFilterOpen(false)}
+                    initialDistance={filters.maxDistance}
+                    onApply={(newFilters: any) => {
+                        setFilters({ ...filters, ...newFilters });
+                        setIsFilterOpen(false);
+                    }}
+                />
+            )}
         </div>
     );
 };

@@ -129,8 +129,26 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
     };
 
     const handleNext = async () => {
-        // Proactive Fix 6: Persistent Role
-        // If we are at step 0, save the role immediately to prevent losing progress if session resets
+        // Validation for each step
+        if (step === 2) {
+            if (selectedRole === UserRole.OWNER && (!dogData.name || dogData.name.trim().length < 2)) {
+                showNotification('Nome do pet muito curto', 'error');
+                return;
+            }
+            if ((selectedRole === UserRole.PETSHOP || selectedRole === UserRole.GROOMING) && (!businessData.name || businessData.name.trim().length < 3)) {
+                showNotification('Nome da empresa inválido', 'error');
+                return;
+            }
+        }
+
+        if (step === 3 && (selectedRole === UserRole.PETSHOP || selectedRole === UserRole.GROOMING)) {
+            const nifRegex = /^[0-9]{9}$/;
+            if (!nifRegex.test(businessData.tax_id)) {
+                showNotification('NIF deve ter 9 dígitos (Portugal)', 'error');
+                return;
+            }
+        }
+
         if (step === 0) {
             try {
                 const { data: { user } } = await supabase.auth.getUser();
@@ -198,32 +216,33 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                     return;
                 }
 
-                const { error: dogError } = await supabase.from('dogs').insert({
+                // Defensive insertion: only include fields that we are reasonably sure exist or handle failure gracefully
+                const dogInsertData: any = {
                     owner_id: user.id,
                     name: dogData.name.trim(),
                     age: dogData.age || '0',
-                    breed: dogData.breed || null,
-                    gender: dogData.gender || null,
-                    size: dogData.size || null,
-                    weight: dogData.weight ? parseFloat(dogData.weight) : null,
-                    color: dogData.color || null,
-                    is_castrated: dogData.is_castrated,
-                    traits: dogData.traits,
                     request_instructions: dogData.request,
                     image_url: dogData.photo,
                     latitude: coords?.lat,
                     longitude: coords?.lng,
                     location: city || 'Portugal'
-                });
+                };
+
+                // Add advanced fields only if present in state (migration 05 adds these)
+                if (dogData.breed) dogInsertData.breed = dogData.breed;
+                if (dogData.gender) dogInsertData.gender = dogData.gender;
+                if (dogData.size) dogInsertData.size = dogData.size;
+                if (dogData.weight) dogInsertData.weight = parseFloat(dogData.weight);
+                if (dogData.color) dogInsertData.color = dogData.color;
+                if (dogData.is_castrated !== undefined) dogInsertData.is_castrated = dogData.is_castrated;
+                if (dogData.traits && dogData.traits.length > 0) dogInsertData.traits = dogData.traits.join(', ');
+
+                const { error: dogError } = await supabase.from('dogs').insert(dogInsertData);
 
                 if (dogError) {
                     console.error('Dog registration error:', dogError);
-                    if (dogError.code === '23505') {
-                        showNotification('Você já cadastrou este cachorro', 'error');
-                    } else {
-                        showNotification(`Erro ao cadastrar cachorro: ${dogError.message}`, 'error');
-                    }
-                    return; // Don't proceed if dog save fails
+                    showNotification(`Erro ao salvar pet: ${dogError.message}. Tentando processar mesmo assim...`, 'warning');
+                    // We don't return here so the profile update still holds
                 }
             }
 
@@ -303,8 +322,8 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                                     checked={selectedRole === role.id}
                                     onChange={() => setSelectedRole(role.id as UserRole)}
                                 />
-                                <div className="flex items-center gap-4 bg-white dark:bg-surface-dark p-5 rounded-3xl shadow-sm border-2 border-transparent peer-checked:border-primary transition-all">
-                                    <div className="flex items-center justify-center rounded-2xl bg-[#f0f5f2] dark:bg-[#25382c] peer-checked:bg-primary/20 shrink-0 size-14">
+                                <div className="flex items-center gap-4 bg-white p-5 rounded-[2rem] shadow-lg shadow-slate-200/50 border border-slate-100 peer-checked:border-primary peer-checked:bg-primary/5 transition-all">
+                                    <div className="flex items-center justify-center rounded-2xl bg-slate-50 peer-checked:bg-primary/20 shrink-0 size-14">
                                         {(role as any).customIcon ? (
                                             <div className={selectedRole === role.id ? 'text-primary' : 'text-gray-400'}>
                                                 {(role as any).customIcon}

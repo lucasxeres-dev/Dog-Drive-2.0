@@ -1,10 +1,10 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate, useLocation as useRouterLocation } from 'react-router-dom';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { authService } from '../services/authService';
+import { useSupabase } from '../hooks/useSupabase';
+import { ArrowLeft, Filter, Search, ShieldCheck, MapPin, Star } from 'lucide-react';
 import FilterModal from '../components/FilterModal';
-import { useLocation as useRouterLocation } from 'react-router-dom';
 
 const WalkerListView: React.FC = () => {
     const navigate = useNavigate();
@@ -14,16 +14,18 @@ const WalkerListView: React.FC = () => {
 
     const { t } = useTranslation();
     const { showNotification } = useNotification();
+    const supabaseClient = useSupabase();
+
     const [sortBy, setSortBy] = useState<'nearby' | 'top_rated' | 'lowest_price'>('nearby');
     const [walkers, setWalkers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     const [showFilters, setShowFilters] = useState(false);
     const [location, setLocation] = useState<{ lat: number, lng: number } | null>(null);
-    const [locationName, setLocationName] = useState<string>(t('loading_location') || 'Rio de Janeiro');
+    const [locationName, setLocationName] = useState<string>('Rio de Janeiro');
 
     const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-        const R = 6371; // Radius of the earth in km
+        const R = 6371;
         const dLat = (lat2 - lat1) * Math.PI / 180;
         const dLon = (lon2 - lon1) * Math.PI / 180;
         const a =
@@ -57,11 +59,13 @@ const WalkerListView: React.FC = () => {
                 (err) => console.error('Geolocation error:', err)
             );
         }
+    }, []);
 
+    useEffect(() => {
         const fetchWalkers = async () => {
             setLoading(true);
             try {
-                let queryBuilder = (authService as any).supabase.from('profiles').select('*');
+                let queryBuilder = supabaseClient.from('profiles').select('*');
 
                 if (serviceFilter === 'walking') {
                     queryBuilder = queryBuilder.eq('role', 'provider').contains('provider_services', ['Passeador']);
@@ -89,10 +93,10 @@ const WalkerListView: React.FC = () => {
                             name: w.business_name || w.full_name,
                             specialty: w.business_type === 'clinic' ? 'Hospital Veterinário 24h' :
                                 w.business_type === 'grooming' ? 'Estética e Bem-estar' :
-                                    w.bio?.substring(0, 30) + '...' || 'Pet Specialist',
-                            price: w.business_type !== 'none' ? 120 : 35, // Mock price
+                                    w.bio?.substring(0, 45) + (w.bio?.length > 45 ? '...' : '') || 'Especialista Pet',
+                            price: w.business_type !== 'none' ? 120 : 35,
                             dist: dist,
-                            rating: 4.8 + (Math.random() * 0.2), // Still mock rating
+                            rating: 4.8 + (Math.random() * 0.2),
                             img: w.avatar_url || (w.business_type === 'clinic' ? 'https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?w=200' : 'https://images.pexels.com/photos/733872/pexels-photo-733872.jpeg')
                         };
                     });
@@ -105,7 +109,7 @@ const WalkerListView: React.FC = () => {
             }
         };
         fetchWalkers();
-    }, [location]);
+    }, [location, serviceFilter, supabaseClient, showNotification]);
 
     const sortedWalkers = useMemo(() => {
         const list = [...walkers];
@@ -116,85 +120,113 @@ const WalkerListView: React.FC = () => {
     }, [sortBy, walkers]);
 
     return (
-        <div className="flex-1 flex flex-col bg-background-light dark:bg-background-dark font-display h-screen overflow-hidden">
-            <header className="flex items-center px-6 py-4 pt-6 justify-between sticky top-0 z-10 bg-background-light/90 backdrop-blur-md">
-                <button onClick={() => navigate(-1)} className="p-2 -ml-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/5"><span className="material-symbols-outlined">arrow_back</span></button>
-                <h2 className="text-xl font-bold flex-1 text-center pr-2">{t('find_walker')}</h2>
+        <div className="flex-1 flex flex-col bg-[#f8fafc] h-screen overflow-hidden pb-16 animate-fade-in">
+            <header className="px-6 pt-12 pb-6 flex items-center justify-between bg-white shadow-sm shadow-slate-200/30">
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-600 active:scale-90 transition-all border border-slate-200/50"
+                    >
+                        <ArrowLeft size={20} />
+                    </button>
+                    <div>
+                        <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-none">{t('find_walker')}</h1>
+                        <p className="text-[10px] font-black text-[#22eb7e] uppercase tracking-widest mt-1">{locationName}</p>
+                    </div>
+                </div>
                 <button
                     onClick={() => setShowFilters(true)}
-                    className="p-2 rounded-full bg-white dark:bg-surface-dark shadow-sm border border-gray-100 dark:border-white/10 active:scale-90 transition-all text-primary"
+                    className="w-10 h-10 rounded-xl bg-[#22eb7e]/10 text-[#22eb7e] flex items-center justify-center active:scale-90 transition-all"
                 >
-                    <span className="material-symbols-outlined">tune</span>
+                    <Filter size={20} />
                 </button>
             </header>
 
-            <div className="px-6 pb-2">
-                <div className="flex items-center w-full rounded-full h-14 bg-white dark:bg-surface-dark shadow-sm border border-transparent focus-within:border-primary/50 px-5">
-                    <span className="material-symbols-outlined text-gray-400">search</span>
-                    <input className="flex-1 bg-transparent border-none focus:ring-0 px-4 text-base font-medium" placeholder={t('search_walker')} />
+            <div className="px-6 py-6">
+                <div className="relative">
+                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <input
+                        className="input-premium pl-14"
+                        placeholder={t('search_walker')}
+                    />
                 </div>
             </div>
 
-            <div className="flex gap-3 px-6 py-4 overflow-x-auto no-scrollbar">
-                <button
-                    onClick={() => setSortBy('nearby')}
-                    className={`flex h-10 shrink-0 items-center justify-center rounded-full px-5 text-sm font-bold transition-all ${sortBy === 'nearby' ? 'bg-[#111814] text-white dark:bg-primary dark:text-[#111814]' : 'bg-white dark:bg-surface-dark border border-gray-100 dark:border-white/10 text-[#111814] dark:text-gray-200'}`}
-                >
-                    {t('nearby')}
-                </button>
-                <button
-                    onClick={() => setSortBy('top_rated')}
-                    className={`flex h-10 shrink-0 items-center justify-center rounded-full px-5 text-sm font-bold transition-all ${sortBy === 'top_rated' ? 'bg-[#111814] text-white dark:bg-primary dark:text-[#111814]' : 'bg-white dark:bg-surface-dark border border-gray-100 dark:border-white/10 text-[#111814] dark:text-gray-200'}`}
-                >
-                    {t('top_rated')}
-                </button>
-                <button
-                    onClick={() => setSortBy('lowest_price')}
-                    className={`flex h-10 shrink-0 items-center justify-center rounded-full px-5 text-sm font-bold transition-all ${sortBy === 'lowest_price' ? 'bg-[#111814] text-white dark:bg-primary dark:text-[#111814]' : 'bg-white dark:bg-surface-dark border border-gray-100 dark:border-white/10 text-[#111814] dark:text-gray-200'}`}
-                >
-                    {t('lowest_price')}
-                </button>
+            <div className="flex gap-3 px-6 pb-6 overflow-x-auto no-scrollbar">
+                {[
+                    { id: 'nearby', label: t('nearby') },
+                    { id: 'top_rated', label: t('top_rated') },
+                    { id: 'lowest_price', label: t('lowest_price') }
+                ].map(sort => (
+                    <button
+                        key={sort.id}
+                        onClick={() => setSortBy(sort.id as any)}
+                        className={`h-10 px-6 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${sortBy === sort.id ? 'bg-[#102217] text-white shadow-lg shadow-slate-200' : 'bg-white text-slate-400 border border-slate-100 hover:bg-slate-50'}`}
+                    >
+                        {sort.label}
+                    </button>
+                ))}
             </div>
 
             <main className="flex-1 overflow-y-auto px-6 pb-28 space-y-4 no-scrollbar">
                 {loading ? (
-                    <div className="flex items-center justify-center py-20">
-                        <div className="size-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                    <div className="flex flex-col items-center justify-center py-20 gap-4">
+                        <div className="w-12 h-12 border-4 border-[#22eb7e] border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest animate-pulse">Buscando profissionais...</p>
+                    </div>
+                ) : sortedWalkers.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-center">
+                        <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6">
+                            <Search size={40} className="text-slate-200" />
+                        </div>
+                        <h3 className="text-xl font-black text-slate-900 mb-2">Nenhum profissional encontrado</h3>
+                        <p className="text-sm font-bold text-slate-400 max-w-[200px]">Tente ajustar seus filtros ou mudar de localização.</p>
                     </div>
                 ) : sortedWalkers.map(walker => (
-                    <div key={walker.id} onClick={() => navigate(`/booking/${walker.id}`)} className="flex items-center p-4 bg-white dark:bg-surface-dark rounded-3xl shadow-sm border border-transparent hover:border-primary/20 transition-all cursor-pointer">
+                    <div
+                        key={walker.id}
+                        onClick={() => navigate(`/booking/${walker.id}`)}
+                        className="flex items-center p-5 bg-white rounded-[2.5rem] shadow-sm border border-white hover:border-[#22eb7e]/30 transition-all cursor-pointer group"
+                    >
                         <div className="relative shrink-0">
-                            <img className="h-16 w-16 rounded-2xl object-cover" src={walker.img} alt={walker.name} />
-                            <div className="absolute -bottom-1 -right-1 bg-primary rounded-full size-3 border-2 border-white"></div>
-                        </div>
-                        <div className="flex-1 px-4 flex flex-col">
-                            <h3 className="text-lg font-bold">{walker.name}</h3>
-                            <p className="text-gray-500 text-sm font-medium truncate">{walker.specialty}</p>
-                            <div className="flex items-center gap-3 mt-1.5">
-                                <span className="flex items-center gap-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                                    <span className="material-symbols-outlined text-[14px]">location_on</span>
-                                    {walker.dist === 999 ? '...' : (walker.dist < 1 ? `${Math.round(walker.dist * 1000)}m` : `${walker.dist.toFixed(1)}km`)}
-                                </span>
-                                <div className="size-1 rounded-full bg-gray-300"></div>
-                                <span className="text-sm font-bold">R${walker.price}<span className="text-gray-400 font-normal text-xs">{t('per_hour')}</span></span>
+                            <img className="h-20 w-20 rounded-3xl object-cover group-hover:scale-105 transition-transform duration-500" src={walker.img} alt={walker.name} />
+                            <div className="absolute -bottom-1 -right-1 bg-[#22eb7e] rounded-full w-5 h-5 border-2 border-white flex items-center justify-center">
+                                <ShieldCheck size={10} className="text-[#102217]" strokeWidth={3} />
                             </div>
                         </div>
-                        <div className="flex items-center gap-1 bg-primary px-2.5 py-1 rounded-full shadow-sm">
-                            <span className="material-symbols-outlined text-[16px] text-[#0a2e16] fill-1">star</span>
-                            <span className="text-[#0a2e16] text-sm font-bold">{walker.rating}</span>
+                        <div className="flex-1 px-5 flex flex-col justify-center">
+                            <h3 className="text-lg font-black text-[#102217] leading-tight mb-1">{walker.name}</h3>
+                            <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest line-clamp-1 mb-2">{walker.specialty}</p>
+                            <div className="flex items-center gap-3">
+                                <span className="flex items-center gap-1.5 text-[10px] font-black text-[#2e9c60] uppercase tracking-widest">
+                                    <MapPin size={12} strokeWidth={3} />
+                                    {walker.dist === 999 ? '...' : (walker.dist < 1 ? t('under_1km') || 'Perto' : `${walker.dist.toFixed(1)}km`)}
+                                </span>
+                                <div className="w-1 h-1 rounded-full bg-slate-200"></div>
+                                <span className="text-sm font-black text-[#102217]">
+                                    €{walker.price}
+                                    <span className="text-slate-300 font-bold text-[10px] ml-1 uppercase">{t('per_hour')}</span>
+                                </span>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 bg-[#22eb7e]/10 px-3 py-2 rounded-2xl">
+                            <Star size={14} className="text-[#2e9c60] fill-[#2e9c60]" />
+                            <span className="text-[#2e9c60] text-xs font-black">{walker.rating.toFixed(1)}</span>
                         </div>
                     </div>
                 ))}
             </main>
 
-            <FilterModal
-                isOpen={showFilters}
-                onClose={() => setShowFilters(false)}
-                onApply={(filters) => {
-                    console.log('Filters applied:', filters);
-                    setShowFilters(false);
-                }}
-            />
+            {showFilters && (
+                <FilterModal
+                    isOpen={showFilters}
+                    onClose={() => setShowFilters(false)}
+                    onApply={(filters) => {
+                        console.log('Filters applied:', filters);
+                        setShowFilters(false);
+                    }}
+                />
+            )}
         </div>
     );
 };

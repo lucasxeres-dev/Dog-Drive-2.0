@@ -33,9 +33,35 @@ const RegisterView: React.FC = () => {
     const isBusinessRole = role === 'business' || role === 'provider';
 
     const handleRegister = async () => {
+        // Validation Step 2
+        if (!formData.fullName || formData.fullName.length < 3) {
+            showNotification('Nome completo inválido', 'error');
+            return;
+        }
+        if (!formData.email.includes('@')) {
+            showNotification('E-mail inválido', 'error');
+            return;
+        }
+        if (formData.password.length < 6) {
+            showNotification('Senha deve ter no mínimo 6 caracteres', 'error');
+            return;
+        }
         if (formData.password !== formData.confirmPassword) {
             showNotification('As senhas não coincidem', 'error');
             return;
+        }
+
+        // Validation Step 3 (Business)
+        if (isBusinessRole) {
+            const nifRegex = /^[0-9]{9}$/;
+            if (!nifRegex.test(formData.nif)) {
+                showNotification('NIF deve ter 9 dígitos', 'error');
+                return;
+            }
+            if (!formData.companyName || formData.companyName.length < 3) {
+                showNotification('Nome da empresa inválido', 'error');
+                return;
+            }
         }
 
         setLoading(true);
@@ -92,7 +118,7 @@ const RegisterView: React.FC = () => {
                     {[1, 2, 3].map((s) => (
                         <div
                             key={s}
-                            className={`h-1.5 rounded-full transition-all duration-500 ${step >= s ? 'w-8 bg-[#22eb7e]' : 'w-4 bg-slate-100'}`}
+                            className={`h-2 rounded-full transition-all duration-500 ${step >= s ? 'w-10 bg-[#22eb7e]' : 'w-4 bg-slate-100'}`}
                         />
                     ))}
                 </div>
@@ -212,7 +238,7 @@ const RegisterView: React.FC = () => {
 const RoleButton: React.FC<{ active: boolean, onClick: () => void, icon: string, title: string, subtitle: string }> = ({ active, onClick, icon, title, subtitle }) => (
     <button
         onClick={onClick}
-        className={`w-full p-5 rounded-[1.5rem] border-2 text-left transition-all duration-300 group ${active ? 'bg-[#22eb7e]/10 border-[#22eb7e]' : 'bg-white border-slate-100 hover:border-slate-200 shadow-sm'}`}
+        className={`w-full p-6 rounded-[2rem] border-2 text-left transition-all duration-300 group ${active ? 'bg-[#22eb7e]/5 border-[#22eb7e] shadow-xl shadow-[#22eb7e]/10' : 'bg-white border-slate-100 hover:border-slate-200 shadow-sm'}`}
     >
         <div className="flex items-center gap-4">
             <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${active ? 'bg-[#22eb7e] text-black' : 'bg-slate-100 text-slate-400 group-hover:text-slate-600'}`}>

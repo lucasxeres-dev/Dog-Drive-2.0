@@ -58,16 +58,19 @@ const MainApp: React.FC = () => {
                             <Route path="/booking/:id" element={<BookingView />} />
                             <Route path="/emergency" element={<EmergencyView />} />
                             <Route path="/marketplace" element={<MarketplaceView />} />
-                            <Route path="/marketplace" element={<MarketplaceView />} />
                             <Route path="/cart" element={<CartView />} />
                             <Route path="/checkout" element={
-                                <div className="flex-1 flex flex-col items-center justify-center dark:text-white p-6 text-center">
-                                    <h2 className="text-xl font-black mb-2">Checkout</h2>
-                                    <p className="opacity-60">Funcionalidade de pagamento em breve.</p>
-                                    <button onClick={() => window.history.back()} className="mt-6 text-primary font-bold">Voltar</button>
+                                <div className="flex-1 flex flex-col items-center justify-center dark:text-white p-10 text-center">
+                                    <div className="w-20 h-20 bg-[#22eb7e]/10 rounded-full flex items-center justify-center mb-6">
+                                        <ShoppingBag size={40} className="text-[#22eb7e]" />
+                                    </div>
+                                    <h2 className="text-2xl font-black mb-2">Checkout</h2>
+                                    <p className="opacity-60 max-w-[250px]">Funcionalidade de pagamento em breve nesta demonstração.</p>
+                                    <button onClick={() => window.history.back()} className="mt-8 px-8 h-12 bg-slate-100 rounded-full text-xs font-black uppercase tracking-widest text-slate-600">Voltar</button>
                                 </div>
                             } />
                             <Route path="/wallet" element={<WalletView />} />
+
                             <Route path="/settings" element={<SettingsView />} />
                             <Route path="/register-provider" element={<ProviderRegistrationView />} />
                             <Route path="/map" element={<MapView />} />
