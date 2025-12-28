@@ -61,39 +61,6 @@ const WalletView: React.FC = () => {
                     .filter(t => t.type === 'cashback' && t.status === 'completed')
                     .reduce((sum, t) => sum + t.amount, 0);
                 setCashbackEarned(totalCashback);
-            } else {
-                // Mock data for demo
-                setBalance(125.50);
-                setCashbackEarned(8.50);
-                setTransactions([
-                    {
-                        id: '1',
-                        user_id: user.id,
-                        type: 'payment',
-                        amount: 15.00,
-                        status: 'completed',
-                        description: 'Passeio com Thor',
-                        created_at: '2024-12-24T14:30:00Z'
-                    },
-                    {
-                        id: '2',
-                        user_id: user.id,
-                        type: 'deposit',
-                        amount: 50.00,
-                        status: 'completed',
-                        stripe_payment_id: 'pi_123abc',
-                        created_at: '2024-12-22T10:15:00Z'
-                    },
-                    {
-                        id: '3',
-                        user_id: user.id,
-                        type: 'cashback',
-                        amount: 2.50,
-                        status: 'completed',
-                        description: 'Bônus de serviço completado',
-                        created_at: '2024-12-24T15:00:00Z'
-                    }
-                ] as WalletTransaction[]);
             }
         } catch (err: any) {
             console.error('Error fetching wallet data:', err);

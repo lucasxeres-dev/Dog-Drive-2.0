@@ -23,6 +23,18 @@ CREATE TABLE location_updates (
 
 CREATE INDEX idx_location_updates_booking ON location_updates(booking_id);
 
+-- 2.1 SEGURANÇA GPS (RLS)
+ALTER TABLE location_updates ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own booking locations" ON location_updates
+  FOR SELECT USING (
+    auth.uid() = provider_id OR 
+    EXISTS (SELECT 1 FROM bookings WHERE id = booking_id AND user_id = auth.uid())
+  );
+
+CREATE POLICY "Providers can insert their own locations" ON location_updates
+  FOR INSERT WITH CHECK (auth.uid() = provider_id);
+
 -- 3. CRIAR coluna wallet_balance (ignora se já existir)
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS wallet_balance DECIMAL(10, 2) DEFAULT 0.00;
 
@@ -40,18 +52,30 @@ CREATE TABLE wallet_transactions (
 
 CREATE INDEX idx_wallet_transactions_user ON wallet_transactions(user_id);
 
+-- 4.1 SEGURANÇA WALLET (RLS)
+ALTER TABLE wallet_transactions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own transactions" ON wallet_transactions
+  FOR SELECT USING (auth.uid() = user_id);
+
 -- 5. CRIAR tabela products (se não existir)
 CREATE TABLE IF NOT EXISTS products (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name VARCHAR(255) UNIQUE NOT NULL,
   description TEXT,
   price DECIMAL(10, 2) NOT NULL,
-  category VARCHAR(100),
+  category VARCHAR(100) CHECK (category IN ('food', 'toys', 'accessories', 'treats', 'grooming', 'other')),
   image_url TEXT,
   stock_quantity INTEGER DEFAULT 0,
   rating DECIMAL(2, 1) DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- 5.1 SEGURANÇA PRODUTOS (RLS)
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Products are viewable by everyone" ON products
+  FOR SELECT USING (true);
 
 -- 6. INSERIR produtos (ignora duplicados)
 INSERT INTO products (name, description, price, category, image_url, stock_quantity, rating)
