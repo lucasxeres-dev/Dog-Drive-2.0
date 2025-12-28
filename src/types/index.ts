@@ -71,3 +71,13 @@ export interface Booking {
     location: string;
     is_reviewed?: boolean;
 }
+
+export interface LocationUpdate {
+    id: string;
+    booking_id: string;
+    provider_id: string;
+    latitude: number;
+    longitude: number;
+    timestamp: string;
+    accuracy?: number;
+}

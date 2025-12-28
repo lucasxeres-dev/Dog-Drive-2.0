@@ -7,6 +7,7 @@ import {
 import { useTranslation } from '../contexts/LanguageContext';
 import { useNotification } from '../contexts/NotificationContext';
 import ServiceReviewModal from '../components/ServiceReviewModal';
+import LiveTrackingMap from '../components/LiveTrackingMap';
 import { Booking } from '../types';
 
 const BookingDetailView: React.FC = () => {
@@ -92,18 +93,28 @@ const BookingDetailView: React.FC = () => {
 
             <main className="flex-1 overflow-y-auto p-6 no-scrollbar pb-32">
                 <div className="space-y-6">
-                    {/* Map / Location Placeholder */}
+                    {/* Live Map / Location */}
                     <div className="aspect-video bg-slate-200 rounded-[2rem] relative overflow-hidden shadow-inner">
-                        <img
-                            src="https://images.unsplash.com/photo-1524661135-423995f22d0b?w=800&q=80"
-                            alt="Map Location"
-                            className="w-full h-full object-cover opacity-60 grayscale"
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="size-16 bg-[#22eb7e]/20 rounded-full flex items-center justify-center animate-pulse">
-                                <div className="size-4 bg-[#22eb7e] rounded-full shadow-lg shadow-[#22eb7e]/50 border-2 border-white" />
-                            </div>
-                        </div>
+                        {booking.status === 'confirmed' ? (
+                            <LiveTrackingMap
+                                bookingId={booking.id}
+                                providerName={booking.provider.name}
+                                initialPosition={[38.7223, -9.1393]} // Default Lisbon
+                            />
+                        ) : (
+                            <>
+                                <img
+                                    src="https://images.unsplash.com/photo-1524661135-423995f22d0b?w=800&q=80"
+                                    alt="Map Location"
+                                    className="w-full h-full object-cover opacity-60 grayscale"
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className="size-16 bg-[#22eb7e]/20 rounded-full flex items-center justify-center">
+                                        <div className="size-4 bg-[#22eb7e] rounded-full shadow-lg shadow-[#22eb7e]/50 border-2 border-white" />
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </div>
 
                     {/* Booking Info */}
