@@ -1,27 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useTranslation } from '../contexts/LanguageContext';
+import { motion } from 'framer-motion';
 import { useNotification } from '../contexts/NotificationContext';
 import { useAuth } from '../hooks/useAuth';
 import { useSupabase } from '../hooks/useSupabase';
-import {
-    ArrowLeft, Plus, Landmark, ArrowUpRight, ArrowDownLeft,
-    ShieldCheck, CreditCard, ChevronRight, Sparkles
-} from 'lucide-react';
+import { ArrowLeft, Plus, ArrowUpRight, Sparkles, Wallet } from 'lucide-react';
+import DepositModal from '../components/DepositModal';
+import WithdrawModal from '../components/WithdrawModal';
+import TransactionList from '../components/TransactionList';
+import { WalletTransaction } from '../types';
 
 const WalletView: React.FC = () => {
     const navigate = useNavigate();
-    const { t } = useTranslation();
     const { showNotification } = useNotification();
     const { user } = useAuth();
     const supabase = useSupabase();
 
     const [balance, setBalance] = useState(0);
+    const [cashbackEarned, setCashbackEarned] = useState(0);
     const [loading, setLoading] = useState(true);
-    const [showBankForm, setShowBankForm] = useState(false);
-    const [bankData, setBankData] = useState({ bank: '', account: '', type: 'Conta Corrente' });
-    const [transactions, setTransactions] = useState<any[]>([]);
+    const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
+    const [showDepositModal, setShowDepositModal] = useState(false);
+    const [showWithdrawModal, setShowWithdrawModal] = useState(false);
 
     useEffect(() => {
         if (user) {
@@ -34,244 +34,172 @@ const WalletView: React.FC = () => {
         setLoading(true);
 
         try {
-            // Fetch Wallet Balance
-            const { data: walletData, error: walletError } = await supabase
-                .from('wallets')
-                .select('balance')
-                .eq('user_id', user.id)
+            // Fetch wallet balance from profiles
+            const { data: profileData } = await supabase
+                .from('profiles')
+                .select('wallet_balance')
+                .eq('id', user.id)
                 .single();
 
-            if (!walletError && walletData) {
-                setBalance(walletData.balance);
+            if (profileData) {
+                setBalance(profileData.wallet_balance || 0);
+            }
+
+            // Fetch transactions
+            const { data: transactionData } = await supabase
+                .from('wallet_transactions')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false })
+                .limit(50);
+
+            if (transactionData) {
+                setTransactions(transactionData);
+
+                // Calculate cashback earned
+                const totalCashback = transactionData
+                    .filter(t => t.type === 'cashback' && t.status === 'completed')
+                    .reduce((sum, t) => sum + t.amount, 0);
+                setCashbackEarned(totalCashback);
             } else {
-                setBalance(1250.00); // Demo fallback
+                // Mock data for demo
+                setBalance(125.50);
+                setCashbackEarned(8.50);
+                setTransactions([
+                    {
+                        id: '1',
+                        user_id: user.id,
+                        type: 'payment',
+                        amount: 15.00,
+                        status: 'completed',
+                        description: 'Passeio com Thor',
+                        created_at: '2024-12-24T14:30:00Z'
+                    },
+                    {
+                        id: '2',
+                        user_id: user.id,
+                        type: 'deposit',
+                        amount: 50.00,
+                        status: 'completed',
+                        stripe_payment_id: 'pi_123abc',
+                        created_at: '2024-12-22T10:15:00Z'
+                    },
+                    {
+                        id: '3',
+                        user_id: user.id,
+                        type: 'cashback',
+                        amount: 2.50,
+                        status: 'completed',
+                        description: 'Bônus de serviço completado',
+                        created_at: '2024-12-24T15:00:00Z'
+                    }
+                ] as WalletTransaction[]);
             }
-
-            // Fetch Bank Details
-            const { data: bankResult, error: bankError } = await supabase
-                .from('bank_details')
-                .select('bank_name, account_type')
-                .eq('user_id', user.id)
-                .single();
-
-            if (!bankError && bankResult) {
-                setBankData({
-                    bank: bankResult.bank_name,
-                    account: '**** **** **** 7789', // Masked for demo
-                    type: bankResult.account_type
-                });
-            }
-
-            setTransactions([
-                { id: 1, title: 'Passeio com Thor', date: '24 Dez', amount: -15.00, type: 'payment' },
-                { id: 2, title: 'Depósito Realizado', date: '22 Dez', amount: 50.00, type: 'deposit' },
-                { id: 3, title: 'Ração High Pro', date: '20 Dez', amount: -42.50, type: 'payment' }
-            ]);
         } catch (err: any) {
-            showNotification(err.message || 'Erro ao carregar carteira', 'error');
+            console.error('Error fetching wallet data:', err);
+            showNotification('Erro ao carregar carteira', 'error');
         } finally {
             setLoading(false);
         }
     };
 
-    const saveBankDetails = async () => {
-        if (!user) return;
+    const handleDepositSuccess = (amount: number) => {
+        setBalance(prev => prev + amount);
+        fetchWalletData(); // Refresh to get latest transactions
+        showNotification(`Depósito de €${amount.toFixed(2)} confirmado!`, 'success');
+    };
 
-        try {
-            const { error } = await supabase
-                .from('bank_details')
-                .upsert({
-                    user_id: user.id,
-                    bank_name: bankData.bank,
-                    account_type: bankData.type,
-                    encrypted_data: 'encrypted_placeholder'
-                });
-
-            if (error) throw error;
-
-            showNotification('Dados bancários salvos!', 'success');
-            setShowBankForm(false);
-            fetchWalletData();
-        } catch (err: any) {
-            showNotification(err.message || 'Erro ao salvar dados bancários', 'error');
-        }
+    const handleWithdrawSuccess = (amount: number) => {
+        setBalance(prev => prev - amount);
+        fetchWalletData();
+        showNotification(`Saque de €${amount.toFixed(2)} processado!`, 'success');
     };
 
     return (
-        <div className="flex-1 flex flex-col bg-[#f8fafc] h-screen overflow-hidden pb-16">
+        <div className="flex-1 flex flex-col bg-[#f8fafc] h-screen overflow-hidden">
             {/* Header */}
-            <header className="px-6 pt-12 pb-6 bg-white shadow-sm shadow-slate-200/50 flex items-center justify-between">
+            <header className="px-6 pt-12 pb-6 bg-white shadow-sm z-10">
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => navigate(-1)}
-                        className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-600 active:scale-90 transition-all border border-slate-200/50"
+                        className="size-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-600 active:scale-95 transition-all"
                     >
                         <ArrowLeft size={20} />
                     </button>
-                    <h1 className="text-xl font-black text-slate-900 tracking-tight">Minha Carteira</h1>
+                    <h1 className="text-2xl font-black text-slate-900 tracking-tight">Carteira</h1>
                 </div>
-                <button className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-600">
-                    <ShieldCheck size={20} />
-                </button>
             </header>
 
-            <main className="flex-1 overflow-y-auto p-6 no-scrollbar">
+            <main className="flex-1 overflow-y-auto p-6 no-scrollbar pb-32">
                 {loading ? (
-                    <div className="flex flex-col items-center justify-center py-20">
-                        <div className="w-12 h-12 border-4 border-[#22eb7e] border-t-transparent rounded-full animate-spin"></div>
+                    <div className="flex items-center justify-center h-64">
+                        <div className="w-12 h-12 border-4 border-[#22eb7e] border-t-transparent rounded-full animate-spin" />
                     </div>
                 ) : (
-                    <div className="space-y-8">
+                    <div className="space-y-6">
                         {/* Balance Card */}
-                        <div className="relative overflow-hidden bg-gradient-to-br from-[#102217] to-[#1a3a28] rounded-[3rem] p-10 text-white shadow-2xl shadow-[#102217]/30 border border-white/5">
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-[#22eb7e]/10 rounded-full -mr-32 -mt-32 blur-[100px]" />
-                            <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#22eb7e]/10 rounded-full -ml-24 -mb-24 blur-[80px]" />
-
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className="bg-gradient-to-br from-[#102217] to-[#1a3a28] rounded-[3rem] p-8 shadow-2xl shadow-[#102217]/20 border border-white/5 relative overflow-hidden"
+                        >
+                            <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#22eb7e]/10 rounded-full blur-3xl" />
                             <div className="relative z-10">
-                                <div className="flex items-center gap-2 mb-6">
-                                    <Sparkles size={14} className="text-[#22eb7e]" />
-                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#22eb7e]">Saldo Disponível</p>
-                                </div>
-                                <div className="flex items-baseline gap-3 mb-10">
-                                    <span className="text-3xl font-black text-[#22eb7e]">€</span>
-                                    <h2 className="text-6xl font-black tracking-tighter">{balance.toFixed(2)}</h2>
+                                <div className="flex items-center justify-between mb-8">
+                                    <div className="flex items-center gap-2">
+                                        <Wallet size={20} className="text-[#22eb7e]" />
+                                        <span className="text-white/60 text-xs font-black uppercase tracking-widest">Saldo Disponível</span>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-amber-400">
+                                        <Sparkles size={14} />
+                                        <span className="text-xs font-black">€{cashbackEarned.toFixed(2)} Cashback</span>
+                                    </div>
                                 </div>
 
-                                <div className="flex gap-4">
-                                    <button className="btn-primary-premium flex-1 !h-14">
+                                <div className="text-5xl font-black text-white mb-8">
+                                    €{balance.toFixed(2)}
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        onClick={() => setShowDepositModal(true)}
+                                        className="h-14 bg-[#22eb7e] text-[#102217] rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-[#1fd672] transition-colors shadow-lg shadow-[#22eb7e]/20 active:scale-95"
+                                    >
                                         <Plus size={18} strokeWidth={3} />
-                                        <span>Depositar</span>
+                                        Depositar
                                     </button>
-                                    <button className="flex-1 h-14 bg-white/10 hover:bg-white/15 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest border border-white/10 active:scale-95 transition-all flex items-center justify-center gap-2 backdrop-blur-md">
-                                        <CreditCard size={18} />
-                                        <span>Sacar</span>
+                                    <button
+                                        onClick={() => setShowWithdrawModal(true)}
+                                        className="h-14 bg-white/10 backdrop-blur-md text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white/20 transition-colors border border-white/10 active:scale-95"
+                                    >
+                                        <ArrowUpRight size={18} />
+                                        Sacar
                                     </button>
                                 </div>
                             </div>
+                        </motion.div>
+
+                        {/* Transactions Section */}
+                        <div>
+                            <h2 className="text-xl font-black text-slate-900 mb-4 px-2">Histórico</h2>
+                            <TransactionList transactions={transactions} />
                         </div>
-
-                        {/* Bank Details */}
-                        <section className="space-y-4">
-                            <div className="flex items-center justify-between px-2">
-                                <h3 className="label-premium !ml-0 !mb-0">Dados Bancários</h3>
-                                <button
-                                    onClick={() => setShowBankForm(true)}
-                                    className="text-[#2e9c60] font-black text-[10px] uppercase tracking-widest flex items-center gap-1.5 hover:opacity-70 transition-opacity"
-                                >
-                                    <Plus size={14} strokeWidth={3} /> Gerenciar
-                                </button>
-                            </div>
-
-                            {bankData.bank === '' ? (
-                                <button
-                                    onClick={() => setShowBankForm(true)}
-                                    className="w-full p-10 rounded-[2.5rem] bg-white border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-3 text-slate-300 hover:border-[#22eb7e]/40 hover:text-slate-500 transition-all shadow-sm"
-                                >
-                                    <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center">
-                                        <Landmark size={32} strokeWidth={1.5} />
-                                    </div>
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Vincular Conta Bancária</span>
-                                </button>
-                            ) : (
-                                <div className="bg-white rounded-[2.5rem] p-6 border border-slate-100 shadow-xl shadow-slate-200/40 flex items-center gap-5">
-                                    <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400">
-                                        <Landmark size={24} />
-                                    </div>
-                                    <div className="flex-1">
-                                        <h4 className="font-black text-slate-900 leading-tight">{bankData.bank}</h4>
-                                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mt-1.5">{bankData.type}</p>
-                                    </div>
-                                    <div className="w-10 h-10 rounded-xl bg-[#22eb7e]/10 text-[#22eb7e] flex items-center justify-center">
-                                        <ShieldCheck size={20} />
-                                    </div>
-                                </div>
-                            )}
-                        </section>
-
-                        {/* Recent Activity */}
-                        <section className="space-y-4 pb-20">
-                            <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Atividade Recente</h3>
-                            <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden divide-y divide-slate-50">
-                                {transactions.map(t => (
-                                    <div key={t.id} className="p-6 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
-                                        <div className="flex items-center gap-4">
-                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${t.amount < 0 ? 'bg-rose-50 text-rose-500' : 'bg-emerald-50 text-[#22eb7e]'}`}>
-                                                {t.amount < 0 ? <ArrowUpRight size={18} /> : <ArrowDownLeft size={18} />}
-                                            </div>
-                                            <div>
-                                                <h4 className="font-bold text-slate-900 text-sm leading-none">{t.title}</h4>
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1.5">{t.date}</p>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <span className={`font-black tracking-tight ${t.amount < 0 ? 'text-slate-900' : 'text-[#22eb7e]'}`}>
-                                                {t.amount < 0 ? '' : '+'}{t.amount.toFixed(2)} €
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))}
-                                {transactions.length === 0 && (
-                                    <div className="p-10 text-center">
-                                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Nenhuma transação encontrada</p>
-                                    </div>
-                                )}
-                            </div>
-                        </section>
                     </div>
                 )}
             </main>
 
-            {/* Bank Form Modal */}
-            <AnimatePresence>
-                {showBankForm && (
-                    <div className="fixed inset-0 z-[100] flex items-end justify-center px-4 pb-6">
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setShowBankForm(false)}
-                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-                        />
-                        <motion.div
-                            initial={{ y: '100%' }}
-                            animate={{ y: 0 }}
-                            exit={{ y: '100%' }}
-                            className="relative w-full max-w-md bg-white rounded-[3rem] p-8 shadow-2xl"
-                        >
-                            <div className="w-12 h-1.5 bg-slate-100 rounded-full mx-auto mb-8"></div>
-
-                            <div className="mb-8">
-                                <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-none mb-2">Dados Bancários</h3>
-                                <p className="text-xs font-medium text-slate-400">Suas informações são criptografadas e protegidas.</p>
-                            </div>
-
-                            <div className="space-y-4">
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4">Banco</label>
-                                    <input
-                                        className="w-full h-14 rounded-2xl bg-slate-50 border border-slate-200/50 px-6 font-bold text-sm outline-none focus:bg-white focus:border-[#22eb7e] transition-all"
-                                        placeholder="Ex: Banco CTT, Santander..."
-                                        value={bankData.bank}
-                                        onChange={(e) => setBankData({ ...bankData, bank: e.target.value })}
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4">IBAN / Conta</label>
-                                    <input
-                                        className="w-full h-14 rounded-2xl bg-slate-50 border border-slate-200/50 px-6 font-bold text-sm outline-none focus:bg-white focus:border-[#22eb7e] transition-all"
-                                        placeholder="PT50 0000..."
-                                        onChange={(e) => setBankData({ ...bankData, account: e.target.value })}
-                                    />
-                                </div>
-                                <div className="flex gap-4 pt-4">
-                                    <button onClick={() => setShowBankForm(false)} className="flex-1 h-14 rounded-2xl font-black text-xs uppercase tracking-widest text-slate-400">Cancelar</button>
-                                    <button onClick={saveBankDetails} className="flex-[2] h-14 bg-[#22eb7e] text-[#102217] rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-[#22eb7e]/30 active:scale-95 transition-all">Salvar Dados</button>
-                                </div>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+            {/* Modals */}
+            <DepositModal
+                isOpen={showDepositModal}
+                onClose={() => setShowDepositModal(false)}
+                onSuccess={handleDepositSuccess}
+            />
+            <WithdrawModal
+                isOpen={showWithdrawModal}
+                onClose={() => setShowWithdrawModal(false)}
+                currentBalance={balance}
+                onSuccess={handleWithdrawSuccess}
+            />
         </div>
     );
 };

@@ -81,3 +81,17 @@ export interface LocationUpdate {
     timestamp: string;
     accuracy?: number;
 }
+
+export type TransactionType = 'deposit' | 'withdrawal' | 'payment' | 'refund' | 'cashback';
+export type TransactionStatus = 'pending' | 'completed' | 'failed' | 'cancelled';
+
+export interface WalletTransaction {
+    id: string;
+    user_id: string;
+    type: TransactionType;
+    amount: number;
+    status: TransactionStatus;
+    stripe_payment_id?: string;
+    description?: string;
+    created_at: string;
+}
