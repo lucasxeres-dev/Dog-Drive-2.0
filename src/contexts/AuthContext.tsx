@@ -30,7 +30,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 const { data: { session } } = await authService.getSession();
                 if (session) {
                     setUser(session.user);
-                    const userProfile = await authService.getProfile(session.user.id);
+                    let userProfile = await authService.getProfile(session.user.id);
+
+                    // Fallback: If profile missing but session exists (e.g. trigger failed)
+                    if (!userProfile && session.user) {
+                        console.warn('Profile missing for user, creating fallback...');
+                        const { data: newProfile } = await authService.supabase
+                            .from('profiles')
+                            .upsert({
+                                id: session.user.id,
+                                email: session.user.email,
+                                role: session.user.user_metadata?.role || 'owner',
+                                country: 'PT'
+                            })
+                            .select()
+                            .single();
+                        userProfile = newProfile;
+                    }
                     setProfile(userProfile);
                 }
             } catch (err) {
@@ -46,7 +62,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             console.log('Auth state change event:', event);
             if (session) {
                 setUser(session.user);
-                const userProfile = await authService.getProfile(session.user.id);
+                let userProfile = await authService.getProfile(session.user.id);
+                if (!userProfile) {
+                    const { data: newProfile } = await authService.supabase
+                        .from('profiles')
+                        .insert({
+                            id: session.user.id,
+                            email: session.user.email,
+                            role: session.user.user_metadata?.role || 'owner',
+                            country: 'PT'
+                        })
+                        .select()
+                        .single();
+                    userProfile = newProfile;
+                }
                 setProfile(userProfile);
             } else {
                 setUser(null);

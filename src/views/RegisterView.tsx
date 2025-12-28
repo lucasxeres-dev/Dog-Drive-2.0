@@ -65,13 +65,15 @@ const RegisterView: React.FC = () => {
 
         setLoading(true);
         try {
+            console.log('Registering user with:', formData.email);
             const { data, error: signUpError } = await authService.signUp(formData.email, formData.password, {
                 data: {
                     full_name: formData.fullName,
-                    username: formData.username.toLowerCase(),
+                    username: formData.username.trim().toLowerCase().replace('@', ''),
                     phone: formData.phone,
                     role: formData.role,
-                    email: formData.email
+                    email: formData.email,
+                    country: 'PT'
                 }
             });
 
@@ -91,16 +93,19 @@ const RegisterView: React.FC = () => {
 
                 if (businessError) {
                     console.error('Business profile error:', businessError);
-                    // Don't fail entirely, just log
                 }
             }
 
             showNotification('Cadastro realizado com sucesso! Faça login para continuar.', 'success');
-            navigate('/login');
+
+            // Wait a moment for trigger and sessions to settle
+            setTimeout(() => {
+                navigate('/login');
+            }, 1000);
         } catch (err: any) {
-            console.error('Registration error:', err);
-            if (err.message && err.message.includes('already registered')) {
-                showNotification('Este e-mail já está cadastrado.', 'error');
+            console.error('Registration error details:', err);
+            if (err.message && (err.message.includes('already registered') || err.status === 422)) {
+                showNotification('Este e-mail ou usuário já está em uso.', 'error');
             } else {
                 showNotification(`Erro ao criar conta: ${err.message || 'Tente novamente.'}`, 'error');
             }
