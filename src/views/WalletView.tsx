@@ -18,6 +18,7 @@ const WalletView: React.FC = () => {
 
     const [balance, setBalance] = useState(0);
     const [cashbackEarned, setCashbackEarned] = useState(0);
+    const [isBalanceAnimating, setIsBalanceAnimating] = useState(false);
     const [loading, setLoading] = useState(true);
     const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
     const [showDepositModal, setShowDepositModal] = useState(false);
@@ -26,6 +27,34 @@ const WalletView: React.FC = () => {
     useEffect(() => {
         if (user) {
             fetchWalletData();
+
+            // Subscribe to real-time changes on the profile (for balance updates)
+            const channel = supabase
+                .channel('realtime_wallet')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'profiles',
+                        filter: `id=eq.${user.id}`,
+                    },
+                    (payload: any) => {
+                        if (payload.new && payload.new.wallet_balance !== undefined) {
+                            const newBalance = payload.new.wallet_balance;
+                            // Update balance and trigger animation if it changed
+                            setBalance(newBalance);
+                            setIsBalanceAnimating(true);
+                            setTimeout(() => setIsBalanceAnimating(false), 1000);
+                            fetchWalletData(); // Refresh transactions too
+                        }
+                    }
+                )
+                .subscribe();
+
+            return () => {
+                supabase.removeChannel(channel);
+            };
         }
     }, [user]);
 
@@ -99,8 +128,16 @@ const WalletView: React.FC = () => {
 
             <main className="flex-1 overflow-y-auto p-6 no-scrollbar pb-32">
                 {loading ? (
-                    <div className="flex items-center justify-center h-64">
-                        <div className="w-12 h-12 border-4 border-[#22eb7e] border-t-transparent rounded-full animate-spin" />
+                    <div className="space-y-6">
+                        {/* Skeleton Balance Card */}
+                        <div className="h-64 bg-slate-200 rounded-[3rem] animate-pulse" />
+                        {/* Skeleton History */}
+                        <div className="space-y-4">
+                            <div className="h-6 w-32 bg-slate-200 rounded animate-pulse px-2" />
+                            <div className="h-20 bg-slate-100 rounded-2xl animate-pulse" />
+                            <div className="h-20 bg-slate-100 rounded-2xl animate-pulse" />
+                            <div className="h-20 bg-slate-100 rounded-2xl animate-pulse" />
+                        </div>
                     </div>
                 ) : (
                     <div className="space-y-6">
@@ -123,9 +160,14 @@ const WalletView: React.FC = () => {
                                     </div>
                                 </div>
 
-                                <div className="text-5xl font-black text-white mb-8">
+                                <motion.div
+                                    key={balance}
+                                    initial={{ y: 10, opacity: 0 }}
+                                    animate={{ y: 0, opacity: 1 }}
+                                    className={`text-5xl font-black text-white mb-8 transition-colors duration-500 ${isBalanceAnimating ? 'text-[#22eb7e]' : ''}`}
+                                >
                                     €{balance.toFixed(2)}
-                                </div>
+                                </motion.div>
 
                                 <div className="grid grid-cols-2 gap-3">
                                     <button
