@@ -101,7 +101,13 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                             <p className="text-slate-400 font-bold">Entre na sua conta para continuar.</p>
                         </div>
 
-                        <div className="space-y-6">
+                        <form
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                handleLogin();
+                            }}
+                            className="space-y-6"
+                        >
                             <div className="space-y-2">
                                 <label className="label-premium ml-4">E-mail ou Usuário</label>
                                 <div className="relative">
@@ -109,9 +115,10 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                                     <input
                                         className="input-premium !pl-14"
                                         placeholder="ex: doglover@email.com"
-                                        type="text"
+                                        type="email"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
+                                        required
                                     />
                                 </div>
                             </div>
@@ -119,7 +126,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between px-4">
                                     <label className="label-premium">Senha</label>
-                                    <button className="text-[10px] font-black uppercase tracking-widest text-[#22eb7e] hover:text-[#19c765] transition-colors">Esqueceu?</button>
+                                    <button type="button" className="text-[10px] font-black uppercase tracking-widest text-[#22eb7e] hover:text-[#19c765] transition-colors">Esqueceu?</button>
                                 </div>
                                 <div className="relative group">
                                     <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400">
@@ -131,8 +138,10 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                                         type={showPassword ? "text" : "password"}
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
+                                        required
                                     />
                                     <button
+                                        type="button"
                                         onClick={() => setShowPassword(!showPassword)}
                                         className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-300 hover:text-[#22eb7e] transition-all"
                                     >
@@ -142,7 +151,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                             </div>
 
                             <button
-                                onClick={handleLogin}
+                                type="submit"
                                 disabled={loading}
                                 className="btn-primary-premium w-full mt-6 group"
                             >
@@ -155,7 +164,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                                     </>
                                 )}
                             </button>
-                        </div>
+                        </form>
 
                         {/* Social Login */}
                         <div className="mt-12">
