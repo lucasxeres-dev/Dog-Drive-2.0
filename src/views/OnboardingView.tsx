@@ -1,12 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserRole } from '../types';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { authService } from '../services/authService';
 import { useSupabase } from '../hooks/useSupabase';
 import { uploadImage } from '../lib/imageUpload';
-import { Dog } from 'lucide-react';
+import {
+    Dog, ArrowLeft, Check,
+    Globe, User, Footprints,
+    Home, ShoppingBag, Scissors,
+    Camera, FileText, Lock,
+    ChevronRight, CreditCard, Sparkles,
+    CheckCircle2, X, MapPin, Info, Shield
+} from 'lucide-react';
 
 interface OnboardingViewProps {
     onSelectRole: (role: string) => void;
@@ -266,606 +272,513 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
     };
 
     const roles = [
-        { id: UserRole.OWNER, title: t('owner'), icon: 'pets' },
-        {
-            id: UserRole.WALKER,
-            title: t('walker'),
-            icon: 'directions_walk',
-            customIcon: (
-                <div className="flex items-end -ml-2">
-                    <span className="material-symbols-outlined text-[28px]">directions_walk</span>
-                    <div className="relative -ml-1 mb-1">
-                        <Dog size={18} strokeWidth={2.5} />
-                        {/* Leash effect */}
-                        <div className="absolute -top-3 -left-2 w-4 h-px bg-current rotate-45 origin-right opacity-50"></div>
-                    </div>
-                </div>
-            )
-        },
-        { id: UserRole.BOARDING, title: t('boarding'), icon: 'home' },
-        { id: UserRole.PETSHOP, title: t('petshop'), icon: 'storefront' },
-        { id: UserRole.GROOMING, title: t('grooming'), icon: 'content_cut' }
+        { id: UserRole.OWNER, title: t('owner'), icon: Dog },
+        { id: UserRole.WALKER, title: t('walker'), icon: Footprints },
+        { id: UserRole.BOARDING, title: t('boarding'), icon: Home },
+        { id: UserRole.PETSHOP, title: t('petshop'), icon: ShoppingBag },
+        { id: UserRole.GROOMING, title: t('grooming'), icon: Scissors }
     ];
 
     return (
-        <div className="flex-1 flex flex-col bg-background-light dark:bg-background-dark font-display p-6 overflow-y-auto pb-32">
-            <header className="flex items-center mb-8">
-                {step > 0 && (
-                    <button onClick={() => setStep(step - 1)} className="w-10 h-10 rounded-full hover:bg-black/5 flex items-center justify-center border border-gray-100 dark:border-white/10 mr-4">
-                        <span className="material-symbols-outlined text-xl">arrow_back</span>
+        <div className="flex-1 flex flex-col bg-[#f8fafc] h-screen overflow-hidden">
+            <header className="px-6 pt-12 pb-6 flex items-center justify-between bg-white/80 backdrop-blur-xl sticky top-0 z-50">
+                {step > 0 ? (
+                    <button
+                        onClick={() => setStep(step - 1)}
+                        className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-600 active:scale-95 transition-all border border-slate-200/50"
+                    >
+                        <ArrowLeft size={20} />
                     </button>
+                ) : (
+                    <div className="w-10" />
                 )}
-                <div className="flex-1 text-center font-bold opacity-60">
-                    {step === 0 ? 'Dog Drive' :
-                        step === 1 ? (selectedCountry === 'BR' ? t('brazil') : t('europe')) :
-                            selectedRole === UserRole.OWNER ? t('owner') :
-                                (selectedRole === UserRole.PETSHOP || selectedRole === UserRole.GROOMING) ? t('business') : t('walker')}
+                <div className="flex-1 text-center">
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
+                        {step === 0 ? 'Registro' :
+                            step === 1 ? 'Localização' :
+                                selectedRole === UserRole.OWNER ? 'Pet Info' : 'Profissional'}
+                    </span>
                 </div>
-                {step === 0 && <div className="w-10" />}
+                <div className="w-10" />
             </header>
 
-            {step === 0 ? (
-                // Step 0: Role Selection
-                <>
-                    <div className="mb-8">
-                        <h1 className="text-[32px] font-extrabold leading-tight mb-3">{t('onboarding_title')}</h1>
-                        <p className="text-[#608a72] dark:text-[#a1b8aa] text-base font-medium">{t('onboarding_sub')}</p>
-                    </div>
-
-                    <div className="flex flex-col gap-4">
-                        {roles.map((role) => (
-                            <label key={role.id} className="cursor-pointer group">
-                                <input
-                                    type="radio"
-                                    className="sr-only peer"
-                                    name="role"
-                                    checked={selectedRole === role.id}
-                                    onChange={() => setSelectedRole(role.id as UserRole)}
-                                />
-                                <div className="flex items-center gap-4 bg-white p-5 rounded-[2rem] shadow-lg shadow-slate-200/50 border border-slate-100 peer-checked:border-primary peer-checked:bg-primary/5 transition-all">
-                                    <div className="flex items-center justify-center rounded-2xl bg-slate-50 peer-checked:bg-primary/20 shrink-0 size-14">
-                                        {(role as any).customIcon ? (
-                                            <div className={selectedRole === role.id ? 'text-primary' : 'text-gray-400'}>
-                                                {(role as any).customIcon}
-                                            </div>
-                                        ) : (
-                                            <span className={`material-symbols-outlined text-[28px] ${selectedRole === role.id ? 'text-primary' : 'text-gray-400'}`}>{role.icon}</span>
-                                        )}
-                                    </div>
-                                    <div className="flex flex-col flex-1">
-                                        <h3 className="text-lg font-bold">{role.title}</h3>
-                                    </div>
-                                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${selectedRole === role.id ? 'bg-primary border-primary' : 'border-gray-200 dark:border-white/20'}`}>
-                                        {selectedRole === role.id && <span className="material-symbols-outlined text-[16px] text-[#102217] font-bold">check</span>}
-                                    </div>
-                                </div>
-                            </label>
-                        ))}
-                    </div>
-                </>
-            ) : step === 1 ? (
-                // Step 1: Country Selection (Portugal only now)
-                <div className="space-y-6 animate-fadeIn">
-                    <div className="mb-8">
-                        <h1 className="text-3xl font-black mb-2">{t('select_country')} 🇵🇹</h1>
-                        <p className="text-gray-500 font-medium">Você será registrado em Portugal.</p>
-                    </div>
-
-                    <div className="p-8 rounded-[2.5rem] bg-primary/10 border-4 border-primary/20 flex flex-col items-center gap-4 text-center">
-                        <span className="text-6xl animate-bounce">🇵🇹</span>
+            <main className="flex-1 overflow-y-auto p-6 pb-32 no-scrollbar">
+                {step === 0 ? (
+                    <div className="space-y-10 animate-fade-in">
                         <div>
-                            <h2 className="text-2xl font-black uppercase tracking-tight">Portugal</h2>
-                            <p className="text-sm font-bold text-primary uppercase tracking-widest mt-1">Região Ativa</p>
-                        </div>
-                    </div>
-
-                    <p className="text-center text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] px-8">
-                        No momento, o Dog Drive está focado em oferecer a melhor experiência para a comunidade em Portugal.
-                    </p>
-                </div>
-            ) : selectedRole === UserRole.OWNER ? (
-                // Step 2: Owner (Dog Info)
-                <div className="space-y-6 animate-fadeIn">
-                    <div className="mb-8">
-                        <h1 className="text-3xl font-black mb-2 animate-slideUp">Cadastre seu Cão 🦴</h1>
-                        <p className="text-gray-500 font-medium">Conte-nos um pouco sobre seu melhor amigo.</p>
-                    </div>
-
-                    <div className="space-y-5">
-                        <div className="group">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">{t('pet_name')}</label>
-                            <input
-                                type="text"
-                                value={dogData.name}
-                                onChange={e => setDogData({ ...dogData, name: e.target.value })}
-                                placeholder="ex: Max"
-                                className="w-full h-16 bg-white dark:bg-surface-dark rounded-3xl px-6 font-bold border-2 border-transparent focus:border-primary/30 transition-all shadow-sm"
-                            />
+                            <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-[1.1] mb-4">Como você quer usar o <span className="text-[#22eb7e]">Dog Drive</span>?</h1>
+                            <p className="text-slate-500 font-bold leading-relaxed">Escolha seu perfil para começarmos.</p>
                         </div>
 
-                        <div className="flex gap-4">
-                            <div className="flex-1">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">{t('pet_age')}</label>
-                                <input
-                                    type="text"
-                                    value={dogData.age}
-                                    onChange={e => setDogData({ ...dogData, age: e.target.value })}
-                                    placeholder="ex: 3 anos"
-                                    className="w-full h-16 bg-white dark:bg-surface-dark rounded-3xl px-6 font-bold border-2 border-transparent focus:border-primary/30 transition-all shadow-sm"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="flex-1">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">Raça</label>
-                                <input
-                                    type="text"
-                                    value={dogData.breed}
-                                    onChange={e => setDogData({ ...dogData, breed: e.target.value })}
-                                    placeholder="ex: Golden Retriever"
-                                    className="w-full h-16 bg-white dark:bg-surface-dark rounded-3xl px-6 font-bold border-2 border-transparent focus:border-primary/30 transition-all shadow-sm"
-                                />
-                            </div>
-                            <div className="flex-1">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">Gênero</label>
-                                <select
-                                    value={dogData.gender}
-                                    onChange={e => setDogData({ ...dogData, gender: e.target.value as any })}
-                                    className="w-full h-16 bg-white dark:bg-surface-dark rounded-3xl px-6 font-bold border-2 border-transparent focus:border-primary/30 transition-all shadow-sm appearance-none"
-                                >
-                                    <option value="">Selecionar</option>
-                                    <option value="male">Macho</option>
-                                    <option value="female">Fêmea</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="flex-1">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">Porte</label>
-                                <select
-                                    value={dogData.size}
-                                    onChange={e => setDogData({ ...dogData, size: e.target.value as any })}
-                                    className="w-full h-16 bg-white dark:bg-surface-dark rounded-3xl px-6 font-bold border-2 border-transparent focus:border-primary/30 transition-all shadow-sm appearance-none"
-                                >
-                                    <option value="">Porte</option>
-                                    <option value="mini">Mini</option>
-                                    <option value="small">Pequeno</option>
-                                    <option value="medium">Médio</option>
-                                    <option value="large">Grande</option>
-                                    <option value="giant">Gigante</option>
-                                </select>
-                            </div>
-                            <div className="flex-1">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">Peso (Kg)</label>
-                                <input
-                                    type="number"
-                                    value={dogData.weight}
-                                    onChange={e => setDogData({ ...dogData, weight: e.target.value })}
-                                    placeholder="ex: 15"
-                                    className="w-full h-16 bg-white dark:bg-surface-dark rounded-3xl px-6 font-bold border-2 border-transparent focus:border-primary/30 transition-all shadow-sm"
-                                />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">Cão Castrado?</label>
-                            <div className="grid grid-cols-2 gap-4">
-                                <button
-                                    onClick={() => setDogData({ ...dogData, is_castrated: true })}
-                                    className={`p-6 rounded-3xl border-2 flex flex-col items-center gap-2 transition-all ${dogData.is_castrated ? 'bg-primary/20 border-primary shadow-lg shadow-primary/10' : 'bg-white dark:bg-surface-dark border-transparent shadow-sm'}`}
-                                >
-                                    <div className={`size-12 rounded-2xl flex items-center justify-center transition-colors ${dogData.is_castrated ? 'bg-primary text-[#050705]' : 'bg-gray-100 dark:bg-white/5 text-gray-400'}`}>
-                                        <span className="material-symbols-outlined text-2xl font-black">check_circle</span>
-                                    </div>
-                                    <span className={`font-black uppercase tracking-widest text-xs ${dogData.is_castrated ? 'text-white' : 'text-gray-500'}`}>Sim</span>
-                                </button>
-                                <button
-                                    onClick={() => setDogData({ ...dogData, is_castrated: false })}
-                                    className={`p-6 rounded-3xl border-2 flex flex-col items-center gap-2 transition-all ${!dogData.is_castrated ? 'bg-white/10 border-white/20' : 'bg-white dark:bg-surface-dark border-transparent shadow-sm'}`}
-                                >
-                                    <div className={`size-12 rounded-2xl flex items-center justify-center transition-colors ${!dogData.is_castrated ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-white/5 text-gray-400'}`}>
-                                        <span className="material-symbols-outlined text-2xl font-black">cancel</span>
-                                    </div>
-                                    <span className={`font-black uppercase tracking-widest text-xs ${!dogData.is_castrated ? 'text-white' : 'text-gray-500'}`}>Não</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">Cor</label>
-                            <input
-                                type="text"
-                                value={dogData.color}
-                                onChange={e => setDogData({ ...dogData, color: e.target.value })}
-                                placeholder="ex: Caramelo, Preto e Branco"
-                                className="w-full h-16 bg-white dark:bg-surface-dark rounded-3xl px-6 font-bold border-2 border-transparent focus:border-primary/30 transition-all shadow-sm"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">{t('pet_photo')}</label>
-                            <div className="flex flex-col items-center gap-4 p-6 bg-white dark:bg-surface-dark rounded-3xl border-2 border-dashed border-gray-200 dark:border-white/10 transition-all hover:border-primary/50">
-                                {dogData.photo ? (
-                                    <div className="relative group">
-                                        <img src={dogData.photo} alt="Preview" className="size-40 rounded-2xl object-cover shadow-lg" />
-                                        <button
-                                            onClick={() => setDogData({ ...dogData, photo: '' })}
-                                            className="absolute -top-2 -right-2 size-8 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-all"
-                                        >
-                                            <span className="material-symbols-outlined text-sm">close</span>
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <label className="flex flex-col items-center justify-center cursor-pointer w-full py-4">
-                                        <div className="size-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                                            {uploading ? (
-                                                <div className="size-6 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                                            ) : (
-                                                <span className="material-symbols-outlined text-[32px] text-primary">add_a_photo</span>
-                                            )}
-                                        </div>
-                                        <span className="text-sm font-bold text-gray-500 uppercase tracking-widest">{uploading ? 'Enviando...' : 'Subir Foto'}</span>
-                                        <input
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={(e) => handleFileUpload(e, 'pet')}
-                                            className="hidden"
-                                            disabled={uploading}
-                                        />
-                                    </label>
-                                )}
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">Traços / Temperamento</label>
-                            <div className="grid grid-cols-2 gap-2">
-                                {['Dócil', 'Ativo', 'Calmo', 'Protetor', 'Brincalhão', 'Bravo', 'Sociável', 'Independente'].map(trait => (
-                                    <button
-                                        key={trait}
-                                        onClick={() => {
-                                            const current = dogData.traits;
-                                            setDogData({
-                                                ...dogData,
-                                                traits: current.includes(trait)
-                                                    ? current.filter(t => t !== trait)
-                                                    : [...current, trait]
-                                            });
-                                        }}
-                                        className={`px-4 py-3 rounded-2xl border-2 text-sm font-bold transition-all ${dogData.traits.includes(trait)
-                                            ? 'bg-primary/10 border-primary text-primary shadow-sm'
-                                            : 'bg-white dark:bg-surface-dark border-transparent text-gray-500'
-                                            }`}
-                                    >
-                                        {trait}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">Instruções ou Pedido</label>
-                            <textarea
-                                value={dogData.request}
-                                onChange={e => setDogData({ ...dogData, request: e.target.value })}
-                                placeholder="ex: Preciso de alguém para gastar energia dele pela manhã..."
-                                className="w-full h-32 bg-white dark:bg-surface-dark rounded-3xl p-6 font-bold border-2 border-transparent focus:border-primary/30 transition-all shadow-sm resize-none text-sm"
-                            />
-                        </div>
-                    </div>
-                </div>
-            ) : selectedRole === UserRole.OWNER && step === 3 ? (
-                // Step 3: Owner Summary (The Green Bar)
-                <div className="space-y-6 animate-fadeIn pb-10">
-                    <div className="mb-4">
-                        <h1 className="text-3xl font-black mb-2">Quase Pronto! 🚀</h1>
-                        <p className="text-gray-500 font-medium">Confira seus dados antes de finalizar.</p>
-                    </div>
-
-                    <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-[#102217] via-[#102217] to-primary p-8 text-white shadow-2xl shadow-primary/20">
-                        <div className="absolute top-0 right-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-primary/20 blur-3xl"></div>
-
-                        <div className="relative z-10 flex flex-col items-center">
-                            <div className="relative mb-6">
-                                <div className="h-28 w-28 rounded-full border-4 border-white/20 p-1">
-                                    <img
-                                        src={dogData.photo || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=200&auto=format&fit=crop'}
-                                        alt={dogData.name}
-                                        className="h-full w-full rounded-full object-cover"
-                                    />
-                                </div>
-                                <div className="absolute bottom-0 right-0 flex h-10 w-10 items-center justify-center rounded-full bg-primary text-[#102217] shadow-lg border-2 border-[#102217]">
-                                    <span className="material-symbols-outlined font-black text-xl">pets</span>
-                                </div>
-                            </div>
-
-                            <div className="flex justify-between items-start">
-                                <div className="flex-1">
-                                    <h1 className="text-3xl font-extrabold">{dogData.name || 'Sem nome'}, {dogData.age || 'Idade N/I'}</h1>
-                                    <div className="flex items-center gap-2 mt-2">
-                                        <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider">{dogData.breed || 'SRD'}</span>
-                                        {dogData.is_castrated && (
-                                            <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
-                                                <span className="material-symbols-outlined text-[14px]">vaccines</span>
-                                                Castrado
-                                            </span>
-                                        )}
-                                        <div className="flex items-center gap-1 text-slate-500 text-sm">
-                                            <span className="material-symbols-outlined text-[16px]">location_on</span>
-                                            <span>{city || 'Portugal'}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="w-full space-y-4">
-                                <div className="flex items-center gap-4 rounded-2xl bg-white/10 p-4 backdrop-blur-md">
-                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10">
-                                        <span className="material-symbols-outlined text-primary">psychology</span>
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className="text-[10px] font-black uppercase text-white/50 tracking-wider">Temperamento</p>
-                                        <p className="font-bold text-sm">{(dogData.traits || []).join(', ') || 'Não informado'}</p>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-4 rounded-2xl bg-white/10 p-4 backdrop-blur-md">
-                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10">
-                                        <span className="material-symbols-outlined text-primary">monitor_weight</span>
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className="text-[10px] font-black uppercase text-white/50 tracking-wider">Porte / Peso</p>
-                                        <p className="font-bold text-sm uppercase tracking-tighter">{dogData.size || 'N/I'} • {dogData.weight ? `${dogData.weight}kg` : 'N/I'} • {dogData.is_castrated ? 'Castrado' : 'Não Castrado'}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            ) : (selectedRole === UserRole.PETSHOP || selectedRole === UserRole.GROOMING) ? (
-                // Business Flow: Shop / Grooming
-                <div className="space-y-6 animate-fadeIn pb-10">
-                    {step === 2 && (
-                        <>
-                            <div className="mb-8">
-                                <h1 className="text-3xl font-black mb-2">{t('business_type_title')} 🏢</h1>
-                                <p className="text-gray-500 font-medium">{t('business_type_subtitle')}</p>
-                            </div>
-                            <div className="space-y-4">
-                                {[
-                                    { id: 'clinic', label: t('vet_clinic'), icon: 'medical_services' },
-                                    { id: 'grooming', label: t('grooming_shop'), icon: 'content_cut' }
-                                ].map(type => (
-                                    <button
-                                        key={type.id}
-                                        onClick={() => setBusinessData({ ...businessData, type: type.id as any })}
-                                        className={`w-full p-6 rounded-3xl border-2 flex items-center gap-4 transition-all ${businessData.type === type.id
-                                            ? 'bg-primary/10 border-primary shadow-lg shadow-primary/10'
-                                            : 'bg-white dark:bg-surface-dark border-transparent shadow-sm'
-                                            }`}
-                                    >
-                                        <div className={`size-12 rounded-2xl flex items-center justify-center ${businessData.type === type.id ? 'bg-primary text-[#102217]' : 'bg-gray-100 dark:bg-white/5 text-gray-400'}`}>
-                                            <span className="material-symbols-outlined text-2xl font-black">{type.icon}</span>
-                                        </div>
-                                        <span className="text-lg font-bold flex-1 text-left">{type.label}</span>
-                                        {businessData.type === type.id && <span className="material-symbols-outlined text-primary font-black">check_circle</span>}
-                                    </button>
-                                ))}
-                            </div>
-                        </>
-                    )}
-
-                    {step === 3 && (
-                        <div className="space-y-6">
-                            <div className="mb-8">
-                                <h1 className="text-3xl font-black mb-2">Dados da Empresa 📋</h1>
-                                <p className="text-gray-500 font-medium">Precisamos dos dados legais para validação.</p>
-                            </div>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">{t('business_name')}</label>
+                        <div className="grid grid-cols-1 gap-4">
+                            {roles.map((role) => (
+                                <label key={role.id} className="cursor-pointer group">
                                     <input
-                                        type="text"
-                                        value={businessData.name}
-                                        onChange={e => setBusinessData({ ...businessData, name: e.target.value })}
-                                        placeholder="Nome Fantasia"
-                                        className="w-full h-16 bg-white dark:bg-surface-dark rounded-3xl px-6 font-bold border-2 border-transparent focus:border-primary transition-all shadow-sm"
+                                        type="radio"
+                                        className="sr-only peer"
+                                        name="role"
+                                        checked={selectedRole === role.id}
+                                        onChange={() => setSelectedRole(role.id as UserRole)}
                                     />
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">{t('tax_id_eu')}</label>
-                                    <input
-                                        type="text"
-                                        value={businessData.tax_id}
-                                        onChange={e => setBusinessData({ ...businessData, tax_id: e.target.value })}
-                                        placeholder="Tax ID / VAT Number"
-                                        className="w-full h-16 bg-white dark:bg-surface-dark rounded-3xl px-6 font-bold border-2 border-transparent focus:border-primary transition-all shadow-sm"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">{t('business_address')}</label>
-                                    <input
-                                        type="text"
-                                        value={businessData.address}
-                                        onChange={e => setBusinessData({ ...businessData, address: e.target.value })}
-                                        placeholder="Endereço da Sede"
-                                        className="w-full h-16 bg-white dark:bg-surface-dark rounded-3xl px-6 font-bold border-2 border-transparent focus:border-primary transition-all shadow-sm"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">Comprovante / Licença</label>
-                                    <div className="flex flex-col items-center gap-4 p-6 bg-white dark:bg-surface-dark rounded-3xl border-2 border-dashed border-primary/30">
-                                        {businessData.doc_url ? (
-                                            <span className="text-primary font-bold flex items-center gap-2"><span className="material-symbols-outlined">check_circle</span>Arquivo Enviado</span>
-                                        ) : (
-                                            <label className="cursor-pointer flex flex-col items-center">
-                                                <span className="material-symbols-outlined text-4xl text-primary mb-2">upload_file</span>
-                                                <span className="text-xs font-bold text-gray-400">Clique para enviar comprovante</span>
-                                                <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, 'doc')} />
-                                            </label>
-                                        )}
+                                    <div className="flex items-center gap-6 bg-white p-6 rounded-[2.5rem] shadow-xl shadow-slate-200/40 border-2 border-transparent peer-checked:border-[#22eb7e] peer-checked:bg-[#22eb7e]/5 transition-all relative overflow-hidden">
+                                        <div className="size-16 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:scale-105 transition-transform peer-checked:bg-[#22eb7e]/20 peer-checked:text-[#102217]">
+                                            <role.icon size={28} strokeWidth={2.5} />
+                                        </div>
+                                        <div className="flex-1">
+                                            <h3 className="text-lg font-black text-slate-900 leading-none">{role.title}</h3>
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-2 italic">
+                                                {role.id === UserRole.OWNER ? 'Para quem tem pet' : 'Para quem ama pets'}
+                                            </p>
+                                        </div>
+                                        <div className={`size-6 rounded-full border-2 flex items-center justify-center transition-all ${selectedRole === role.id ? 'bg-[#22eb7e] border-[#22eb7e] scale-110' : 'border-slate-200'}`}>
+                                            {selectedRole === role.id && <Check size={14} className="text-[#102217] stroke-[4]" />}
+                                        </div>
                                     </div>
-                                </div>
-
-                                <div className="mt-8 p-6 rounded-[2.5rem] bg-white dark:bg-surface-dark border-2 border-transparent hover:border-primary/20 transition-all flex items-center gap-4">
-                                    <div className={`size-14 rounded-2xl flex items-center justify-center transition-colors ${hasShop ? 'bg-primary/20 text-primary' : 'bg-gray-100 dark:bg-white/5 text-gray-400'}`}>
-                                        <span className="material-symbols-outlined text-3xl">shopping_bag</span>
-                                    </div>
-                                    <div className="flex-1">
-                                        <h3 className="font-bold">{t('shop_function')}</h3>
-                                        <p className="text-xs text-gray-500 font-medium">Permitir venda de produtos no marketplace</p>
-                                    </div>
-                                    <button
-                                        onClick={() => setHasShop(!hasShop)}
-                                        className={`w-14 h-8 rounded-full relative transition-colors ${hasShop ? 'bg-primary' : 'bg-gray-200 dark:bg-white/10'}`}
-                                    >
-                                        <div className={`absolute top-1 size-6 bg-white rounded-full transition-all ${hasShop ? 'left-7' : 'left-1'} shadow-sm`} />
-                                    </button>
-                                </div>
-                            </div>
+                                </label>
+                            ))}
                         </div>
-                    )}
-                </div>
-            ) : (
-                // Provider Flow: Walker / Boarding
-                <div className="space-y-6 animate-fadeIn pb-10">
-                    {step === 2 && (
-                        <>
-                            <div className="mb-8">
-                                <h1 className="text-3xl font-black mb-2 animate-slideUp">{t('service_type')}</h1>
-                                <p className="text-gray-500 font-medium">Você pode escolher uma ou ambas.</p>
-                            </div>
-                            <div className="space-y-4">
-                                {[
-                                    { id: 'walking', label: t('walking'), icon: 'directions_walk' },
-                                    { id: 'boarding', label: t('boarding_label'), icon: 'home' }
-                                ].map(svc => (
-                                    <button
-                                        key={svc.id}
-                                        onClick={() => {
-                                            const current = providerData.services;
-                                            setProviderData({
-                                                ...providerData,
-                                                services: current.includes(svc.id)
-                                                    ? current.filter(s => s !== svc.id)
-                                                    : [...current, svc.id]
-                                            });
-                                        }}
-                                        className={`w-full p-6 rounded-3xl border-2 flex items-center gap-4 transition-all ${providerData.services.includes(svc.id)
-                                            ? 'bg-primary/10 border-primary shadow-lg shadow-primary/10'
-                                            : 'bg-white dark:bg-surface-dark border-transparent shadow-sm'
-                                            }`}
-                                    >
-                                        <div className={`size-12 rounded-2xl flex items-center justify-center ${providerData.services.includes(svc.id) ? 'bg-primary text-[#102217]' : 'bg-gray-100 dark:bg-white/5 text-gray-400'}`}>
-                                            <span className="material-symbols-outlined text-2xl font-black">{svc.icon}</span>
-                                        </div>
-                                        <span className="text-lg font-bold flex-1 text-left">{svc.label}</span>
-                                        {providerData.services.includes(svc.id) && <span className="material-symbols-outlined text-primary font-black">check_circle</span>}
-                                    </button>
-                                ))}
-                            </div>
-                        </>
-                    )}
+                    </div>
+                ) : step === 1 ? (
+                    <div className="space-y-10 animate-fade-in">
+                        <div>
+                            <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-[1.1] mb-4">Sua região é <span className="text-[#22eb7e]">Portugal</span> 🇵🇹</h1>
+                            <p className="text-slate-500 font-bold leading-relaxed">Operamos exclusivamente em terras lusitanas no momento.</p>
+                        </div>
 
-                    {step === 3 && (
-                        <>
-                            <div className="mb-8">
-                                <h1 className="text-3xl font-black mb-2 animate-slideUp">Documentação 🪪</h1>
-                                <p className="text-gray-500 font-medium">{t('doc_upload')}</p>
+                        <div className="p-12 rounded-[3.5rem] bg-white border border-slate-100 shadow-2xl shadow-slate-200/50 flex flex-col items-center gap-6 text-center hover:scale-[1.02] transition-transform">
+                            <div className="size-24 bg-slate-50 rounded-full flex items-center justify-center text-5xl shadow-inner">
+                                🇵🇹
                             </div>
-                            <div className="flex flex-col items-center gap-4 p-8 bg-white dark:bg-surface-dark rounded-3xl border-2 border-dashed border-primary/30">
-                                {providerData.doc_url ? (
-                                    <div className="relative">
-                                        <div className="size-48 bg-gray-100 dark:bg-white/5 rounded-2xl flex items-center justify-center overflow-hidden border border-primary/20 shadow-xl">
-                                            <img src={providerData.doc_url} alt="Document" className="w-full h-full object-cover grayscale opacity-50" />
-                                            <div className="absolute inset-0 flex items-center justify-center">
-                                                <span className="material-symbols-outlined text-4xl text-primary drop-shadow-lg">lock</span>
-                                            </div>
-                                        </div>
-                                        <button
-                                            onClick={() => setProviderData({ ...providerData, doc_url: '' })}
-                                            className="absolute -top-2 -right-2 size-8 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"
-                                        >
-                                            <span className="material-symbols-outlined text-sm">close</span>
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <label className="flex flex-col items-center justify-center cursor-pointer w-full py-6 group">
-                                        <div className="size-20 bg-primary/10 rounded-[2rem] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                            {uploadingDoc ? (
-                                                <div className="size-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                                            ) : (
-                                                <span className="material-symbols-outlined text-4xl text-primary">credit_card</span>
-                                            )}
-                                        </div>
-                                        <span className="text-sm font-black text-gray-500 uppercase tracking-widest">{uploadingDoc ? 'Uploading...' : 'Subir foto para a nuvem'}</span>
-                                        <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'doc')} disabled={uploadingDoc} />
-                                    </label>
-                                )}
-                            </div>
-                        </>
-                    )}
-
-                    {step === 4 && (
-                        <div className="space-y-6 animate-slideUp">
                             <div>
-                                <h1 className="text-3xl font-black mb-2">Quase lá! ✨</h1>
-                                <p className="text-gray-500 font-medium">Finalize com seu endereço e dados para pagamento.</p>
-                            </div>
-
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">{t('address_label')}</label>
-                                    <input
-                                        type="text"
-                                        value={providerData.address}
-                                        onChange={e => setProviderData({ ...providerData, address: e.target.value })}
-                                        placeholder="Rua, Número, Bairro - Cidade"
-                                        className="w-full h-16 bg-white dark:bg-surface-dark rounded-3xl px-6 font-bold border-2 border-transparent focus:border-primary transition-all shadow-sm"
-                                    />
-                                </div>
-
-                                <div className="p-6 bg-primary/5 rounded-[2.5rem] border-2 border-primary/20 mt-4">
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <span className="material-symbols-outlined text-primary">payments</span>
-                                        <label className="text-xs font-black uppercase tracking-widest text-[#102217]">{t('bank_title')}</label>
-                                    </div>
-                                    <input
-                                        type="text"
-                                        value={providerData.pix}
-                                        onChange={e => setProviderData({ ...providerData, pix: e.target.value })}
-                                        placeholder={t('pix_key')}
-                                        className="w-full h-14 bg-white dark:bg-background-dark rounded-2xl px-5 font-bold border-2 border-transparent focus:border-primary transition-all text-sm"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">{t('experience_label')}</label>
-                                    <textarea
-                                        value={providerData.bio}
-                                        onChange={e => setProviderData({ ...providerData, bio: e.target.value })}
-                                        placeholder="Fale um pouco sobre você..."
-                                        className="w-full h-32 bg-white dark:bg-surface-dark rounded-3xl p-6 font-bold border-2 border-transparent focus:border-primary transition-all shadow-sm resize-none"
-                                    />
+                                <h2 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Portugal</h2>
+                                <div className="flex items-center justify-center gap-2 mt-2">
+                                    <div className="w-2 h-2 rounded-full bg-[#22eb7e] animate-ping" />
+                                    <span className="text-[10px] font-black text-[#2e9c60] uppercase tracking-[0.3em]">Comunidade Ativa</span>
                                 </div>
                             </div>
                         </div>
-                    )}
-                </div>
-            )}
 
-            <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-background-light via-background-light dark:from-background-dark pt-12">
+                        <div className="bg-[#102217] p-8 rounded-[2.5rem] text-white flex items-center gap-4">
+                            <Globe size={20} className="text-[#22eb7e] shrink-0" />
+                            <p className="text-[11px] font-bold leading-relaxed opacity-80 uppercase tracking-wider">
+                                Estamos expandindo em breve para outras regiões. Fique atento às novidades!
+                            </p>
+                        </div>
+                    </div>
+                ) : selectedRole === UserRole.OWNER && step === 2 ? (
+                    <div className="space-y-10 animate-fade-in">
+                        <div>
+                            <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-[1.1] mb-4">Cadastre seu <span className="text-[#22eb7e]">Pet</span> 🦴</h1>
+                            <p className="text-slate-500 font-bold leading-relaxed">Conte-nos um pouco sobre seu melhor amigo.</p>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div className="space-y-2">
+                                <label className="label-premium ml-4">Nome do Pet</label>
+                                <input
+                                    type="text"
+                                    value={dogData.name}
+                                    onChange={e => setDogData({ ...dogData, name: e.target.value })}
+                                    placeholder="ex: Max"
+                                    className="input-premium"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="label-premium ml-4">Idade</label>
+                                    <input
+                                        type="text"
+                                        value={dogData.age}
+                                        onChange={e => setDogData({ ...dogData, age: e.target.value })}
+                                        placeholder="ex: 3 anos"
+                                        className="input-premium"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="label-premium ml-4">Gênero</label>
+                                    <select
+                                        value={dogData.gender}
+                                        onChange={e => setDogData({ ...dogData, gender: e.target.value as any })}
+                                        className="input-premium appearance-none"
+                                    >
+                                        <option value="">Selecionar</option>
+                                        <option value="male">Macho</option>
+                                        <option value="female">Fêmea</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="label-premium ml-4">Foto do Pet</label>
+                                <div className="premium-card !p-8 !rounded-[2.5rem] border-dashed border-2 border-slate-200 flex flex-col items-center justify-center min-h-[200px] hover:border-[#22eb7e] transition-colors group cursor-pointer">
+                                    {dogData.photo ? (
+                                        <div className="relative">
+                                            <img src={dogData.photo} alt="Preview" className="w-full h-48 object-cover rounded-2xl shadow-xl" />
+                                            <button
+                                                onClick={() => setDogData({ ...dogData, photo: '' })}
+                                                className="absolute -top-3 -right-3 size-10 bg-white text-rose-500 rounded-full flex items-center justify-center shadow-lg border border-slate-100 active:scale-95 transition-all"
+                                            >
+                                                <X size={20} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <label className="flex flex-col items-center gap-4 cursor-pointer w-full text-center">
+                                            <div className="size-16 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-[#22eb7e]/10 group-hover:text-[#22eb7e] transition-all">
+                                                {uploading ? <div className="size-6 border-2 border-[#22eb7e] border-t-transparent rounded-full animate-spin" /> : <Camera size={32} />}
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-black text-slate-900 uppercase tracking-tight">Toque para enviar</p>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">PNG, JPG até 5MB</p>
+                                            </div>
+                                            <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'pet')} />
+                                        </label>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <label className="label-premium ml-4">Temperamento</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {['Dócil', 'Ativo', 'Calmo', 'Brincalhão', 'Bravo', 'Sociável'].map(trait => (
+                                        <button
+                                            key={trait}
+                                            onClick={() => {
+                                                const current = dogData.traits;
+                                                setDogData({
+                                                    ...dogData,
+                                                    traits: current.includes(trait)
+                                                        ? current.filter(t => t !== trait)
+                                                        : [...current, trait]
+                                                });
+                                            }}
+                                            className={`px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${dogData.traits.includes(trait) ? 'bg-[#102217] text-[#22eb7e] shadow-lg shadow-[#102217]/20 border border-[#102217]' : 'bg-white text-slate-400 border border-slate-100 hover:border-slate-200'}`}
+                                        >
+                                            {trait}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ) : selectedRole === UserRole.OWNER && step === 3 ? (
+                    <div className="space-y-10 animate-fade-in">
+                        <div>
+                            <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-[1.1] mb-4">Pronto para <span className="text-[#22eb7e]">Explorar</span>! 🚀</h1>
+                            <p className="text-slate-500 font-bold leading-relaxed">Confira os dados do seu pet e comece a diversão.</p>
+                        </div>
+
+                        <div className="relative overflow-hidden bg-[#102217] rounded-[3.5rem] p-10 text-white shadow-2xl shadow-[#102217]/30 border border-white/5">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-[#22eb7e]/10 rounded-full -mr-32 -mt-32 blur-3xl opacity-50" />
+
+                            <div className="relative z-10 flex flex-col items-center text-center">
+                                <div className="relative mb-8">
+                                    <div className="size-32 rounded-[2.5rem] border-4 border-[#22eb7e]/30 p-2 rotate-3 hover:rotate-0 transition-transform duration-500">
+                                        <img
+                                            src={dogData.photo || 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=200&auto=format&fit=crop'}
+                                            alt={dogData.name}
+                                            className="w-full h-full rounded-[2rem] object-cover shadow-2xl"
+                                        />
+                                    </div>
+                                    <div className="absolute -bottom-2 -right-2 size-12 bg-[#22eb7e] text-[#102217] rounded-2xl flex items-center justify-center shadow-xl border-4 border-[#102217]">
+                                        <Dog size={24} strokeWidth={3} />
+                                    </div>
+                                </div>
+
+                                <h2 className="text-4xl font-black tracking-tight mb-2">{dogData.name || 'Pet'}</h2>
+                                <div className="flex items-center gap-3 justify-center mb-8">
+                                    <span className="px-3 py-1 bg-white/10 rounded-lg text-[10px] font-black uppercase tracking-widest text-[#22eb7e]">{dogData.age || 'N/I'}</span>
+                                    <span className="px-3 py-1 bg-white/10 rounded-lg text-[10px] font-black uppercase tracking-widest text-[#22eb7e]">{dogData.gender === 'male' ? 'Macho' : 'Fêmea'}</span>
+                                </div>
+
+                                <div className="w-full space-y-3">
+                                    <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/5 text-left">
+                                        <div className="size-10 rounded-xl bg-white/10 flex items-center justify-center text-[#22eb7e]">
+                                            <MapPin size={18} />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Localização</p>
+                                            <p className="text-sm font-bold">{city || 'Portugal'}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/5 text-left">
+                                        <div className="size-10 rounded-xl bg-white/10 flex items-center justify-center text-[#22eb7e]">
+                                            <Sparkles size={18} />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Temperamento</p>
+                                            <p className="text-sm font-bold truncate">{(dogData.traits || []).join(', ') || 'N/I'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ) : (selectedRole === UserRole.PETSHOP || selectedRole === UserRole.GROOMING) ? (
+                    // Business Flow: Shop / Grooming
+                    <div className="space-y-6 animate-fadeIn pb-10">
+                        {step === 2 && (
+                            <>
+                                <div className="mb-8">
+                                    <h1 className="text-3xl font-black mb-2">{t('business_type_title')} 🏢</h1>
+                                    <p className="text-gray-500 font-medium">{t('business_type_subtitle')}</p>
+                                </div>
+                                <div className="space-y-4">
+                                    {[
+                                        { id: 'clinic', label: t('vet_clinic'), icon: 'medical_services' },
+                                        { id: 'grooming', label: t('grooming_shop'), icon: 'content_cut' }
+                                    ].map(type => (
+                                        <button
+                                            key={type.id}
+                                            onClick={() => setBusinessData({ ...businessData, type: type.id as any })}
+                                            className={`w-full p-6 rounded-3xl border-2 flex items-center gap-4 transition-all ${businessData.type === type.id
+                                                ? 'bg-primary/10 border-primary shadow-lg shadow-primary/10'
+                                                : 'bg-white dark:bg-surface-dark border-transparent shadow-sm'
+                                                }`}
+                                        >
+                                            <div className={`size-12 rounded-2xl flex items-center justify-center ${businessData.type === type.id ? 'bg-primary text-[#102217]' : 'bg-gray-100 dark:bg-white/5 text-gray-400'}`}>
+                                                <span className="material-symbols-outlined text-2xl font-black">{type.icon}</span>
+                                            </div>
+                                            <span className="text-lg font-bold flex-1 text-left">{type.label}</span>
+                                            {businessData.type === type.id && <span className="material-symbols-outlined text-primary font-black">check_circle</span>}
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+
+                        {step === 3 && (
+                            <div className="space-y-6">
+                                <div className="mb-8">
+                                    <h1 className="text-3xl font-black mb-2">Dados da Empresa 📋</h1>
+                                    <p className="text-gray-500 font-medium">Precisamos dos dados legais para validação.</p>
+                                </div>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">{t('business_name')}</label>
+                                        <input
+                                            type="text"
+                                            value={businessData.name}
+                                            onChange={e => setBusinessData({ ...businessData, name: e.target.value })}
+                                            placeholder="Nome Fantasia"
+                                            className="w-full h-16 bg-white dark:bg-surface-dark rounded-3xl px-6 font-bold border-2 border-transparent focus:border-primary transition-all shadow-sm"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">{t('tax_id_eu')}</label>
+                                        <input
+                                            type="text"
+                                            value={businessData.tax_id}
+                                            onChange={e => setBusinessData({ ...businessData, tax_id: e.target.value })}
+                                            placeholder="Tax ID / VAT Number"
+                                            className="w-full h-16 bg-white dark:bg-surface-dark rounded-3xl px-6 font-bold border-2 border-transparent focus:border-primary transition-all shadow-sm"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">{t('business_address')}</label>
+                                        <input
+                                            type="text"
+                                            value={businessData.address}
+                                            onChange={e => setBusinessData({ ...businessData, address: e.target.value })}
+                                            placeholder="Endereço da Sede"
+                                            className="w-full h-16 bg-white dark:bg-surface-dark rounded-3xl px-6 font-bold border-2 border-transparent focus:border-primary transition-all shadow-sm"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">Comprovante / Licença</label>
+                                        <div className="flex flex-col items-center gap-4 p-6 bg-white dark:bg-surface-dark rounded-3xl border-2 border-dashed border-primary/30">
+                                            {businessData.doc_url ? (
+                                                <span className="text-primary font-bold flex items-center gap-2"><span className="material-symbols-outlined">check_circle</span>Arquivo Enviado</span>
+                                            ) : (
+                                                <label className="cursor-pointer flex flex-col items-center">
+                                                    <span className="material-symbols-outlined text-4xl text-primary mb-2">upload_file</span>
+                                                    <span className="text-xs font-bold text-gray-400">Clique para enviar comprovante</span>
+                                                    <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, 'doc')} />
+                                                </label>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-8 p-6 rounded-[2.5rem] bg-white dark:bg-surface-dark border-2 border-transparent hover:border-primary/20 transition-all flex items-center gap-4">
+                                        <div className={`size-14 rounded-2xl flex items-center justify-center transition-colors ${hasShop ? 'bg-primary/20 text-primary' : 'bg-gray-100 dark:bg-white/5 text-gray-400'}`}>
+                                            <span className="material-symbols-outlined text-3xl">shopping_bag</span>
+                                        </div>
+                                        <div className="flex-1">
+                                            <h3 className="font-bold">{t('shop_function')}</h3>
+                                            <p className="text-xs text-gray-500 font-medium">Permitir venda de produtos no marketplace</p>
+                                        </div>
+                                        <button
+                                            onClick={() => setHasShop(!hasShop)}
+                                            className={`w-14 h-8 rounded-full relative transition-colors ${hasShop ? 'bg-primary' : 'bg-gray-200 dark:bg-white/10'}`}
+                                        >
+                                            <div className={`absolute top-1 size-6 bg-white rounded-full transition-all ${hasShop ? 'left-7' : 'left-1'} shadow-sm`} />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div className="space-y-10 animate-fade-in pb-10">
+                        {step === 2 && (
+                            <div className="space-y-10">
+                                <div>
+                                    <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-[1.1] mb-4">Quais <span className="text-[#22eb7e]">Serviços</span> você oferece?</h1>
+                                    <p className="text-slate-500 font-bold leading-relaxed">Você pode escolher múltiplas opções.</p>
+                                </div>
+                                <div className="grid grid-cols-1 gap-4">
+                                    {[
+                                        { id: 'walking', label: 'Passeios', icon: Footprints },
+                                        { id: 'boarding', label: 'Hospedagem', icon: Home },
+                                        { id: 'grooming', label: 'Banho e Tosa', icon: Scissors },
+                                        { id: 'petshop', label: 'Pet Shop', icon: ShoppingBag }
+                                    ].map(svc => (
+                                        <button
+                                            key={svc.id}
+                                            onClick={() => {
+                                                const current = providerData.services;
+                                                setProviderData({
+                                                    ...providerData,
+                                                    services: current.includes(svc.id)
+                                                        ? current.filter(s => s !== svc.id)
+                                                        : [...current, svc.id]
+                                                });
+                                            }}
+                                            className={`flex items-center gap-6 bg-white p-6 rounded-[2.5rem] shadow-xl shadow-slate-200/40 border-2 transition-all group ${providerData.services.includes(svc.id) ? 'border-[#22eb7e] bg-[#22eb7e]/5' : 'border-transparent'}`}
+                                        >
+                                            <div className={`size-16 rounded-2xl flex items-center justify-center transition-all ${providerData.services.includes(svc.id) ? 'bg-[#22eb7e] text-[#102217]' : 'bg-slate-50 text-slate-300'}`}>
+                                                <svc.icon size={28} strokeWidth={2.5} />
+                                            </div>
+                                            <span className="text-lg font-black text-slate-900 flex-1 text-left">{svc.label}</span>
+                                            <div className={`size-6 rounded-full border-2 flex items-center justify-center transition-all ${providerData.services.includes(svc.id) ? 'bg-[#22eb7e] border-[#22eb7e] scale-110' : 'border-slate-200'}`}>
+                                                {providerData.services.includes(svc.id) && <Check size={14} className="text-[#102217] stroke-[4]" />}
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {step === 3 && (
+                            <div className="space-y-10">
+                                <div>
+                                    <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-[1.1] mb-4">Sua <span className="text-[#22eb7e]">Identidade</span> 🪪</h1>
+                                    <p className="text-slate-500 font-bold leading-relaxed">Precisamos de uma foto do seu documento para segurança.</p>
+                                </div>
+                                <div className="premium-card !p-10 !rounded-[3.5rem] border-dashed border-2 border-slate-200 flex flex-col items-center justify-center min-h-[300px] bg-white group cursor-pointer hover:border-[#22eb7e] transition-all">
+                                    {providerData.doc_url ? (
+                                        <div className="relative w-full">
+                                            <div className="relative aspect-video rounded-3xl overflow-hidden border border-slate-100 shadow-2xl">
+                                                <img src={providerData.doc_url} alt="Document" className="w-full h-full object-cover grayscale opacity-40 blur-[2px]" />
+                                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#102217]/60 backdrop-blur-sm">
+                                                    <Lock size={48} className="text-[#22eb7e] mb-4" />
+                                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#22eb7e]">Documento Protegido</p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => setProviderData({ ...providerData, doc_url: '' })}
+                                                className="absolute -top-4 -right-4 size-12 bg-white text-rose-500 rounded-full flex items-center justify-center shadow-2xl border border-slate-100 active:scale-95 transition-all"
+                                            >
+                                                <X size={24} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <label className="flex flex-col items-center gap-6 cursor-pointer w-full text-center">
+                                            <div className="size-24 rounded-3xl bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-[#22eb7e]/10 group-hover:text-[#22eb7e] transition-all">
+                                                {uploadingDoc ? <div className="size-8 border-4 border-[#22eb7e] border-t-transparent rounded-full animate-spin" /> : <FileText size={48} />}
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl font-black text-slate-900 tracking-tight">Tire uma foto nítida</h3>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">FRENTE E VERSO OU PASSAPORTE</p>
+                                            </div>
+                                            <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'doc')} disabled={uploadingDoc} />
+                                        </label>
+                                    )}
+                                </div>
+
+                                <div className="flex items-start gap-4 p-6 bg-slate-50 rounded-[2rem] border border-slate-100">
+                                    <Shield size={20} className="text-[#22eb7e] shrink-0" />
+                                    <p className="text-[10px] font-bold text-slate-500 leading-relaxed uppercase tracking-wider">
+                                        Seus dados são criptografados de ponta a ponta e usados apenas para verificação de identidade.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        {step === 4 && (
+                            <div className="space-y-10">
+                                <div>
+                                    <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-[1.1] mb-4">Detalhes da <span className="text-[#22eb7e]">Conta</span> ✨</h1>
+                                    <p className="text-slate-500 font-bold leading-relaxed">Quase lá! Finalize seu perfil profissional.</p>
+                                </div>
+
+                                <div className="space-y-6">
+                                    <div className="space-y-2">
+                                        <label className="label-premium ml-4">Endereço de Atendimento</label>
+                                        <div className="relative">
+                                            <MapPin size={18} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" />
+                                            <input
+                                                type="text"
+                                                value={providerData.address}
+                                                onChange={e => setProviderData({ ...providerData, address: e.target.value })}
+                                                placeholder="Rua, Número, Bairro - Cidade"
+                                                className="input-premium !pl-14"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-[#102217] p-8 rounded-[2.5rem] border border-white/5 shadow-2xl shadow-[#102217]/20 relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 w-32 h-32 bg-[#22eb7e]/5 rounded-full -mr-16 -mt-16 blur-2xl" />
+                                        <div className="relative z-10 space-y-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="size-8 rounded-lg bg-[#22eb7e]/10 flex items-center justify-center text-[#22eb7e]">
+                                                    <CreditCard size={16} />
+                                                </div>
+                                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Dados para Recebimento (IBAN)</label>
+                                            </div>
+                                            <input
+                                                type="text"
+                                                value={providerData.pix}
+                                                onChange={e => setProviderData({ ...providerData, pix: e.target.value })}
+                                                placeholder="PT50 0000 0000 0000 0000 0000 0"
+                                                className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl px-6 text-white font-bold placeholder:text-white/20 focus:border-[#22eb7e] transition-all outline-none"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="label-premium ml-4">Fale sobre sua experiência</label>
+                                        <textarea
+                                            value={providerData.bio}
+                                            onChange={e => setProviderData({ ...providerData, bio: e.target.value })}
+                                            placeholder="Fale um pouco sobre você e seu amor por pets..."
+                                            className="input-premium !h-32 !py-6 resize-none"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </main>
+
+            <footer className="px-6 py-8 bg-white/80 backdrop-blur-xl border-t border-slate-100 sticky bottom-0 z-50">
                 <button
                     onClick={handleNext}
                     disabled={uploading || uploadingDoc}
-                    className="w-full h-16 bg-primary text-[#102217] text-lg font-black rounded-3xl shadow-xl shadow-primary/20 active:scale-95 transition-all flex items-center justify-center gap-3 uppercase tracking-widest disabled:opacity-50"
+                    className="btn-primary-premium w-full group overflow-hidden"
                 >
-                    <span>{((selectedRole === UserRole.OWNER && step === 3) || ((selectedRole === UserRole.WALKER || selectedRole === UserRole.BOARDING) && step === 4) || ((selectedRole === UserRole.PETSHOP || selectedRole === UserRole.GROOMING) && step === 3)) ? t('finish_btn') : t('continue')}</span>
-                    <span className="material-symbols-outlined font-black">arrow_forward</span>
+                    <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                    <span className="relative z-10">
+                        {((selectedRole === UserRole.OWNER && step === 3) ||
+                            ((selectedRole === UserRole.WALKER || selectedRole === UserRole.BOARDING) && step === 4) ||
+                            ((selectedRole === UserRole.PETSHOP || selectedRole === UserRole.GROOMING) && step === 3))
+                            ? 'Finalizar Cadastro'
+                            : 'Continuar'}
+                    </span>
+                    <ChevronRight size={20} className="relative z-10 group-hover:translate-x-1 transition-transform" />
                 </button>
-            </div>
+            </footer>
         </div>
     );
 };

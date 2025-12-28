@@ -7,7 +7,8 @@ import SwipeCard from '../components/SwipeCard';
 import FilterModal from '../components/FilterModal';
 import {
     Dog as DogIcon, X, Heart, Star,
-    RotateCcw, Bone, Sparkles, Filter
+    RotateCcw, Bone, Sparkles, Filter,
+    MessageCircle, MapPin
 } from 'lucide-react';
 
 const FeedView: React.FC = () => {
@@ -82,26 +83,33 @@ const FeedView: React.FC = () => {
     return (
         <div className="flex-1 flex flex-col bg-[#f8fafc] h-screen overflow-hidden pb-24">
             {/* Header */}
-            <header className="px-6 pt-12 pb-6 flex items-center justify-between bg-white shadow-sm shadow-slate-100">
+            <header className="px-6 pt-12 pb-6 flex items-center justify-between bg-white/80 backdrop-blur-xl sticky top-0 z-50 border-b border-slate-100">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-[#22eb7e] rounded-xl flex items-center justify-center shadow-lg shadow-[#22eb7e]/20">
-                        <DogIcon size={22} className="text-[#102217]" strokeWidth={2.5} />
+                    <div className="w-11 h-11 bg-gradient-to-br from-[#22eb7e] to-[#1ed170] rounded-[14px] flex items-center justify-center shadow-lg shadow-[#22eb7e]/30">
+                        <DogIcon size={24} className="text-[#102217]" strokeWidth={2.5} />
                     </div>
                     <div>
                         <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none">Dog Drive</h1>
-                        <div className="flex items-center gap-1.5 mt-1">
-                            <Sparkles size={10} className="text-[#2e9c60]" />
-                            <p className="text-[10px] font-black text-[#2e9c60] uppercase tracking-widest leading-none">Community</p>
+                        <div className="flex items-center gap-1.5 mt-1.5">
+                            <div className="w-1 h-1 rounded-full bg-[#2e9c60] animate-pulse" />
+                            <p className="text-[10px] font-black text-[#2e9c60] uppercase tracking-widest leading-none">Comunidade Ativa</p>
                         </div>
                     </div>
                 </div>
 
-                <button
-                    onClick={() => setIsFilterOpen(true)}
-                    className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-600 active:scale-95 transition-all border border-slate-200/50 shadow-sm"
-                >
-                    <Filter size={20} />
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setIsFilterOpen(true)}
+                        className="w-11 h-11 rounded-full bg-slate-50 flex items-center justify-center text-slate-600 active:scale-95 transition-all border border-slate-200/50 shadow-sm"
+                    >
+                        <Filter size={20} />
+                    </button>
+                    <button
+                        className="w-11 h-11 rounded-full bg-slate-50 flex items-center justify-center text-slate-600 active:scale-95 transition-all border border-slate-200/50 shadow-sm"
+                    >
+                        <MessageCircle size={20} />
+                    </button>
+                </div>
             </header>
 
             {/* Swipe Area */}
@@ -122,6 +130,7 @@ const FeedView: React.FC = () => {
                                         dog={dog}
                                         onSwipe={(dir) => handleSwipe(dir, dog.id)}
                                         isTop={isTop}
+                                        index={currentIndex + (idx === 1 ? 0 : 1)}
                                     />
                                 );
                             })}

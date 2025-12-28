@@ -7,7 +7,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useSupabase } from '../hooks/useSupabase';
 import {
     ArrowLeft, Plus, Landmark, ArrowUpRight, ArrowDownLeft,
-    ShieldCheck, CreditCard, ChevronRight
+    ShieldCheck, CreditCard, ChevronRight, Sparkles
 } from 'lucide-react';
 
 const WalletView: React.FC = () => {
@@ -123,33 +123,40 @@ const WalletView: React.FC = () => {
                 ) : (
                     <div className="space-y-8">
                         {/* Balance Card */}
-                        <div className="relative overflow-hidden bg-[#102217] rounded-[2.5rem] p-8 text-white shadow-2xl shadow-[#102217]/20">
-                            <div className="absolute top-0 right-0 w-40 h-40 bg-[#22eb7e]/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
-                            <div className="absolute bottom-0 left-0 w-32 h-32 bg-[#22eb7e]/10 rounded-full -ml-16 -mb-16 blur-2xl"></div>
+                        <div className="relative overflow-hidden bg-gradient-to-br from-[#102217] to-[#1a3a28] rounded-[3rem] p-10 text-white shadow-2xl shadow-[#102217]/30 border border-white/5">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-[#22eb7e]/10 rounded-full -mr-32 -mt-32 blur-[100px]" />
+                            <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#22eb7e]/10 rounded-full -ml-24 -mb-24 blur-[80px]" />
 
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#22eb7e] mb-4 opacity-80">Saldo Disponível</p>
-                            <div className="flex items-baseline gap-2 mb-8">
-                                <span className="text-2xl font-black text-[#22eb7e]/60">€</span>
-                                <h2 className="text-5xl font-black tracking-tight">{balance.toFixed(2)}</h2>
-                            </div>
+                            <div className="relative z-10">
+                                <div className="flex items-center gap-2 mb-6">
+                                    <Sparkles size={14} className="text-[#22eb7e]" />
+                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[#22eb7e]">Saldo Disponível</p>
+                                </div>
+                                <div className="flex items-baseline gap-3 mb-10">
+                                    <span className="text-3xl font-black text-[#22eb7e]">€</span>
+                                    <h2 className="text-6xl font-black tracking-tighter">{balance.toFixed(2)}</h2>
+                                </div>
 
-                            <div className="flex gap-4">
-                                <button className="flex-1 h-14 bg-[#22eb7e] text-[#102217] rounded-2xl font-black text-xs uppercase tracking-widest active:scale-95 transition-all flex items-center justify-center gap-2">
-                                    <Plus size={16} strokeWidth={3} /> Depositar
-                                </button>
-                                <button className="flex-1 h-14 bg-white/10 text-white rounded-2xl font-black text-xs uppercase tracking-widest border border-white/5 active:scale-95 transition-all flex items-center justify-center gap-2 backdrop-blur-md">
-                                    <CreditCard size={16} /> Sacar
-                                </button>
+                                <div className="flex gap-4">
+                                    <button className="btn-primary-premium flex-1 !h-14">
+                                        <Plus size={18} strokeWidth={3} />
+                                        <span>Depositar</span>
+                                    </button>
+                                    <button className="flex-1 h-14 bg-white/10 hover:bg-white/15 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest border border-white/10 active:scale-95 transition-all flex items-center justify-center gap-2 backdrop-blur-md">
+                                        <CreditCard size={18} />
+                                        <span>Sacar</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
                         {/* Bank Details */}
                         <section className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Dados Bancários</h3>
+                            <div className="flex items-center justify-between px-2">
+                                <h3 className="label-premium !ml-0 !mb-0">Dados Bancários</h3>
                                 <button
                                     onClick={() => setShowBankForm(true)}
-                                    className="text-[#22eb7e] font-black text-xs uppercase tracking-widest flex items-center gap-1"
+                                    className="text-[#2e9c60] font-black text-[10px] uppercase tracking-widest flex items-center gap-1.5 hover:opacity-70 transition-opacity"
                                 >
                                     <Plus size={14} strokeWidth={3} /> Gerenciar
                                 </button>
@@ -158,22 +165,24 @@ const WalletView: React.FC = () => {
                             {bankData.bank === '' ? (
                                 <button
                                     onClick={() => setShowBankForm(true)}
-                                    className="w-full p-8 rounded-[2rem] bg-white border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-2 text-slate-400 hover:border-[#22eb7e]/50 hover:text-slate-600 transition-all"
+                                    className="w-full p-10 rounded-[2.5rem] bg-white border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-3 text-slate-300 hover:border-[#22eb7e]/40 hover:text-slate-500 transition-all shadow-sm"
                                 >
-                                    <Landmark size={32} strokeWidth={1.5} />
+                                    <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center">
+                                        <Landmark size={32} strokeWidth={1.5} />
+                                    </div>
                                     <span className="text-[10px] font-black uppercase tracking-widest">Vincular Conta Bancária</span>
                                 </button>
                             ) : (
-                                <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-sm flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400">
+                                <div className="bg-white rounded-[2.5rem] p-6 border border-slate-100 shadow-xl shadow-slate-200/40 flex items-center gap-5">
+                                    <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400">
                                         <Landmark size={24} />
                                     </div>
                                     <div className="flex-1">
-                                        <h4 className="font-black text-slate-900 leading-none">{bankData.bank}</h4>
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{bankData.type}</p>
+                                        <h4 className="font-black text-slate-900 leading-tight">{bankData.bank}</h4>
+                                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mt-1.5">{bankData.type}</p>
                                     </div>
-                                    <div className="w-8 h-8 rounded-full bg-[#22eb7e]/10 text-[#22eb7e] flex items-center justify-center">
-                                        <ShieldCheck size={16} />
+                                    <div className="w-10 h-10 rounded-xl bg-[#22eb7e]/10 text-[#22eb7e] flex items-center justify-center">
+                                        <ShieldCheck size={20} />
                                     </div>
                                 </div>
                             )}

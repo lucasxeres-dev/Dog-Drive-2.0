@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../contexts/LanguageContext';
+import {
+    ChevronLeft, Navigation, Shield, Car,
+    User, Phone, AlertCircle, MapPin
+} from 'lucide-react';
 
 const EmergencyView: React.FC = () => {
     const navigate = useNavigate();
@@ -30,63 +34,84 @@ const EmergencyView: React.FC = () => {
     }, []);
 
     return (
-        <div className="flex-1 flex flex-col bg-background-light dark:bg-background-dark font-display h-screen overflow-hidden">
-            <header className="sticky top-0 z-50 flex items-center bg-background-light/90 dark:bg-background-dark/90 backdrop-blur-md px-5 py-4">
-                <button onClick={() => navigate(-1)} className="flex size-9 items-center justify-center rounded-full bg-gray-200/60 dark:bg-white/10 text-gray-600 dark:text-white border border-gray-300 dark:border-white/20 mr-4">
-                    <span className="material-symbols-outlined">arrow_back</span>
+        <div className="flex-1 flex flex-col bg-[#fdfdfd] h-screen overflow-hidden">
+            <header className="px-6 pt-12 pb-6 flex items-center bg-white border-b border-slate-100 sticky top-0 z-50">
+                <button
+                    onClick={() => navigate(-1)}
+                    className="size-11 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 border border-slate-100 active:scale-95 transition-all mr-6"
+                >
+                    <ChevronLeft size={24} />
                 </button>
-                <div className="flex flex-col">
-                    <h2 className="text-lg font-bold leading-none tracking-tight">{t('help_tab')}</h2>
+                <div>
+                    <div className="flex items-center gap-2 mb-0.5">
+                        <AlertCircle size={14} className="text-red-500 fill-red-500/10" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-red-500">Centro de Ajuda</span>
+                    </div>
+                    <h1 className="text-xl font-black text-slate-900 tracking-tight">{t('help_tab')}</h1>
                 </div>
             </header>
 
-            <div className="px-5 pt-4 pb-2">
-                <h1 className="tracking-tight text-3xl font-extrabold leading-tight text-green-700 dark:text-primary">
-                    {t('need_help')}
-                </h1>
-            </div>
+            <main className="flex-1 overflow-y-auto no-scrollbar px-6 py-8">
+                <div className="mb-10">
+                    <h2 className="text-4xl font-black text-slate-900 tracking-tight leading-[1.1] mb-4">
+                        Precisando de <span className="text-[#22eb7e]">Ajuda?</span>
+                    </h2>
+                    <p className="text-slate-500 font-bold">Estamos aqui para apoiar você e seu pet.</p>
+                </div>
 
-            <main className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4 no-scrollbar">
-                <div className="flex items-center justify-between gap-4 bg-white dark:bg-surface-dark p-4 rounded-2xl shadow-sm">
-                    <div className="flex flex-col flex-1 gap-1">
-                        <div className="flex items-center gap-1.5 text-green-600 mb-1">
-                            <span className="material-symbols-outlined text-[18px] fill-1">my_location</span>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400">{t('location_label')}</span>
+                <div className="space-y-6">
+                    {/* Current Location Card */}
+                    <div className="premium-card bg-white p-6 shadow-xl shadow-slate-200/40 border-slate-50">
+                        <div className="flex items-start gap-4">
+                            <div className="size-12 rounded-2xl bg-[#22eb7e]/10 flex items-center justify-center text-[#22eb7e] shrink-0">
+                                <Navigation size={24} fill="currentColor" fillOpacity={0.2} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-[#22eb7e] block mb-1">
+                                    {t('location_label')}
+                                </span>
+                                <h3 className="text-lg font-black text-slate-900 leading-tight truncate">
+                                    {realAddress}
+                                </h3>
+                                <p className="text-slate-400 text-sm font-bold mt-1">
+                                    {realCity}
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-lg font-bold leading-tight">{realAddress}</p>
-                            <p className="text-gray-500 text-xs mt-0.5">{realCity}</p>
-                        </div>
+                    </div>
+
+                    {/* Action Cards */}
+                    <div className="grid gap-4">
+                        {[
+                            { title: t('call_police'), icon: Shield, color: 'bg-slate-900', textColor: 'text-white' },
+                            { title: t('report_accident'), icon: Car, color: 'bg-[#22eb7e]', textColor: 'text-[#102217]' },
+                            { title: t('call_owner'), icon: User, color: 'bg-white', textColor: 'text-slate-900', border: 'border-2 border-slate-100' }
+                        ].map((item, idx) => (
+                            <div
+                                key={idx}
+                                className={`p-6 rounded-[2.5rem] shadow-sm relative overflow-hidden group active:scale-95 transition-all ${item.color} ${item.border || ''}`}
+                            >
+                                <div className="flex items-center justify-between mb-8">
+                                    <h3 className={`text-xl font-black tracking-tight ${item.textColor}`}>{item.title}</h3>
+                                    <div className={`size-12 rounded-2xl flex items-center justify-center ${item.textColor} opacity-20`}>
+                                        <item.icon size={32} />
+                                    </div>
+                                </div>
+                                <button className={`flex w-full items-center justify-center h-16 rounded-[1.5rem] font-black uppercase tracking-widest gap-3 shadow-lg shadow-black/5 ${item.textColor === 'text-white' ? 'bg-white/10 hover:bg-white/20' : 'bg-black/5 hover:bg-black/10'}`}>
+                                    <Phone size={20} fill="currentColor" fillOpacity={0.3} />
+                                    {item.title}
+                                </button>
+                            </div>
+                        ))}
                     </div>
                 </div>
 
-                {[
-                    { title: t('call_police'), icon: 'local_police', color: 'bg-green-700', bg: 'bg-green-600/10' },
-                    { title: t('report_accident'), icon: 'car_crash', color: 'bg-teal-600', bg: 'bg-teal-500/10' },
-                    { title: t('call_owner'), icon: 'person_alert', color: 'bg-emerald-600', bg: 'bg-emerald-600/10' }
-                ].map((item) => (
-                    <div key={item.title} className="relative overflow-hidden bg-white dark:bg-surface-dark p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-white/5 active:scale-[0.99] transition-all">
-                        <div className="flex flex-col gap-5 relative z-10">
-                            <div className="flex items-start justify-between">
-                                <h3 className="text-lg font-bold">{item.title}</h3>
-                                <div className="flex size-10 items-center justify-center rounded-full bg-opacity-20 bg-gray-500 text-gray-700 dark:text-white">
-                                    <span className="material-symbols-outlined text-2xl">{item.icon}</span>
-                                </div>
-                            </div>
-                            <button className={`flex w-full items-center justify-center rounded-xl h-12 ${item.color} text-white gap-2 text-sm font-bold shadow-sm`}>
-                                <span className="material-symbols-outlined text-[20px]">call</span>
-                                <span>{item.title}</span>
-                            </button>
-                        </div>
-                    </div>
-                ))}
+                <div className="mt-12 mb-8 bg-slate-50 rounded-[2rem] p-8 border border-slate-100">
+                    <p className="text-[11px] text-slate-400 leading-relaxed font-bold uppercase tracking-wider text-center italic">
+                        "{t('emergency_warn')}"
+                    </p>
+                </div>
             </main>
-
-            <div className="p-6 text-center">
-                <p className="text-[11px] text-gray-400 leading-relaxed px-6 font-medium">
-                    {t('emergency_warn')}
-                </p>
-            </div>
         </div>
     );
 };

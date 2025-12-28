@@ -3,14 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from '../contexts/LanguageContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useAuth } from '../hooks/useAuth';
-import { authService } from '../services/authService';
+import { useSupabase } from '../hooks/useSupabase';
 import { ChatPreview, Dog } from '../types';
+import { Search, ArrowLeft, MoreHorizontal, Sparkles } from 'lucide-react';
 
 const ChatListView: React.FC = () => {
     const navigate = useNavigate();
     const { t } = useTranslation();
     const { showNotification } = useNotification();
     const { user } = useAuth();
+    const supabase = useSupabase();
     const [chats, setChats] = useState<ChatPreview[]>([]);
     const [matches, setMatches] = useState<Dog[]>([]);
     const [loading, setLoading] = useState(true);
@@ -25,11 +27,11 @@ const ChatListView: React.FC = () => {
             setLoading(true);
 
             try {
-                // Fetch dogs for "New Matches" section (simulated for now)
-                const { data: matchData } = await (authService as any).supabase.from('dogs').select('*').limit(10);
+                // Fetch dogs for "New Matches" section
+                const { data: matchData } = await supabase.from('dogs').select('*').limit(10);
 
                 // Fetch chats where the user is a participant
-                const { data: chatData, error: chatError } = await (authService as any).supabase
+                const { data: chatData, error: chatError } = await supabase
                     .from('chats')
                     .select('*')
                     .or(`user_id_1.eq.${user.id},user_id_2.eq.${user.id}`);
@@ -39,14 +41,14 @@ const ChatListView: React.FC = () => {
                 if (chatData) {
                     const enhancedChats = await Promise.all(chatData.map(async (c: any) => {
                         const otherUserId = c.user_id_1 === user.id ? c.user_id_2 : c.user_id_1;
-                        const { data: otherProfile } = await (authService as any).supabase.from('profiles').select('*').eq('id', otherUserId).single();
+                        const { data: otherProfile } = await supabase.from('profiles').select('*').eq('id', otherUserId).single();
 
                         return {
                             id: c.id,
-                            name: otherProfile?.full_name || 'User',
+                            name: otherProfile?.full_name || 'Usuário',
                             avatar: otherProfile?.avatar_url || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop',
                             lastMessage: c.last_message || 'Inicie a conversa!',
-                            time: c.last_message_time ? new Date(c.last_message_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
+                            time: c.last_message_time ? new Date(c.last_message_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Agora',
                             unreadCount: 0,
                             online: true
                         };
@@ -70,14 +72,14 @@ const ChatListView: React.FC = () => {
         fetchData();
 
         // Real-time subscription
-        const channel = (authService as any).supabase.channel('chats-channel')
+        const channel = supabase.channel('chats-channel')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => {
                 fetchData();
             })
             .subscribe();
 
         return () => {
-            (authService as any).supabase.removeChannel(channel);
+            supabase.removeChannel(channel);
         };
     }, [user]);
 
@@ -90,67 +92,90 @@ const ChatListView: React.FC = () => {
     }
 
     return (
-        <div className="flex-1 flex flex-col bg-background-light dark:bg-background-dark font-display h-screen overflow-hidden">
-            <header className="sticky top-0 z-40 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-sm px-4 py-4 pt-6">
-                <div className="flex items-center justify-between">
-                    <h1 className="text-3xl font-bold tracking-tight">{t('messages')}</h1>
-                    <button className="w-10 h-10 flex items-center justify-center rounded-full bg-white dark:bg-surface-dark shadow-sm">
-                        <span className="material-symbols-outlined">tune</span>
-                    </button>
+        <div className="flex-1 flex flex-col bg-[#f8fafc] h-screen overflow-hidden pb-16">
+            {/* Header */}
+            <header className="px-6 pt-12 pb-6 bg-white shadow-sm shadow-slate-200/30 flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Mensagens</h1>
+                    <div className="flex items-center gap-1.5 mt-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#22eb7e] animate-pulse" />
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Crescendo a Conexão</p>
+                    </div>
                 </div>
+                <button className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-600 border border-slate-200/50">
+                    <MoreHorizontal size={20} />
+                </button>
             </header>
 
-            <div className="px-4 pb-4">
-                <div className="flex w-full items-center rounded-full h-12 bg-white dark:bg-surface-dark shadow-sm px-4">
-                    <span className="material-symbols-outlined text-[#608a72]">search</span>
-                    <input className="flex-1 bg-transparent border-none focus:ring-0 text-base" placeholder={t('search_placeholder')} />
+            {/* Search Bar */}
+            <div className="px-6 pb-6 bg-white">
+                <div className="relative">
+                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                    <input
+                        className="input-premium pl-14 shadow-sm"
+                        placeholder="Pesquisar mensagens..."
+                    />
                 </div>
             </div>
 
-            <main className="flex-1 overflow-y-auto no-scrollbar pb-24">
-                <section className="flex flex-col">
-                    <h2 className="text-xs font-bold uppercase tracking-wider px-4 pb-3 pt-2 opacity-60">{t('new_matches')}</h2>
-                    <div className="flex w-full overflow-x-auto no-scrollbar px-4 pb-4 gap-4">
+            <main className="flex-1 overflow-y-auto no-scrollbar pb-32">
+                {/* New Matches Section */}
+                <section className="mt-8 mb-4">
+                    <div className="px-10 flex items-center gap-2 mb-4">
+                        <Sparkles size={14} className="text-[#22eb7e]" />
+                        <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Matches Recentes</h2>
+                    </div>
+                    <div className="flex overflow-x-auto no-scrollbar px-10 gap-6 pb-4">
                         {matches.length === 0 ? (
-                            <p className="px-4 text-sm text-gray-500">No new matches.</p>
+                            <div className="w-full py-8 bg-slate-50/50 rounded-[2rem] border border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-300">
+                                <p className="text-[10px] font-black uppercase tracking-widest">Sem novos matches</p>
+                            </div>
                         ) : (
                             matches.map(dog => (
-                                <div key={dog.id} className="flex flex-col items-center gap-2 min-w-[72px] cursor-pointer" onClick={() => navigate(`/dog/${dog.id}`)}>
-                                    <div className="relative w-[72px] h-[72px] rounded-full border-2 border-primary p-0.5">
-                                        <div className="w-full h-full bg-center bg-cover rounded-full" style={{ backgroundImage: `url(${dog.imageUrl})` }}></div>
-                                        <div className="absolute bottom-0 right-0 w-4 h-4 bg-primary rounded-full border-2 border-white"></div>
+                                <div key={dog.id} className="flex flex-col items-center gap-3 min-w-[80px] cursor-pointer group" onClick={() => navigate(`/dog/${dog.id}`)}>
+                                    <div className="relative w-20 h-20 rounded-[1.75rem] p-0.5 bg-gradient-to-br from-[#22eb7e] to-[#1ed170] shadow-lg shadow-[#22eb7e]/10 group-active:scale-95 transition-all">
+                                        <div className="w-full h-full bg-center bg-cover rounded-[1.6rem] border-2 border-white" style={{ backgroundImage: `url(${dog.imageUrl})` }}></div>
+                                        <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-[#22eb7e] rounded-full border-2 border-white flex items-center justify-center">
+                                            <Sparkles size={10} className="text-[#102217]" />
+                                        </div>
                                     </div>
-                                    <p className="text-xs font-semibold truncate w-full text-center">{dog.name}</p>
+                                    <p className="text-[10px] font-black text-slate-600 truncate w-full text-center uppercase tracking-widest">{dog.name}</p>
                                 </div>
                             ))
                         )}
                     </div>
                 </section>
 
-                <section className="flex flex-col mt-2">
-                    <h2 className="text-xs font-bold uppercase tracking-wider px-4 pb-2 opacity-60">{t('conversations')}</h2>
-                    <div className="flex flex-col">
+                {/* Conversations Section */}
+                <section className="mt-4">
+                    <div className="px-10 flex items-center gap-2 mb-4">
+                        <MoreHorizontal size={14} className="text-slate-300" />
+                        <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Conversas</h2>
+                    </div>
+                    <div className="flex flex-col px-6 gap-3">
                         {chats.length === 0 ? (
-                            <p className="px-4 py-8 text-center text-sm text-gray-400">No active conversations yet.</p>
+                            <div className="py-20 flex flex-col items-center justify-center text-center px-10">
+                                <p className="text-sm font-bold text-slate-400 leading-relaxed max-w-[200px]">Nenhuma conversa ativa ainda. Vamos dar o primeiro passo?</p>
+                            </div>
                         ) : (
                             chats.map(chat => (
                                 <div
                                     key={chat.id}
                                     onClick={() => navigate(`/chat/${chat.id}`)}
-                                    className="flex items-center gap-4 px-4 py-3 hover:bg-white dark:hover:bg-surface-dark transition-colors cursor-pointer"
+                                    className="flex items-center gap-5 p-5 bg-white rounded-[2rem] shadow-sm border border-slate-50 hover:shadow-xl hover:shadow-slate-200/40 hover:-translate-y-0.5 transition-all cursor-pointer group"
                                 >
                                     <div className="relative shrink-0">
-                                        <div className="w-14 h-14 rounded-full bg-cover bg-center" style={{ backgroundImage: `url(${chat.avatar})` }}></div>
-                                        {chat.online && <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white"></div>}
+                                        <div className="w-16 h-16 rounded-2xl bg-cover bg-center border border-slate-100 shadow-sm" style={{ backgroundImage: `url(${chat.avatar})` }}></div>
+                                        {chat.online && <div className="absolute -top-1 -right-1 w-4 h-4 bg-[#22eb7e] rounded-full border-2 border-white shadow-sm"></div>}
                                     </div>
-                                    <div className="flex-1 min-w-0 flex flex-col justify-center h-full gap-0.5">
-                                        <div className="flex justify-between items-baseline">
-                                            <h3 className="font-bold truncate">{chat.name}</h3>
-                                            <span className={`text-xs ${chat.unreadCount > 0 ? 'text-primary font-bold' : 'text-gray-400'}`}>{chat.time}</span>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex justify-between items-baseline mb-1">
+                                            <h3 className="text-base font-black text-slate-900 truncate leading-none">{chat.name}</h3>
+                                            <span className={`text-[9px] font-black uppercase tracking-widest ${chat.unreadCount > 0 ? 'text-[#2e9c60]' : 'text-slate-300'}`}>{chat.time}</span>
                                         </div>
                                         <div className="flex justify-between items-center">
-                                            <p className={`text-sm truncate pr-2 ${chat.unreadCount > 0 ? 'font-semibold text-gray-900 dark:text-gray-100' : 'text-gray-500'}`}>{chat.lastMessage}</p>
-                                            {chat.unreadCount > 0 && <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center text-[10px] font-bold text-black">{chat.unreadCount}</div>}
+                                            <p className={`text-xs truncate pr-4 leading-relaxed ${chat.unreadCount > 0 ? 'font-black text-[#102217]' : 'font-bold text-slate-400'}`}>{chat.lastMessage}</p>
+                                            {chat.unreadCount > 0 && <div className="min-w-[20px] h-5 px-1.5 rounded-full bg-[#22eb7e] flex items-center justify-center text-[10px] font-black text-[#102217] shadow-sm">{chat.unreadCount}</div>}
                                         </div>
                                     </div>
                                 </div>
@@ -159,8 +184,6 @@ const ChatListView: React.FC = () => {
                     </div>
                 </section>
             </main>
-
-
         </div>
     );
 };

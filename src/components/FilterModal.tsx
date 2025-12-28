@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTranslation } from '../contexts/LanguageContext';
+import { X, RotateCcw, Check, Sparkles, MapPin } from 'lucide-react';
 
 interface FilterModalProps {
     isOpen: boolean;
@@ -17,63 +18,77 @@ const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, onApply, ini
     React.useEffect(() => {
         if (isOpen) {
             // In a real app, you'd fetch neighborhoods based on the current city
-            // For now, we'll keep the Rio defaults but ideally this is dynamic
         }
     }, [isOpen]);
 
     if (!isOpen) return null;
 
-
     return (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center px-4 pb-10 bg-black/60 backdrop-blur-md animate-fadeIn transition-all">
-            <div className="w-full max-w-md bg-white dark:bg-[#111814] rounded-[3.5rem] p-8 shadow-2xl animate-slideUp border border-white/10">
-                <div className="flex items-center justify-between mb-8">
-                    <div className="flex flex-col">
-                        <h3 className="text-2xl font-black tracking-tight text-[#111814] dark:text-white uppercase transition-colors">{t('filter_preferences') || 'Configurações'}</h3>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-primary mt-1">Personalize sua busca</p>
+        <div className="fixed inset-0 z-[100] flex items-end justify-center px-4 pb-12 bg-black/60 backdrop-blur-xl animate-in fade-in duration-500">
+            <div className="w-full max-w-md bg-white rounded-[3.5rem] p-10 shadow-2xl animate-in slide-in-from-bottom-20 duration-700 border border-slate-100">
+                <div className="flex items-center justify-between mb-10">
+                    <div>
+                        <div className="flex items-center gap-2 mb-1">
+                            <Sparkles size={14} className="text-[#22eb7e]" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#22eb7e]">Busca Inteligente</span>
+                        </div>
+                        <h3 className="text-3xl font-black tracking-tighter text-slate-900">{t('filter_preferences') || 'Configurações'}</h3>
                     </div>
                     <button
                         onClick={onClose}
-                        className="size-12 rounded-2xl bg-gray-100 dark:bg-white/5 flex items-center justify-center active:scale-95 transition-all text-gray-500 hover:text-primary"
+                        className="size-14 rounded-2xl bg-slate-50 flex items-center justify-center active:scale-95 transition-all text-slate-300 hover:bg-slate-100 hover:text-slate-900"
                     >
-                        <span className="material-symbols-outlined font-black">close</span>
+                        <X size={24} strokeWidth={3} />
                     </button>
                 </div>
 
-                <div className="space-y-10">
+                <div className="space-y-12">
                     <div>
-                        <div className="flex items-center justify-between mb-6">
-                            <label className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400">{t('max_distance') || 'Distância Máxima'}</label>
-                            <span className="px-4 py-1.5 rounded-full bg-primary/10 text-primary font-black text-sm border border-primary/20 italic">
+                        <div className="flex items-center justify-between mb-8 px-2">
+                            <label className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-400">
+                                {t('max_distance') || 'Distância Máxima'}
+                            </label>
+                            <span className="px-5 py-2 rounded-full bg-[#22eb7e]/10 text-[#22eb7e] font-black text-sm border border-[#22eb7e]/20 italic">
                                 {distance} km
                             </span>
                         </div>
-                        <div className="relative h-12 flex items-center">
+                        <div className="relative h-4 px-2">
+                            <div className="absolute top-1/2 left-2 right-2 h-2 bg-slate-100 rounded-full -translate-y-1/2"></div>
+                            <div
+                                className="absolute top-1/2 left-2 h-2 bg-[#22eb7e] rounded-full -translate-y-1/2"
+                                style={{ width: `${(distance / 50) * 100}%` }}
+                            ></div>
                             <input
                                 type="range"
                                 min="1"
                                 max="50"
                                 value={distance}
                                 onChange={(e) => setDistance(parseInt(e.target.value))}
-                                className="w-full h-2 bg-gray-100 dark:bg-white/5 rounded-full appearance-none accent-primary cursor-pointer transition-all"
+                                className="absolute inset-0 w-full h-full appearance-none bg-transparent accent-[#22eb7e] cursor-pointer"
                             />
                         </div>
-                        <div className="flex justify-between mt-2 text-[9px] font-black uppercase tracking-widest text-gray-400 opacity-50">
+                        <div className="flex justify-between mt-6 px-2 text-[10px] font-black uppercase tracking-widest text-slate-300">
                             <span>1 km</span>
+                            <span className="text-slate-400">Raio de Cobertura</span>
                             <span>50 km</span>
                         </div>
                     </div>
 
                     <div>
-                        <label className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400 mb-6 block">{t('location_filter') || 'Bairros Próximos'}</label>
+                        <div className="flex items-center gap-2 mb-6 ml-2">
+                            <MapPin size={14} className="text-[#22eb7e]" />
+                            <label className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-400">
+                                {t('location_filter') || 'Bairros Próximos'}
+                            </label>
+                        </div>
                         <div className="grid grid-cols-3 gap-3">
                             {neighborhoods.map(loc => (
                                 <button
                                     key={loc}
                                     onClick={() => setSelectedLocation(selectedLocation === loc ? null : loc)}
-                                    className={`py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${selectedLocation === loc
-                                        ? 'bg-primary text-[#111814] border-primary shadow-lg shadow-primary/20 scale-105'
-                                        : 'bg-gray-100 dark:bg-white/5 text-gray-500 border-transparent hover:border-primary/30'
+                                    className={`py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border active:scale-95 ${selectedLocation === loc
+                                        ? 'bg-[#22eb7e] text-[#102217] border-[#22eb7e] shadow-xl shadow-[#22eb7e]/20 scale-105'
+                                        : 'bg-white text-slate-400 border-slate-100 hover:border-slate-300'
                                         }`}
                                 >
                                     {loc}
@@ -88,16 +103,16 @@ const FilterModal: React.FC<FilterModalProps> = ({ isOpen, onClose, onApply, ini
                                 setDistance(10);
                                 setSelectedLocation(null);
                             }}
-                            className="w-16 h-16 bg-gray-100 dark:bg-white/5 rounded-3xl flex items-center justify-center text-gray-400 hover:text-primary active:scale-90 transition-all border border-transparent hover:border-primary/20"
+                            className="size-16 bg-slate-100 rounded-[1.5rem] flex items-center justify-center text-slate-400 hover:bg-slate-200 hover:text-slate-900 active:scale-90 transition-all"
                         >
-                            <span className="material-symbols-outlined font-black">restart_alt</span>
+                            <RotateCcw size={24} strokeWidth={2.5} />
                         </button>
                         <button
                             onClick={() => onApply({ maxDistance: distance, location: selectedLocation })}
-                            className="flex-1 h-16 bg-primary text-[#111814] font-black rounded-3xl shadow-2xl shadow-primary/30 active:scale-[0.98] transition-all uppercase tracking-[0.2em] text-sm flex items-center justify-center gap-2 group"
+                            className="btn-primary-premium flex-1 h-16"
                         >
-                            <span>{t('apply_filters') || 'Salvar Ajustes'}</span>
-                            <span className="material-symbols-outlined font-black group-hover:translate-x-1 transition-transform">check</span>
+                            <span className="uppercase tracking-[0.2em]">{t('apply_filters') || 'Buscar Agora'}</span>
+                            <Check size={20} className="group-hover:translate-y-[-1px] transition-transform" strokeWidth={3} />
                         </button>
                     </div>
                 </div>
