@@ -7,6 +7,7 @@ import { useAuth } from './hooks/useAuth';
 import { dogService } from './services/dogService';
 import BottomNav from './components/BottomNav';
 import ErrorBoundary from './components/ErrorBoundary';
+import { ShoppingBag } from 'lucide-react';
 
 // Lazy loading views for performance
 const LandingView = lazy(() => import('./views/LandingView'));
