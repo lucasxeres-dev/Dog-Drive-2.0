@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, CreditCard, Smartphone, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotification } from '../contexts/NotificationContext';
+import { useSupabase } from '../hooks/useSupabase';
 
 interface DepositModalProps {
     isOpen: boolean;
@@ -11,6 +12,7 @@ interface DepositModalProps {
 
 const DepositModal: React.FC<DepositModalProps> = ({ isOpen, onClose, onSuccess }) => {
     const { showNotification } = useNotification();
+    const supabase = useSupabase();
     const [amount, setAmount] = useState('');
     const [paymentMethod, setPaymentMethod] = useState<'card' | 'mbway'>('card');
     const [isProcessing, setIsProcessing] = useState(false);
@@ -32,19 +34,26 @@ const DepositModal: React.FC<DepositModalProps> = ({ isOpen, onClose, onSuccess 
 
         setIsProcessing(true);
 
-        // TODO: Call Supabase Edge Function to create Stripe payment
-        // const { data } = await supabase.functions.invoke('create-payment-intent', {
-        //   body: { amount: depositAmount, method: paymentMethod }
-        // });
+        try {
+            const { data, error } = await supabase.functions.invoke('create-payment-intent', {
+                body: { amount: depositAmount, method: paymentMethod }
+            });
 
-        // Simulate payment processing
-        setTimeout(() => {
+            if (error) throw error;
+
+            if (data?.clientSecret) {
+                showNotification(`Pronto! Use o Stripe para completar o pagamento.`, 'success');
+                onSuccess(depositAmount);
+                // Here you would normally initialize Stripe Elements with data.clientSecret
+                setAmount('');
+                onClose();
+            }
+        } catch (err: any) {
+            console.error('Erro no depósito:', err);
+            showNotification(err.message || 'Erro ao processar depósito', 'error');
+        } finally {
             setIsProcessing(false);
-            showNotification(`Depósito de €${depositAmount.toFixed(2)} concluído!`, 'success');
-            onSuccess(depositAmount);
-            setAmount('');
-            onClose();
-        }, 2000);
+        }
     };
 
     return (
@@ -116,8 +125,8 @@ const DepositModal: React.FC<DepositModalProps> = ({ isOpen, onClose, onSuccess 
                                 <button
                                     onClick={() => setPaymentMethod('card')}
                                     className={`h-14 rounded-2xl border-2 flex items-center justify-center gap-2 font-black text-sm transition-all ${paymentMethod === 'card'
-                                            ? 'border-[#22eb7e] bg-[#22eb7e]/10 text-[#22eb7e]'
-                                            : 'border-slate-200 bg-white text-slate-600'
+                                        ? 'border-[#22eb7e] bg-[#22eb7e]/10 text-[#22eb7e]'
+                                        : 'border-slate-200 bg-white text-slate-600'
                                         }`}
                                 >
                                     <CreditCard size={18} />
@@ -126,8 +135,8 @@ const DepositModal: React.FC<DepositModalProps> = ({ isOpen, onClose, onSuccess 
                                 <button
                                     onClick={() => setPaymentMethod('mbway')}
                                     className={`h-14 rounded-2xl border-2 flex items-center justify-center gap-2 font-black text-sm transition-all ${paymentMethod === 'mbway'
-                                            ? 'border-[#22eb7e] bg-[#22eb7e]/10 text-[#22eb7e]'
-                                            : 'border-slate-200 bg-white text-slate-600'
+                                        ? 'border-[#22eb7e] bg-[#22eb7e]/10 text-[#22eb7e]'
+                                        : 'border-slate-200 bg-white text-slate-600'
                                         }`}
                                 >
                                     <Smartphone size={18} />

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Banknote, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotification } from '../contexts/NotificationContext';
+import { useSupabase } from '../hooks/useSupabase';
 
 interface WithdrawModalProps {
     isOpen: boolean;
@@ -12,6 +13,7 @@ interface WithdrawModalProps {
 
 const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose, currentBalance, onSuccess }) => {
     const { showNotification } = useNotification();
+    const supabase = useSupabase();
     const [amount, setAmount] = useState('');
     const [iban, setIban] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
@@ -36,19 +38,26 @@ const WithdrawModal: React.FC<WithdrawModalProps> = ({ isOpen, onClose, currentB
 
         setIsProcessing(true);
 
-        // TODO: Call Supabase Edge Function
-        // const { data } = await supabase.functions.invoke('create-payout', {
-        //   body: { amount: withdrawAmount, iban }
-        // });
+        try {
+            const { data, error } = await supabase.functions.invoke('create-payout', {
+                body: { amount: withdrawAmount, iban }
+            });
 
-        setTimeout(() => {
+            if (error) throw error;
+
+            if (data?.success) {
+                showNotification(`Saque de €${withdrawAmount.toFixed(2)} solicitado com sucesso!`, 'success');
+                onSuccess(withdrawAmount);
+                setAmount('');
+                setIban('');
+                onClose();
+            }
+        } catch (err: any) {
+            console.error('Erro no saque:', err);
+            showNotification(err.message || 'Erro ao processar saque', 'error');
+        } finally {
             setIsProcessing(false);
-            showNotification(`Saque de €${withdrawAmount.toFixed(2)} processado. Chegará em 2-3 dias úteis.`, 'success');
-            onSuccess(withdrawAmount);
-            setAmount('');
-            setIban('');
-            onClose();
-        }, 2000);
+        }
     };
 
     return (
