@@ -38,15 +38,9 @@ const RegisterView: React.FC = () => {
             return;
         }
 
-        if (formData.username.includes(' ')) {
-            showNotification('O nome de usuário não pode conter espaços', 'error');
-            return;
-        }
-
         setLoading(true);
         try {
             const cleanUsername = formData.username.trim().toLowerCase().replace('@', '');
-            
             const { data, error } = await authService.signUp(formData.email, formData.password, {
                 data: {
                     full_name: formData.fullName,
@@ -68,7 +62,6 @@ const RegisterView: React.FC = () => {
                     business_address: formData.businessAddress,
                     vat_registered: formData.vatRegistered
                 });
-
                 if (businessError) console.error('Business profile error:', businessError);
             }
 
@@ -92,115 +85,86 @@ const RegisterView: React.FC = () => {
     };
 
     return (
-        <div className="flex-1 flex flex-col bg-[#050705] overflow-hidden h-full">
+        <div className="flex-1 flex flex-col bg-white overflow-hidden h-full">
             {/* Header / Progress */}
             <div className="pt-10 pb-6 px-8 flex flex-col items-center">
                 <div className="flex gap-2 mb-4">
                     {[1, 2, 3].map((s) => (
-                        <div 
+                        <div
                             key={s}
-                            className={`h-1.5 rounded-full transition-all duration-500 ${step >= s ? 'w-8 bg-primary shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'w-4 bg-white/10'}`}
+                            className={`h-1.5 rounded-full transition-all duration-500 ${step >= s ? 'w-8 bg-[#22eb7e]' : 'w-4 bg-slate-100'}`}
                         />
                     ))}
                 </div>
-                <h2 className="text-2xl font-black text-white">{step === 1 ? 'ESCOLHA SEU PERFIL' : step === 2 ? 'SEUS DADOS' : 'DETALHES DO NEGÓCIO'}</h2>
+                <h2 className="text-xl font-black text-slate-900 uppercase">
+                    {step === 1 ? 'Escolha seu Perfil' : step === 2 ? 'Seus Dados' : 'Detalhes do Negócio'}
+                </h2>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-8 pb-10">
+            <div className="flex-1 overflow-y-auto px-8 pb-10 no-scrollbar">
                 <AnimatePresence mode="wait">
                     {step === 1 && (
-                        <motion.div 
+                        <motion.div
                             key="step1"
                             variants={containerVariants}
                             initial="hidden" animate="visible" exit="exit"
                             className="space-y-4"
                         >
-                            <RoleButton 
-                                active={role === 'owner'} 
+                            <RoleButton
+                                active={role === 'owner'}
                                 onClick={() => { setRole('owner'); nextStep(); }}
                                 icon="pets"
                                 title="Sou Tutor"
-                                subtitle="Quero encontrar passeadores e serviços para meu pet"
+                                subtitle="Encontre serviços para seu pet"
                             />
-                            <RoleButton 
-                                active={role === 'business'} 
+                            <RoleButton
+                                active={role === 'business'}
                                 onClick={() => { setRole('business'); nextStep(); }}
                                 icon="storefront"
                                 title="Sou Empresa"
-                                subtitle="PetShops, Clínicas e Vendedores do Marketplace"
+                                subtitle="PetShops e Clínicas Veterinárias"
                             />
-                            <RoleButton 
-                                active={role === 'provider'} 
+                            <RoleButton
+                                active={role === 'provider'}
                                 onClick={() => { setRole('provider'); nextStep(); }}
                                 icon="handyman"
                                 title="Sou Provedor"
-                                subtitle="Passeadores, Adestradores e profissionais autônomos"
+                                subtitle="Passeadores e profissionais autônomos"
                             />
                         </motion.div>
                     )}
 
                     {step === 2 && (
-                        <motion.div 
+                        <motion.div
                             key="step2"
                             variants={containerVariants}
                             initial="hidden" animate="visible" exit="exit"
-                            className="space-y-6"
+                            className="space-y-5"
                         >
-                            <div>
+                            <div className="space-y-1">
                                 <label className="label-premium">Nome Completo</label>
-                                <input 
-                                    className="input-premium" 
-                                    placeholder="Ex: João da Silva"
-                                    value={formData.fullName}
-                                    onChange={e => setFormData({...formData, fullName: e.target.value})}
-                                />
+                                <input className="input-premium" placeholder="Ex: João Silva" value={formData.fullName} onChange={e => setFormData({ ...formData, fullName: e.target.value })} />
                             </div>
-                            <div>
+                            <div className="space-y-1">
                                 <label className="label-premium">Nome de Usuário</label>
-                                <input 
-                                    className="input-premium" 
-                                    placeholder="@joaosilva"
-                                    value={formData.username}
-                                    onChange={e => setFormData({...formData, username: e.target.value})}
-                                />
+                                <input className="input-premium" placeholder="@joao" value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value })} />
                             </div>
-                            <div>
+                            <div className="space-y-1">
                                 <label className="label-premium">E-mail</label>
-                                <input 
-                                    className="input-premium" 
-                                    placeholder="seu@email.com"
-                                    type="email"
-                                    value={formData.email}
-                                    onChange={e => setFormData({...formData, email: e.target.value})}
-                                />
+                                <input className="input-premium" placeholder="seu@email.com" type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
                             </div>
-                            <div>
+                            <div className="space-y-1">
                                 <label className="label-premium">Senha</label>
-                                <input 
-                                    className="input-premium" 
-                                    placeholder="••••••"
-                                    type="password"
-                                    value={formData.password}
-                                    onChange={e => setFormData({...formData, password: e.target.value})}
-                                />
+                                <input className="input-premium" placeholder="••••••" type="password" value={formData.password} onChange={e => setFormData({ ...formData, password: e.target.value })} />
                             </div>
-                            <div>
+                            <div className="space-y-1">
                                 <label className="label-premium">Confirmar Senha</label>
-                                <input 
-                                    className="input-premium" 
-                                    placeholder="••••••"
-                                    type="password"
-                                    value={formData.confirmPassword}
-                                    onChange={e => setFormData({...formData, confirmPassword: e.target.value})}
-                                />
+                                <input className="input-premium" placeholder="••••••" type="password" value={formData.confirmPassword} onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })} />
                             </div>
 
                             <div className="pt-4 flex gap-4">
                                 <button onClick={prevStep} className="btn-ghost-premium flex-1">Voltar</button>
-                                <button 
-                                    onClick={isBusinessRole ? nextStep : handleRegister} 
-                                    className="btn-primary-premium flex-1"
-                                >
+                                <button onClick={isBusinessRole ? nextStep : handleRegister} className="btn-primary-premium flex-1">
                                     {isBusinessRole ? 'Próximo' : 'Finalizar'}
                                 </button>
                             </div>
@@ -208,38 +172,23 @@ const RegisterView: React.FC = () => {
                     )}
 
                     {step === 3 && (
-                        <motion.div 
+                        <motion.div
                             key="step3"
                             variants={containerVariants}
                             initial="hidden" animate="visible" exit="exit"
-                            className="space-y-6"
+                            className="space-y-5"
                         >
-                            <div>
-                                <label className="label-premium">NIF / CNPJ</label>
-                                <input 
-                                    className="input-premium" 
-                                    placeholder="Número fiscal"
-                                    value={formData.nif}
-                                    onChange={e => setFormData({...formData, nif: e.target.value})}
-                                />
+                            <div className="space-y-1">
+                                <label className="label-premium">NIF / Número Fiscal</label>
+                                <input className="input-premium" placeholder="Ex: 123456789" value={formData.nif} onChange={e => setFormData({ ...formData, nif: e.target.value })} />
                             </div>
-                            <div>
+                            <div className="space-y-1">
                                 <label className="label-premium">Nome da Empresa</label>
-                                <input 
-                                    className="input-premium" 
-                                    placeholder="Ex: Pet Shop Astral"
-                                    value={formData.companyName}
-                                    onChange={e => setFormData({...formData, companyName: e.target.value})}
-                                />
+                                <input className="input-premium" placeholder="Ex: Pet Shop Astral" value={formData.companyName} onChange={e => setFormData({ ...formData, companyName: e.target.value })} />
                             </div>
-                            <div>
+                            <div className="space-y-1">
                                 <label className="label-premium">Endereço Comercial</label>
-                                <input 
-                                    className="input-premium" 
-                                    placeholder="Rua, Número, Cidade"
-                                    value={formData.businessAddress}
-                                    onChange={e => setFormData({...formData, businessAddress: e.target.value})}
-                                />
+                                <input className="input-premium" placeholder="Rua, Cidade, Portugal" value={formData.businessAddress} onChange={e => setFormData({ ...formData, businessAddress: e.target.value })} />
                             </div>
 
                             <div className="pt-4 flex gap-4">
@@ -252,8 +201,8 @@ const RegisterView: React.FC = () => {
                     )}
                 </AnimatePresence>
 
-                <p className="mt-8 text-center text-gray-500 text-xs font-black uppercase tracking-widest">
-                    Já tem conta? <button onClick={() => navigate('/login')} className="text-primary hover:underline">Fazer Login</button>
+                <p className="mt-8 text-center text-slate-500 text-sm font-bold">
+                    Já tem conta? <button onClick={() => navigate('/login')} className="text-[#22eb7e] hover:underline font-black outline-none">Fazer Login</button>
                 </p>
             </div>
         </div>
@@ -261,18 +210,19 @@ const RegisterView: React.FC = () => {
 };
 
 const RoleButton: React.FC<{ active: boolean, onClick: () => void, icon: string, title: string, subtitle: string }> = ({ active, onClick, icon, title, subtitle }) => (
-    <button 
+    <button
         onClick={onClick}
-        className={`w-full p-6 rounded-[2.5rem] border-2 text-left transition-all duration-300 group ${active ? 'bg-primary/10 border-primary' : 'bg-white/5 border-transparent hover:bg-white/10'}`}
+        className={`w-full p-5 rounded-[1.5rem] border-2 text-left transition-all duration-300 group ${active ? 'bg-[#22eb7e]/10 border-[#22eb7e]' : 'bg-white border-slate-100 hover:border-slate-200 shadow-sm'}`}
     >
         <div className="flex items-center gap-4">
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${active ? 'bg-primary text-[#050705]' : 'bg-white/5 text-gray-400 group-hover:text-white'}`}>
-                <span className="material-symbols-outlined text-3xl font-black">{icon}</span>
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${active ? 'bg-[#22eb7e] text-black' : 'bg-slate-100 text-slate-400 group-hover:text-slate-600'}`}>
+                <span className="material-symbols-outlined text-2xl font-black">{icon}</span>
             </div>
-            <div>
-                <h4 className={`text-lg font-black transition-colors ${active ? 'text-white' : 'text-gray-400 group-hover:text-white'}`}>{title}</h4>
-                <p className="text-gray-500 text-[11px] font-medium leading-tight">{subtitle}</p>
+            <div className="flex-1">
+                <h4 className={`text-base font-black transition-colors ${active ? 'text-slate-900' : 'text-slate-500 group-hover:text-slate-900'}`}>{title}</h4>
+                <p className="text-slate-400 text-[11px] font-medium leading-tight">{subtitle}</p>
             </div>
+            {active && <span className="material-symbols-outlined text-[#22eb7e] font-black">check_circle</span>}
         </div>
     </button>
 );
