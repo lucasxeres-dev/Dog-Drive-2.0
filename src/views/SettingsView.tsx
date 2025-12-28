@@ -10,9 +10,16 @@ import { Dog } from '../types';
 import {
     ArrowLeft, Camera, Shield, LogOut, Plus,
     User, MapPin, Phone, Bell, Heart, Store,
-    ChevronRight, Save, X, Sparkles
+    ChevronRight, Save, X, Sparkles, Calendar
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// ... (keep PasswordChangeSection as is, it's defined before SettingsView) ...
+
+// I need to skip to where SettingsView text starts to insert the button inside main
+// Since replace_file_content works on line ranges, I'll do two replaces or one big one?
+// I can just replace the imports first.
+
 
 // Password Change Component
 const PasswordChangeSection: React.FC = () => {
@@ -329,6 +336,25 @@ const SettingsView: React.FC = () => {
             </header>
 
             <main className="flex-1 overflow-y-auto p-6 no-scrollbar pb-32">
+                {/* Dashboard / Activities Link */}
+                <section
+                    onClick={() => navigate('/bookings')}
+                    className="bg-white rounded-[2.5rem] p-6 shadow-sm border border-slate-100 mb-8 flex items-center justify-between cursor-pointer hover:shadow-md transition-all active:scale-[0.98]"
+                >
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-[#22eb7e] text-[#102217] flex items-center justify-center shadow-lg shadow-[#22eb7e]/30">
+                            <Calendar size={24} strokeWidth={2.5} />
+                        </div>
+                        <div>
+                            <h2 className="text-lg font-black text-slate-900 tracking-tight">Minhas Atividades</h2>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Ver agendamentos e histórico</p>
+                        </div>
+                    </div>
+                    <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400">
+                        <ChevronRight size={20} />
+                    </div>
+                </section>
+
                 {/* Profile Section */}
                 <section className="premium-card mb-8">
                     <div className="flex items-center gap-3 mb-8">

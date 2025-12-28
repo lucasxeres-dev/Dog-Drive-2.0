@@ -50,3 +50,24 @@ export interface ChatPreview {
     unreadCount: number;
     online: boolean;
 }
+
+export type BookingStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled';
+
+export interface Booking {
+    id: string;
+    service_type: 'walk' | 'boarding' | 'petshop' | 'grooming';
+    status: BookingStatus;
+    date: string;
+    time: string;
+    duration?: number; // minutes
+    price: number;
+    provider: {
+        id: string;
+        name: string;
+        avatar?: string;
+        role: string;
+    };
+    client_id: string;
+    location: string;
+    is_reviewed?: boolean;
+}

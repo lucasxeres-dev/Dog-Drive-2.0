@@ -120,7 +120,11 @@ const BookingView: React.FC = () => {
 
             <footer className="px-6 py-10 bg-white/80 backdrop-blur-xl border-t border-slate-100 sticky bottom-0 z-50">
                 <button
-                    onClick={() => navigate('/chats')}
+                    onClick={() => {
+                        // navigate('/chats'); // Old flow
+                        // TODO: Create Booking implementation
+                        navigate('/bookings');
+                    }}
                     className="btn-primary-premium w-full group overflow-hidden"
                 >
                     <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
