@@ -21,13 +21,13 @@ const EmergencyView: React.FC = () => {
                     const data = await res.json();
                     const road = data.address.road || data.address.suburb || 'Local Desconhecido';
                     const houseNumber = data.address.house_number ? `, ${data.address.house_number}` : '';
-                    const city = data.address.city || data.address.town || data.address.village || 'Rio de Janeiro';
-                    const state = data.address.state || 'RJ';
+                    const city = data.address.city || data.address.town || data.address.village || 'Lisboa';
+                    const state = data.address.state || 'Lisboa';
 
                     setRealAddress(`${road}${houseNumber}`);
                     setRealCity(`${city}, ${state}`);
                 } catch (e) {
-                    setRealAddress('Rio de Janeiro, RJ');
+                    setRealAddress('Lisboa, Portugal');
                 }
             });
         }

@@ -144,7 +144,7 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                             <button
                                 onClick={handleLogin}
                                 disabled={loading}
-                                className="btn-primary-premium w-full mt-6 group bg-[#102217]"
+                                className="btn-primary-premium w-full mt-6 group"
                             >
                                 {loading ? (
                                     <div className="size-6 border-2 border-white/20 border-t-[#22eb7e] rounded-full animate-spin" />

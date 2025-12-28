@@ -40,7 +40,7 @@ const BookingView: React.FC = () => {
                         </div>
                         <div className="flex flex-col">
                             <h3 className="font-black text-xl text-slate-900 leading-tight">Pedro Santos</h3>
-                            <p className="text-sm font-bold text-slate-400 mt-1">Rio de Janeiro, RJ</p>
+                            <p className="text-sm font-bold text-slate-400 mt-1">Lisboa, Portugal</p>
                             <div className="flex items-center gap-2 mt-3">
                                 <span className="bg-[#22eb7e]/10 text-[#22eb7e] text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
                                     Top Rated
@@ -98,7 +98,7 @@ const BookingView: React.FC = () => {
                                         </div>
                                     </div>
                                 </div>
-                                <p className="font-black text-xl text-[#22eb7e]">R$ 45,00</p>
+                                <p className="font-black text-xl text-[#22eb7e]">€ 15,00</p>
                             </div>
 
                             <div className="h-px bg-white/10 my-8 relative z-10"></div>
@@ -106,7 +106,7 @@ const BookingView: React.FC = () => {
                             <div className="flex justify-between items-end relative z-10">
                                 <div>
                                     <p className="text-[11px] font-black uppercase tracking-[0.3em] text-[#22eb7e] mb-1">Valor Total</p>
-                                    <p className="text-4xl font-black tracking-tighter">R$ 50,00</p>
+                                    <p className="text-4xl font-black tracking-tighter">€ 20,00</p>
                                 </div>
                                 <div className="flex flex-col items-end">
                                     <p className="text-[10px] font-bold text-white/40 uppercase mb-2">Com taxa de serviço</p>

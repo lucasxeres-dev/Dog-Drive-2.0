@@ -11,7 +11,8 @@ import {
     Home, ShoppingBag, Scissors,
     Camera, FileText, Lock,
     ChevronRight, CreditCard, Sparkles,
-    CheckCircle2, X, MapPin, Info, Shield
+    CheckCircle2, X, MapPin, Info, Shield,
+    Stethoscope, Upload
 } from 'lucide-react';
 
 interface OnboardingViewProps {
@@ -525,22 +526,22 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                                 </div>
                                 <div className="space-y-4">
                                     {[
-                                        { id: 'clinic', label: t('vet_clinic'), icon: 'medical_services' },
-                                        { id: 'grooming', label: t('grooming_shop'), icon: 'content_cut' }
+                                        { id: 'clinic', label: t('vet_clinic'), icon: Stethoscope },
+                                        { id: 'grooming', label: t('grooming_shop'), icon: Scissors }
                                     ].map(type => (
                                         <button
                                             key={type.id}
                                             onClick={() => setBusinessData({ ...businessData, type: type.id as any })}
                                             className={`w-full p-6 rounded-3xl border-2 flex items-center gap-4 transition-all ${businessData.type === type.id
                                                 ? 'bg-primary/10 border-primary shadow-lg shadow-primary/10'
-                                                : 'bg-white dark:bg-surface-dark border-transparent shadow-sm'
+                                                : 'bg-white border-slate-100 shadow-sm'
                                                 }`}
                                         >
-                                            <div className={`size-12 rounded-2xl flex items-center justify-center ${businessData.type === type.id ? 'bg-primary text-[#102217]' : 'bg-gray-100 dark:bg-white/5 text-gray-400'}`}>
-                                                <span className="material-symbols-outlined text-2xl font-black">{type.icon}</span>
+                                            <div className={`size-12 rounded-2xl flex items-center justify-center ${businessData.type === type.id ? 'bg-primary text-[#102217]' : 'bg-slate-50 text-slate-400'}`}>
+                                                <type.icon size={24} strokeWidth={2.5} />
                                             </div>
                                             <span className="text-lg font-bold flex-1 text-left">{type.label}</span>
-                                            {businessData.type === type.id && <span className="material-symbols-outlined text-primary font-black">check_circle</span>}
+                                            {businessData.type === type.id && <CheckCircle2 className="text-primary" size={20} strokeWidth={3} />}
                                         </button>
                                     ))}
                                 </div>
@@ -586,34 +587,32 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                                     </div>
                                     <div>
                                         <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-4 mb-2 block">Comprovante / Licença</label>
-                                        <div className="flex flex-col items-center gap-4 p-6 bg-white dark:bg-surface-dark rounded-3xl border-2 border-dashed border-primary/30">
-                                            {businessData.doc_url ? (
-                                                <span className="text-primary font-bold flex items-center gap-2"><span className="material-symbols-outlined">check_circle</span>Arquivo Enviado</span>
-                                            ) : (
-                                                <label className="cursor-pointer flex flex-col items-center">
-                                                    <span className="material-symbols-outlined text-4xl text-primary mb-2">upload_file</span>
-                                                    <span className="text-xs font-bold text-gray-400">Clique para enviar comprovante</span>
-                                                    <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, 'doc')} />
-                                                </label>
-                                            )}
-                                        </div>
+                                        {businessData.doc_url ? (
+                                            <span className="text-primary font-bold flex items-center gap-2"><CheckCircle2 size={18} />Arquivo Enviado</span>
+                                        ) : (
+                                            <label className="cursor-pointer flex flex-col items-center">
+                                                <Upload size={32} className="text-primary mb-2" />
+                                                <span className="text-xs font-bold text-slate-400">Clique para enviar comprovante</span>
+                                                <input type="file" className="hidden" onChange={(e) => handleFileUpload(e, 'doc')} />
+                                            </label>
+                                        )}
                                     </div>
+                                </div>
 
-                                    <div className="mt-8 p-6 rounded-[2.5rem] bg-white dark:bg-surface-dark border-2 border-transparent hover:border-primary/20 transition-all flex items-center gap-4">
-                                        <div className={`size-14 rounded-2xl flex items-center justify-center transition-colors ${hasShop ? 'bg-primary/20 text-primary' : 'bg-gray-100 dark:bg-white/5 text-gray-400'}`}>
-                                            <span className="material-symbols-outlined text-3xl">shopping_bag</span>
-                                        </div>
-                                        <div className="flex-1">
-                                            <h3 className="font-bold">{t('shop_function')}</h3>
-                                            <p className="text-xs text-gray-500 font-medium">Permitir venda de produtos no marketplace</p>
-                                        </div>
-                                        <button
-                                            onClick={() => setHasShop(!hasShop)}
-                                            className={`w-14 h-8 rounded-full relative transition-colors ${hasShop ? 'bg-primary' : 'bg-gray-200 dark:bg-white/10'}`}
-                                        >
-                                            <div className={`absolute top-1 size-6 bg-white rounded-full transition-all ${hasShop ? 'left-7' : 'left-1'} shadow-sm`} />
-                                        </button>
+                                <div className="mt-8 p-6 rounded-[2.5rem] bg-white border border-slate-100 hover:border-primary/20 transition-all flex items-center gap-4">
+                                    <div className={`size-14 rounded-2xl flex items-center justify-center transition-colors ${hasShop ? 'bg-primary/20 text-primary' : 'bg-slate-50 text-slate-400'}`}>
+                                        <ShoppingBag size={28} strokeWidth={2} />
                                     </div>
+                                    <div className="flex-1">
+                                        <h3 className="font-bold">{t('shop_function')}</h3>
+                                        <p className="text-xs text-gray-500 font-medium">Permitir venda de produtos no marketplace</p>
+                                    </div>
+                                    <button
+                                        onClick={() => setHasShop(!hasShop)}
+                                        className={`w-14 h-8 rounded-full relative transition-colors ${hasShop ? 'bg-primary' : 'bg-gray-200 dark:bg-white/10'}`}
+                                    >
+                                        <div className={`absolute top-1 size-6 bg-white rounded-full transition-all ${hasShop ? 'left-7' : 'left-1'} shadow-sm`} />
+                                    </button>
                                 </div>
                             </div>
                         )}
@@ -779,7 +778,7 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                     <ChevronRight size={20} className="relative z-10 group-hover:translate-x-1 transition-transform" />
                 </button>
             </footer>
-        </div>
+        </div >
     );
 };
 

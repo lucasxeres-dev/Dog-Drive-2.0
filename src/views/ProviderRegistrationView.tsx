@@ -36,7 +36,7 @@ const ProviderRegistrationView: React.FC = () => {
                     name: formData.name,
                     description: formData.bio,
                     city: formData.location.split(',')[0]?.trim(),
-                    state: formData.location.split(',')[1]?.trim() || 'MS',
+                    state: formData.location.split(',')[1]?.trim() || 'Lisboa',
                     rating: 5.0
                 });
 
