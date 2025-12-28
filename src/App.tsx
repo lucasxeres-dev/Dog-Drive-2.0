@@ -23,7 +23,9 @@ const BookingView = lazy(() => import('./views/BookingView'));
 const ServicesView = lazy(() => import('./views/ServicesView'));
 const EmergencyView = lazy(() => import('./views/EmergencyView'));
 const MarketplaceView = lazy(() => import('./views/MarketplaceView'));
+const ProductDetailView = lazy(() => import('./views/ProductDetailView'));
 const CartView = lazy(() => import('./views/CartView'));
+const CheckoutView = lazy(() => import('./views/CheckoutView'));
 const WalletView = lazy(() => import('./views/WalletView'));
 const SettingsView = lazy(() => import('./views/SettingsView'));
 const ProviderRegistrationView = lazy(() => import('./views/ProviderRegistrationView'));
@@ -59,17 +61,9 @@ const MainApp: React.FC = () => {
                             <Route path="/booking/:id" element={<BookingView />} />
                             <Route path="/emergency" element={<EmergencyView />} />
                             <Route path="/marketplace" element={<MarketplaceView />} />
+                            <Route path="/product/:slug" element={<ProductDetailView />} />
                             <Route path="/cart" element={<CartView />} />
-                            <Route path="/checkout" element={
-                                <div className="flex-1 flex flex-col items-center justify-center dark:text-white p-10 text-center">
-                                    <div className="w-20 h-20 bg-[#22eb7e]/10 rounded-full flex items-center justify-center mb-6">
-                                        <ShoppingBag size={40} className="text-[#22eb7e]" />
-                                    </div>
-                                    <h2 className="text-2xl font-black mb-2">Checkout</h2>
-                                    <p className="opacity-60 max-w-[250px]">Funcionalidade de pagamento em breve nesta demonstração.</p>
-                                    <button onClick={() => window.history.back()} className="mt-8 px-8 h-12 bg-slate-100 rounded-full text-xs font-black uppercase tracking-widest text-slate-600">Voltar</button>
-                                </div>
-                            } />
+                            <Route path="/checkout" element={<CheckoutView />} />
                             <Route path="/wallet" element={<WalletView />} />
 
                             <Route path="/settings" element={<SettingsView />} />

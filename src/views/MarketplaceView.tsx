@@ -6,9 +6,20 @@ import { useCartStore } from '../stores/cartStore';
 import { Product, Category } from '../types/marketplace';
 import {
     ShoppingBag, ShoppingCart, Search, Heart, Star,
-    Filter, Plus, Sparkles
+    Filter, Plus, Sparkles, X, ChevronRight, Check
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+// Hardcoded categories as requested for the UI flow
+const UI_CATEGORIES = [
+    { id: 'all', name: 'Todos' },
+    { id: 'racao', name: 'Ração' },
+    { id: 'brinquedos', name: 'Brinquedos' },
+    { id: 'higiene', name: 'Higiene' },
+    { id: 'acessorios', name: 'Acessórios' },
+    { id: 'saude', name: 'Saúde' },
+    { id: 'promocoes', name: 'Promoções' }
+];
 
 const MarketplaceView: React.FC = () => {
     const navigate = useNavigate();
@@ -18,62 +29,46 @@ const MarketplaceView: React.FC = () => {
 
     // State
     const [products, setProducts] = useState<Product[]>([]);
-    const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-    const [sortBy, setSortBy] = useState<'featured' | 'price_asc' | 'price_desc' | 'rating'>('featured');
-    const [showFilters, setShowFilters] = useState(false);
-    const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
+    const [activeTab, setActiveTab] = useState<'home' | 'favorites'>('home');
+    const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
-    // Load categories and products
+    // Search & Filter State
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState<string>('all');
+    const [showFilters, setShowFilters] = useState(false);
+
+    // Advanced Filters
+    const [priceRange, setPriceRange] = useState<[number, number]>([0, 500]);
+    const [selectedBrand, setSelectedBrand] = useState<string>('');
+    const [selectedPetType, setSelectedPetType] = useState<string>('');
+
+    // Load data
     useEffect(() => {
-        loadCategories();
         loadProducts();
+        // Load favorites from local storage for demo persistence
+        const savedFavs = localStorage.getItem('dogdrive_favorites');
+        if (savedFavs) {
+            setFavorites(new Set(JSON.parse(savedFavs)));
+        }
     }, []);
 
-    const loadCategories = async () => {
-        try {
-            const { data, error } = await supabaseClient
-                .from('categories')
-                .select('*')
-                .eq('is_active', true)
-                .is('parent_id', null)
-                .order('display_order');
-
-            if (error) throw error;
-            setCategories(data || []);
-        } catch (err: any) {
-            console.error('Error loading categories:', err);
-        }
-    };
+    // Persist favorites
+    useEffect(() => {
+        localStorage.setItem('dogdrive_favorites', JSON.stringify(Array.from(favorites)));
+    }, [favorites]);
 
     const loadProducts = async () => {
         setLoading(true);
         try {
-            let query = supabaseClient
+            // In a real app, we would query Supabase with all filters.
+            // For this demo, we'll fetch active products and filter client-side for smoother interaction with the "mock" categories.
+            const { data, error } = await supabaseClient
                 .from('products')
                 .select('*')
-                .eq('is_active', true);
-
-            if (selectedCategory) {
-                query = query.eq('category_id', selectedCategory);
-            }
-
-            query = query.gte('base_price', priceRange[0]).lte('base_price', priceRange[1]);
-
-            if (sortBy === 'featured') {
-                query = query.order('is_featured', { ascending: false }).order('sales_count', { ascending: false });
-            } else if (sortBy === 'price_asc') {
-                query = query.order('base_price', { ascending: true });
-            } else if (sortBy === 'price_desc') {
-                query = query.order('base_price', { ascending: false });
-            } else if (sortBy === 'rating') {
-                query = query.order('avg_rating', { ascending: false });
-            }
-
-            query = query.limit(50);
-            const { data, error } = await query;
+                .eq('is_active', true)
+                .limit(100);
 
             if (error) throw error;
             setProducts(data || []);
@@ -85,131 +80,256 @@ const MarketplaceView: React.FC = () => {
         }
     };
 
-    useEffect(() => {
-        loadProducts();
-    }, [selectedCategory, sortBy, priceRange]);
+    const toggleFavorite = (productId: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        const newFavs = new Set(favorites);
+        if (newFavs.has(productId)) {
+            newFavs.delete(productId);
+            showNotification('Removido dos favoritos', 'info');
+        } else {
+            newFavs.add(productId);
+            showNotification('Adicionado aos favoritos! ❤️', 'success');
+        }
+        setFavorites(newFavs);
+    };
 
-    const filteredProducts = products.filter(p =>
-        searchQuery ? p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            p.brand?.toLowerCase().includes(searchQuery.toLowerCase()) : true
-    );
-
-    const handleAddToCart = (product: Product) => {
+    const handleAddToCart = (product: Product, e: React.MouseEvent) => {
+        e.stopPropagation();
         cartStore.addItem(product);
         showNotification(`${product.name} no carrinho!`, 'success');
     };
 
+    // Filter Logic
+    const filteredProducts = products.filter(p => {
+        // Tab Filter
+        if (activeTab === 'favorites' && !favorites.has(p.id)) return false;
+
+        // Search
+        if (searchQuery && !p.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+            !p.brand?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+
+        // Category (Mock logic since DB might not match exact UI categories)
+        if (selectedCategory !== 'all') {
+            if (selectedCategory === 'promocoes') {
+                if (!p.sale_price) return false;
+            } else {
+                // Fuzzy match for demo purposes if category_id isn't strictly set match
+                // In production: p.category_id === selectedCategory
+                // Here we simulate category filtering if tags or name include the category
+                const catMatch = p.tags?.some(tag => tag.includes(selectedCategory)) ||
+                    p.description?.toLowerCase().includes(selectedCategory);
+                if (!catMatch) return false;
+            }
+        }
+
+        // Advanced Filters
+        if (p.base_price < priceRange[0] || p.base_price > priceRange[1]) return false;
+        if (selectedBrand && p.brand !== selectedBrand) return false;
+        // if (selectedPetType && !p.tags.includes(selectedPetType)) return false;
+
+        return true;
+    });
+
+    const uniqueBrands = Array.from(new Set(products.map(p => p.brand).filter(Boolean)));
+
     return (
-        <div className="flex-1 flex flex-col bg-[#f8fafc] h-screen overflow-hidden pb-16 animate-fade-in">
+        <div className="flex-1 flex flex-col bg-[#f8fafc] h-screen overflow-hidden animate-fade-in font-sans">
             {/* Header */}
-            <header className="px-6 pt-12 pb-6 bg-white shadow-sm shadow-slate-200/30">
-                <div className="flex items-center justify-between mb-8">
-                    <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-[1.5rem] bg-[#22eb7e] flex items-center justify-center shadow-2xl shadow-[#22eb7e]/30">
-                            <ShoppingBag size={28} className="text-[#102217]" />
-                        </div>
+            <header className="px-6 pt-12 pb-4 bg-white shadow-sm shadow-slate-200/50 z-20 relative">
+                <div className="flex items-center justify-between mb-6">
+                    {activeTab === 'favorites' ? (
                         <div>
-                            <h1 className="text-3xl font-black text-slate-900 tracking-tight leading-none uppercase">Marketplace</h1>
-                            <p className="text-[10px] font-black text-[#22eb7e] uppercase tracking-widest mt-1.5 opacity-80">Premium Care & Food</p>
+                            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Favoritos</h1>
+                            <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest mt-1">Seus itens amados ❤️</p>
                         </div>
-                    </div>
-                    <button
-                        onClick={() => navigate('/cart')}
-                        className="relative w-12 h-12 rounded-full bg-slate-50 border border-slate-200/50 flex items-center justify-center active:scale-90 transition-all shadow-sm"
-                    >
-                        <ShoppingCart size={22} className="text-slate-600" />
-                        {cartStore.getItemCount() > 0 && (
-                            <span className="absolute -top-1 -right-1 size-6 bg-[#22eb7e] text-[#102217] rounded-full text-[10px] font-black flex items-center justify-center border-2 border-white shadow-lg">
-                                {cartStore.getItemCount()}
-                            </span>
-                        )}
-                    </button>
+                    ) : (
+                        <AnimatePresence mode="wait">
+                            {isSearchOpen ? (
+                                <motion.div
+                                    initial={{ opacity: 0, width: 0 }}
+                                    animate={{ opacity: 1, width: '100%' }}
+                                    exit={{ opacity: 0, width: 0 }}
+                                    className="flex items-center gap-2 flex-1 mr-4"
+                                >
+                                    <div className="relative flex-1">
+                                        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <input
+                                            autoFocus
+                                            type="text"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            placeholder="Buscar..."
+                                            className="w-full h-12 pl-12 pr-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:border-[#22eb7e]"
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={() => { setIsSearchOpen(false); setSearchQuery(''); }}
+                                        className="size-12 flex items-center justify-center bg-slate-100 rounded-2xl text-slate-500"
+                                    >
+                                        <X size={20} />
+                                    </button>
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="flex items-center gap-4"
+                                >
+                                    <div className="size-12 rounded-2xl bg-[#22eb7e] flex items-center justify-center shadow-lg shadow-[#22eb7e]/30">
+                                        <ShoppingBag size={24} className="text-[#102217]" />
+                                    </div>
+                                    <div>
+                                        <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Marketplace</h1>
+                                        <p className="text-[10px] font-black text-[#22eb7e] uppercase tracking-widest mt-0.5 opacity-90">Premium Store</p>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    )}
+
+                    {!isSearchOpen && activeTab !== 'favorites' && (
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => setIsSearchOpen(true)}
+                                className="size-12 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-[#22eb7e] hover:border-[#22eb7e] transition-all"
+                            >
+                                <Search size={20} />
+                            </button>
+                            <button
+                                onClick={() => navigate('/cart')}
+                                className="relative size-12 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-slate-600 active:scale-95 transition-all"
+                            >
+                                <ShoppingCart size={20} />
+                                {cartStore.getItemCount() > 0 && (
+                                    <span className="absolute -top-1 -right-1 size-5 bg-[#22eb7e] text-[#102217] rounded-full text-[9px] font-black flex items-center justify-center border-2 border-white">
+                                        {cartStore.getItemCount()}
+                                    </span>
+                                )}
+                            </button>
+                        </div>
+                    )}
                 </div>
 
-                {/* Search Bar */}
-                <div className="relative mb-8">
-                    <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Pesquisar rações, acessórios..."
-                        className="input-premium pl-14"
-                    />
-                </div>
-
-                {/* Categories */}
-                <div className="flex gap-2.5 overflow-x-auto pb-4 -mx-6 px-6 no-scrollbar">
+                {/* Categories / Tabs */}
+                <div className="flex gap-2 overflow-x-auto pb-2 -mx-6 px-6 no-scrollbar">
                     <button
-                        onClick={() => setSelectedCategory(null)}
-                        className={`h-11 px-8 rounded-full font-black text-[10px] uppercase tracking-widest whitespace-nowrap transition-all ${!selectedCategory ? 'bg-[#102217] text-[#22eb7e] shadow-xl shadow-slate-200' : 'bg-slate-50 text-slate-400 border border-slate-200/50 hover:bg-slate-100'}`}
+                        onClick={() => setActiveTab('favorites')}
+                        className={`h-10 px-6 rounded-full font-black text-[10px] uppercase tracking-widest whitespace-nowrap transition-all border ${activeTab === 'favorites' ? 'bg-rose-500 text-white border-rose-500 shadow-lg shadow-rose-500/20' : 'bg-white text-slate-400 border-slate-200'}`}
                     >
-                        Todos
+                        <Heart size={12} className={`inline mr-2 ${activeTab === 'favorites' ? 'fill-white' : ''}`} />
+                        Favoritos
                     </button>
-                    {categories.map(cat => (
+                    <div className="w-px h-6 bg-slate-200 my-auto mx-1" />
+                    {UI_CATEGORIES.map(cat => (
                         <button
                             key={cat.id}
-                            onClick={() => setSelectedCategory(cat.id)}
-                            className={`h-11 px-8 rounded-full font-black text-[10px] uppercase tracking-widest whitespace-nowrap transition-all ${selectedCategory === cat.id ? 'bg-[#102217] text-[#22eb7e] shadow-xl shadow-slate-200' : 'bg-slate-50 text-slate-400 border border-slate-200/50 hover:bg-slate-100'}`}
+                            onClick={() => {
+                                setSelectedCategory(cat.id);
+                                setActiveTab('home');
+                            }}
+                            className={`h-10 px-6 rounded-full font-black text-[10px] uppercase tracking-widest whitespace-nowrap transition-all border ${selectedCategory === cat.id && activeTab === 'home' ? 'bg-[#102217] text-[#22eb7e] border-[#102217] shadow-lg shadow-slate-300' : 'bg-white text-slate-400 border-slate-200 hover:bg-slate-50'}`}
                         >
                             {cat.name}
                         </button>
                     ))}
                 </div>
+
+                {/* Filters Toggle Bar */}
+                {activeTab === 'home' && (
+                    <div className="flex items-center justify-between mt-4 pb-2">
+                        <button
+                            onClick={() => setShowFilters(!showFilters)}
+                            className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest transition-colors ${showFilters ? 'text-[#22eb7e]' : 'text-slate-400'}`}
+                        >
+                            <Filter size={12} />
+                            {showFilters ? 'Ocultar Filtros' : 'Filtros Avançados'}
+                        </button>
+                        <span className="text-[10px] font-bold text-slate-300">
+                            {filteredProducts.length} produtos
+                        </span>
+                    </div>
+                )}
+
+                {/* Advanced Filters Panel */}
+                <AnimatePresence>
+                    {showFilters && activeTab === 'home' && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden"
+                        >
+                            <div className="py-4 space-y-4 border-t border-slate-100">
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-900 mb-2 block">Preço Máximo: €{priceRange[1]}</label>
+                                    <input
+                                        type="range"
+                                        min="0" max="1000" step="10"
+                                        value={priceRange[1]}
+                                        onChange={(e) => setPriceRange([0, parseInt(e.target.value)])}
+                                        className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-[#22eb7e] [&::-webkit-slider-thumb]:rounded-full"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-900 mb-2 block">Marca</label>
+                                    <div className="flex flex-wrap gap-2">
+                                        <button
+                                            onClick={() => setSelectedBrand('')}
+                                            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold border ${!selectedBrand ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-200 text-slate-400'}`}
+                                        >
+                                            Todas
+                                        </button>
+                                        {uniqueBrands.slice(0, 5).map(brand => (
+                                            <button
+                                                key={brand}
+                                                onClick={() => setSelectedBrand(brand === selectedBrand ? '' : brand!)}
+                                                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold border ${brand === selectedBrand ? 'bg-[#22eb7e] text-[#102217] border-[#22eb7e]' : 'border-slate-200 text-slate-400'}`}
+                                            >
+                                                {brand}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </header>
 
-            {/* Sorting */}
-            <div className="px-6 py-5 flex items-center gap-3">
-                <button
-                    onClick={() => setShowFilters(!showFilters)}
-                    className="h-10 px-5 rounded-full bg-white border border-slate-100 text-slate-600 font-extrabold text-[10px] uppercase tracking-widest flex items-center gap-2 shadow-sm"
-                >
-                    <Filter size={14} /> Filtros
-                </button>
-                <div className="flex-1" />
-                <div className="relative">
-                    <select
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value as any)}
-                        className="h-10 pl-6 pr-10 rounded-full bg-white border border-slate-100 text-slate-600 font-extrabold text-[10px] uppercase tracking-widest outline-none shadow-sm appearance-none"
-                    >
-                        <option value="featured">Destaques</option>
-                        <option value="price_asc">Menor Preço</option>
-                        <option value="price_desc">Maior Preço</option>
-                        <option value="rating">Avaliação</option>
-                    </select>
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                        <Plus size={12} className="rotate-45" />
-                    </div>
-                </div>
-            </div>
-
             {/* Products Grid */}
-            <div className="flex-1 overflow-y-auto px-6 pt-2 pb-28 no-scrollbar">
+            <div className="flex-1 overflow-y-auto px-4 pb-32 no-scrollbar bg-[#f8fafc]">
                 {loading ? (
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-3">
                         {[1, 2, 3, 4, 5, 6].map(i => (
-                            <div key={i} className="aspect-[3/4.5] rounded-[3rem] bg-slate-50 animate-pulse border border-slate-100" />
+                            <div key={i} className="aspect-[3.5/5] rounded-[2rem] bg-slate-100 animate-pulse" />
                         ))}
                     </div>
                 ) : filteredProducts.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-24 text-center">
-                        <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-8 shadow-inner">
-                            <ShoppingBag size={48} className="text-slate-200" />
-                        </div>
-                        <h3 className="text-2xl font-black text-slate-900 mb-2">Nada por aqui...</h3>
-                        <p className="text-sm font-bold text-slate-400 mb-10 max-w-[200px]">Infelizmente não encontramos nenhum produto nestas condições.</p>
+                    <div className="flex flex-col items-center justify-center py-12 text-center opacity-60">
+                        <ShoppingBag size={48} className="text-slate-300 mb-4" />
+                        <p className="text-sm font-bold text-slate-400">Nenhum produto encontrado.</p>
                         <button
-                            onClick={() => { setSearchQuery(''); setSelectedCategory(null); }}
-                            className="bg-[#22eb7e] text-[#102217] h-12 px-8 rounded-full font-black uppercase text-[10px] tracking-widest shadow-lg shadow-[#22eb7e]/20"
+                            onClick={() => {
+                                setSelectedCategory('all');
+                                setSearchQuery('');
+                                setPriceRange([0, 1000]);
+                                setSelectedBrand('');
+                            }}
+                            className="mt-4 text-[#22eb7e] font-black text-xs uppercase tracking-widest"
                         >
-                            Limpar filtros
+                            Limpar Filtros
                         </button>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-2 gap-5">
+                    <div className="grid grid-cols-2 gap-3">
                         {filteredProducts.map(product => (
-                            <ProductCard key={product.id} product={product} onAddToCart={handleAddToCart} />
+                            <ProductCard
+                                key={product.id}
+                                product={product}
+                                isFavorite={favorites.has(product.id)}
+                                toggleFavorite={toggleFavorite}
+                                onAddToCart={handleAddToCart}
+                            />
                         ))}
                     </div>
                 )}
@@ -218,67 +338,89 @@ const MarketplaceView: React.FC = () => {
     );
 };
 
-// Refined Product Card
-const ProductCard: React.FC<{ product: Product, onAddToCart: (p: Product) => void }> = ({ product, onAddToCart }) => {
+// Compact Product Card for 2-column grid
+const ProductCard: React.FC<{
+    product: Product,
+    isFavorite: boolean,
+    toggleFavorite: (id: string, e: React.MouseEvent) => void,
+    onAddToCart: (p: Product, e: React.MouseEvent) => void
+}> = ({ product, isFavorite, toggleFavorite, onAddToCart }) => {
     const navigate = useNavigate();
-    const [isFav, setIsFav] = useState(false);
     const price = product.sale_price || product.base_price;
+    const hasDiscount = !!product.sale_price;
 
     return (
         <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="group flex flex-col bg-white rounded-[2.5rem] overflow-hidden border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-slate-200/40 transition-all duration-500"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileTap={{ scale: 0.98 }}
+            className="group flex flex-col bg-white rounded-[2rem] p-3 shadow-sm border border-slate-100 hover:shadow-lg hover:border-[#22eb7e]/30 transition-all duration-300 relative"
+            onClick={() => navigate(`/product/${product.slug || product.id}`)}
         >
-            <div className="relative aspect-[4/5] overflow-hidden bg-slate-50">
+            {/* Image Area */}
+            <div className="relative aspect-square rounded-[1.5rem] bg-slate-50 mb-3 overflow-hidden">
                 <img
                     src={product.images?.[0] || 'https://images.unsplash.com/photo-1583337130417-3346a1be7dee?w=400'}
                     alt={product.name}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                    onClick={() => navigate(`/product/${product.slug}`)}
                 />
 
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-
-                <button
-                    onClick={() => setIsFav(!isFav)}
-                    className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center shadow-lg active:scale-90 transition-all z-10"
-                >
-                    <Heart size={18} className={isFav ? 'fill-rose-500 text-rose-500' : 'text-slate-400'} />
-                </button>
-
-                {product.is_featured && (
-                    <div className="absolute top-4 left-4 h-8 px-3 rounded-full bg-[#22eb7e] text-[#102217] flex items-center gap-1.5 shadow-lg z-10">
-                        <Sparkles size={12} fill="currentColor" />
-                        <span className="text-[9px] font-black uppercase tracking-widest">Destaque</span>
+                {/* Badges */}
+                {hasDiscount && (
+                    <div className="absolute top-2 left-2 px-2 py-1 bg-[#102217] text-[#22eb7e] text-[8px] font-black uppercase tracking-wider rounded-lg shadow-md z-10">
+                        Promo
                     </div>
                 )}
+                {product.stock_quantity > 0 && product.stock_quantity < 5 && (
+                    <div className="absolute bottom-2 left-2 px-2 py-1 bg-red-500 text-white text-[8px] font-black uppercase tracking-wider rounded-lg shadow-md z-10">
+                        Restam {product.stock_quantity}
+                    </div>
+                )}
+
+                {/* Favorite Button */}
+                <button
+                    onClick={(e) => toggleFavorite(product.id, e)}
+                    className="absolute top-2 right-2 size-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm active:scale-90 transition-all z-20"
+                >
+                    <Heart size={14} className={isFavorite ? 'fill-rose-500 text-rose-500' : 'text-slate-300'} />
+                </button>
             </div>
 
-            <div className="p-6 flex-1 flex flex-col">
-                <p className="text-[10px] font-black text-[#22eb7e] uppercase tracking-widest mb-1.5">{product.brand || 'BioPet Premium'}</p>
-                <h3 className="font-extrabold text-sm text-slate-900 line-clamp-2 mb-4 leading-snug cursor-pointer group-hover:text-[#22eb7e] transition-colors" onClick={() => navigate(`/product/${product.slug}`)}>
+            {/* Info */}
+            <div className="flex-1 flex flex-col">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 truncate">
+                    {product.brand || 'DOG DRIVE'}
+                </p>
+                <h3 className="font-bold text-xs text-slate-900 leading-snug line-clamp-2 mb-2 h-8">
                     {product.name}
                 </h3>
 
-                <div className="mt-auto pt-4 flex items-center justify-between">
-                    <div className="flex flex-col">
-                        {product.sale_price && (
-                            <span className="text-[10px] text-slate-300 line-through font-bold mb-0.5">€{product.base_price.toFixed(2)}</span>
+                {/* Rating - Visual */}
+                <div className="flex items-center gap-0.5 mb-3">
+                    {[1, 2, 3, 4, 5].map(star => (
+                        <Star key={star} size={8} className={`${star <= (product.avg_rating || 5) ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} />
+                    ))}
+                    <span className="text-[8px] text-slate-400 ml-1">({product.review_count || 12})</span>
+                </div>
+
+                {/* Price & Add */}
+                <div className="mt-auto flex items-end justify-between">
+                    <div>
+                        {hasDiscount && (
+                            <p className="text-[9px] text-slate-400 line-through font-bold">€{product.base_price.toFixed(2)}</p>
                         )}
-                        <span className="text-xl font-black text-[#102217]">€{price.toFixed(2)}</span>
+                        <p className="text-sm font-black text-[#102217]">€{price.toFixed(2)}</p>
                     </div>
                     <button
-                        onClick={() => onAddToCart(product)}
-                        className="w-12 h-12 rounded-2xl bg-[#102217] text-white flex items-center justify-center active:scale-90 transition-all hover:bg-[#22eb7e] hover:text-[#102217] shadow-lg shadow-slate-200"
+                        onClick={(e) => onAddToCart(product, e)}
+                        className="size-9 rounded-xl bg-[#102217] text-white flex items-center justify-center active:scale-90 transition-all hover:bg-[#22eb7e] hover:text-[#102217] shadow-lg shadow-[#102217]/20"
                     >
-                        <Plus size={24} strokeWidth={3} />
+                        <Plus size={16} strokeWidth={3} />
                     </button>
                 </div>
             </div>
         </motion.div>
     );
 };
-
 
 export default MarketplaceView;
