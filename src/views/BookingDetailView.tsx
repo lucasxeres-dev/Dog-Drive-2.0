@@ -42,18 +42,19 @@ const BookingDetailView: React.FC = () => {
                 status: 'confirmed',
                 date: '05 Dez',
                 time: '14:00',
-                duration: 60,
-                price: 15.00,
+                duration_minutes: 60,
+                amount: 15.00,
                 provider: {
                     id: 'p1',
                     name: 'Pedro Santos',
                     role: 'Walker Premium',
                     avatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=200'
                 },
-                client_id: 'u1',
-                location: 'Parque Eduardo VII, Lisboa',
+                user_id: 'u1', // Corrected from client_id
+                location_id: 'loc1', // Added required field
             };
             setBooking(mockBooking);
+
             setLoading(false);
         }, 600);
     }, [id]);
@@ -129,7 +130,7 @@ const BookingDetailView: React.FC = () => {
                                 <div>
                                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Data e Hora</p>
                                     <p className="text-lg font-black text-slate-900">{booking.date} às {booking.time}</p>
-                                    <p className="text-xs text-slate-500 font-medium mt-1">Duração: {booking.duration} min</p>
+                                    <p className="text-xs text-slate-500 font-medium mt-1">Duração: {booking.duration_minutes} min</p>
                                 </div>
                             </div>
 
@@ -148,7 +149,7 @@ const BookingDetailView: React.FC = () => {
 
                         <div className="flex justify-between items-center">
                             <span className="text-sm font-bold text-slate-500">Valor Total</span>
-                            <span className="text-2xl font-black text-[#102217]">€{booking.price.toFixed(2)}</span>
+                            <span className="text-2xl font-black text-[#102217]">€{booking.amount.toFixed(2)}</span>
                         </div>
                     </div>
 
