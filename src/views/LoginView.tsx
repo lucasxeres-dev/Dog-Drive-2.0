@@ -58,49 +58,52 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                         transition={{ duration: 1.5 }}
                         className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=1200&auto=format&fit=crop')] bg-cover bg-center grayscale-[0.3]"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/20 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-br from-[#102217]/90 via-[#102217]/40 to-transparent" />
 
-                    <div className="relative z-10 p-20 flex flex-col justify-between h-full">
+                    <div className="relative z-10 p-16 xl:p-24 flex flex-col justify-between h-full">
                         <motion.div
                             initial={{ x: -20, opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
                             className="flex items-center gap-4"
                         >
-                            <div className="size-14 bg-[#22eb7e] rounded-2xl flex items-center justify-center shadow-glow">
-                                <Dog size={28} className="text-[#102217]" strokeWidth={3} />
+                            <div className="size-14 xl:size-16 bg-[#22eb7e] rounded-[1.5rem] xl:rounded-[2rem] flex items-center justify-center shadow-glow">
+                                <Dog size={32} className="text-[#102217]" strokeWidth={3} />
                             </div>
-                            <span className="text-3xl font-black text-white tracking-tighter">Dog Drive</span>
+                            <span className="text-3xl xl:text-4xl font-black text-white tracking-tighter">Dog Drive</span>
                         </motion.div>
 
                         <motion.div
                             initial={{ y: 40, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
                             transition={{ delay: 0.3 }}
+                            className="max-w-xl"
                         >
-                            <div className="flex items-center gap-2 mb-6">
+                            <div className="flex items-center gap-3 mb-8">
+                                <div className="h-px w-8 bg-[#22eb7e]/30" />
                                 <Sparkles size={16} className="text-[#22eb7e]" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#22eb7e]">Vibe Premium</span>
+                                <span className="text-[10px] font-black uppercase tracking-[0.5em] text-[#22eb7e]">Vibe Premium</span>
                             </div>
-                            <h2 className="text-7xl font-black text-white leading-none tracking-tighter max-w-lg">
-                                Onde cada <span className="text-[#22eb7e]">match</span> conta uma história.
+                            <h2 className="text-6xl xl:text-8xl font-black text-white leading-[0.9] tracking-tighter mb-4">
+                                Onde cada <span className="text-[#22eb7e]">match</span> <br />conta uma história.
                             </h2>
+                            <p className="text-white/40 font-bold text-lg xl:text-xl tracking-tight max-w-md">Explore conexões únicas e serviços exclusivos para o seu pet.</p>
                         </motion.div>
                     </div>
                 </div>
 
                 {/* Form Right Side */}
-                <div className="flex-1 flex flex-col bg-white lg:rounded-l-[4rem] relative overflow-y-auto no-scrollbar shadow-[-40px_0_80px_rgba(0,0,0,0.02)]">
-                    <header className="px-8 pt-10 pb-4 flex items-center justify-between sticky top-0 bg-white/80 backdrop-blur-xl z-20">
-                        <div className="size-11 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center text-slate-400">
-                            <Globe size={18} />
+                <div className="flex-1 flex flex-col bg-white lg:rounded-l-[4rem] relative overflow-y-auto no-scrollbar shadow-[-40px_0_80px_rgba(0,0,0,0.03)]">
+                    <header className="px-10 pt-12 pb-6 flex items-center justify-between sticky top-0 bg-white/90 backdrop-blur-xl z-20">
+                        <div className="size-11 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center text-slate-400 hover:text-[#22eb7e] transition-colors cursor-pointer group">
+                            <Globe size={18} className="group-hover:rotate-12 transition-transform" />
                         </div>
-                        <div className="flex gap-6">
-                            <span className="text-[11px] font-black text-slate-900 border-b-2 border-[#22eb7e] pb-1 cursor-pointer">PT</span>
-                            <span className="text-[11px] font-black text-slate-400 cursor-pointer hover:text-slate-600 transition-all uppercase tracking-widest">EN</span>
+                        <div className="flex bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
+                            <button className="px-4 py-1.5 text-[10px] font-black text-[#102217] bg-white rounded-xl shadow-sm transition-all uppercase tracking-widest">PT</button>
+                            <button className="px-4 py-1.5 text-[10px] font-black text-slate-400 hover:text-slate-600 transition-all uppercase tracking-widest">EN</button>
                         </div>
                     </header>
 
-                    <main className="flex-1 px-8 py-12 max-w-md mx-auto w-full">
+                    <main className="flex-1 px-10 xl:px-20 py-16 flex flex-col justify-center max-w-2xl mx-auto w-full">
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
@@ -114,11 +117,12 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
                                 <p className="text-[#22eb7e] text-[10px] font-black uppercase tracking-[0.3em] mt-3">Premium Pet Cloud</p>
                             </div>
 
-                            <div className="hidden lg:block">
-                                <h1 className="text-5xl font-black text-slate-900 tracking-tighter leading-none mb-4">Bem-vindo <br />de <span className="text-[#22eb7e]">volta</span>!</h1>
-                                <p className="text-slate-400 font-bold text-lg">Entre na sua conta para continuar.</p>
+                            <div>
+                                <h1 className="text-5xl xl:text-6xl font-black text-slate-900 tracking-tighter leading-none mb-4">Bem-vindo <br />de <span className="text-[#22eb7e]">volta</span>!</h1>
+                                <p className="text-slate-400 font-bold text-lg xl:text-xl">Entre na sua conta para continuar.</p>
                             </div>
                         </motion.div>
+
 
                         <form
                             onSubmit={(e) => {
