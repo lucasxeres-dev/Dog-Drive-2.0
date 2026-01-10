@@ -14,7 +14,7 @@ import {
 
 const RegisterView: React.FC = () => {
     const navigate = useNavigate();
-    const { t } = useTranslation();
+    const { t, language, setLanguage } = useTranslation();
     const { showNotification } = useNotification();
     const supabase = useSupabase();
     const [step, setStep] = useState(1);
@@ -42,19 +42,19 @@ const RegisterView: React.FC = () => {
     const handleRegister = async () => {
         // Validation Step 2
         if (!formData.fullName || formData.fullName.length < 3) {
-            showNotification('Nome completo inválido', 'error');
+            showNotification(t('invalid_name') || 'Nome completo inválido', 'error');
             return;
         }
         if (!formData.email.includes('@')) {
-            showNotification('E-mail inválido', 'error');
+            showNotification(t('invalid_email') || 'E-mail inválido', 'error');
             return;
         }
         if (formData.password.length < 6) {
-            showNotification('Senha deve ter no mínimo 6 caracteres', 'error');
+            showNotification(t('short_password') || 'Senha deve ter no mínimo 6 caracteres', 'error');
             return;
         }
         if (formData.password !== formData.confirmPassword) {
-            showNotification('As senhas não coincidem', 'error');
+            showNotification(t('passwords_mismatch') || 'As senhas não coincidem', 'error');
             return;
         }
 
@@ -62,11 +62,11 @@ const RegisterView: React.FC = () => {
         if (isBusinessRole) {
             const nifRegex = /^[0-9]{9}$/;
             if (!nifRegex.test(formData.nif)) {
-                showNotification('NIF deve ter 9 dígitos', 'error');
+                showNotification(t('invalid_nif') || 'NIF deve ter 9 dígitos', 'error');
                 return;
             }
             if (!formData.companyName || formData.companyName.length < 3) {
-                showNotification('Nome da empresa inválido', 'error');
+                showNotification(t('invalid_company_name') || 'Nome da empresa inválido', 'error');
                 return;
             }
         }
@@ -98,11 +98,11 @@ const RegisterView: React.FC = () => {
                 if (businessError) console.error('Business profile error:', businessError);
             }
 
-            showNotification('Conta criada com sucesso!', 'success');
+            showNotification(t('register_success') || 'Conta criada com sucesso!', 'success');
             setTimeout(() => navigate('/login'), 2000);
         } catch (err: any) {
             console.error('Registration error:', err);
-            showNotification(err.message || 'Erro ao criar conta', 'error');
+            showNotification(err.message || t('register_error') || 'Erro ao criar conta', 'error');
         } finally {
             setLoading(false);
         }
@@ -139,7 +139,7 @@ const RegisterView: React.FC = () => {
                             <div className="size-14 xl:size-16 bg-[#22eb7e] rounded-[1.5rem] xl:rounded-[2rem] flex items-center justify-center shadow-glow">
                                 <Dog size={32} className="text-[#102217]" strokeWidth={3} />
                             </div>
-                            <span className="text-3xl xl:text-4xl font-black text-white tracking-tighter">Dog Drive</span>
+                            <span className="text-3xl xl:text-4xl font-black text-white tracking-tighter">{t('app_name')}</span>
                         </motion.div>
 
                         <motion.div
@@ -150,12 +150,12 @@ const RegisterView: React.FC = () => {
                             <div className="flex items-center gap-3 mb-8">
                                 <div className="h-px w-8 bg-[#22eb7e]/30" />
                                 <Sparkles size={16} className="text-[#22eb7e]" />
-                                <span className="text-[10px] font-black uppercase tracking-[0.5em] text-[#22eb7e]">Membro Premium</span>
+                                <span className="text-[10px] font-black uppercase tracking-[0.5em] text-[#22eb7e]">{t('vibe_premium_member')}</span>
                             </div>
                             <h2 className="text-5xl xl:text-7xl font-black text-white leading-[0.9] tracking-tighter mb-4">
-                                Comece sua <br /><span className="text-[#22eb7e]">jornada</span> hoje.
+                                {t('register_story_1')} <br /><span className="text-[#22eb7e]">{t('register_story_2')}</span> {t('register_story_3')}
                             </h2>
-                            <p className="text-white/40 font-bold text-lg xl:text-xl tracking-tight max-w-sm">Junte-se à maior plataforma pet plus de Portugal.</p>
+                            <p className="text-white/40 font-bold text-lg xl:text-xl tracking-tight max-w-sm">{t('register_story_desc')}</p>
                         </motion.div>
                     </div>
                 </div>
@@ -173,9 +173,19 @@ const RegisterView: React.FC = () => {
                                 </div>
                             ))}
                         </div>
-                        <div className="flex gap-4">
-                            <span className="text-[11px] font-black text-[#102217] px-3 py-1.5 bg-slate-50 rounded-lg">PT</span>
-                            <span className="text-[11px] font-black text-slate-400 px-3 py-1.5 hover:text-slate-600 transition-all uppercase tracking-widest cursor-pointer">EN</span>
+                        <div className="flex bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
+                            <button
+                                onClick={() => setLanguage('pt')}
+                                className={`px-4 py-1.5 text-[10px] font-black transition-all uppercase tracking-widest rounded-xl ${language === 'pt' ? 'text-[#102217] bg-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                            >
+                                PT
+                            </button>
+                            <button
+                                onClick={() => setLanguage('en')}
+                                className={`px-4 py-1.5 text-[10px] font-black transition-all uppercase tracking-widest rounded-xl ${language === 'en' ? 'text-[#102217] bg-white shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                            >
+                                EN
+                            </button>
                         </div>
                     </header>
 
@@ -183,7 +193,7 @@ const RegisterView: React.FC = () => {
                         <div className="flex items-center gap-2 mb-2">
                             <Sparkles size={14} className="text-[#22eb7e]" />
                             <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">
-                                {step === 1 ? 'Tipo de Perfil' : step === 2 ? 'Identidade' : 'Configuração Profissional'}
+                                {step === 1 ? t('step_profile_type') : step === 2 ? t('step_identity') : t('step_pro_config')}
                             </h2>
                         </div>
                     </div>
@@ -200,9 +210,9 @@ const RegisterView: React.FC = () => {
                                 >
                                     <div className="text-center md:text-left">
                                         <h1 className="text-4xl font-black text-slate-900 tracking-tighter leading-tight mb-4">
-                                            Como você quer <span className="text-[#22eb7e] relative">começar<div className="absolute -bottom-1 left-0 w-full h-2 bg-[#22eb7e]/20 -rotate-1" /></span>?
+                                            {t('how_to_start_1')} <span className="text-[#22eb7e] relative">{t('how_to_start_2')}<div className="absolute -bottom-1 left-0 w-full h-2 bg-[#22eb7e]/20 -rotate-1" /></span>?
                                         </h1>
-                                        <p className="text-slate-500 font-bold leading-relaxed">Selecione seu tipo de perfil no ecossistema Dog Drive.</p>
+                                        <p className="text-slate-500 font-bold leading-relaxed">{t('select_profile_desc')}</p>
                                     </div>
 
                                     <div className="space-y-4">
@@ -210,22 +220,22 @@ const RegisterView: React.FC = () => {
                                             active={role === 'owner'}
                                             onClick={() => { setRole('owner'); nextStep(); }}
                                             icon={Dog}
-                                            title="Sou Tutor"
-                                            subtitle="Encontre o match perfeito e serviços incríveis"
+                                            title={t('role_owner_title')}
+                                            subtitle={t('role_owner_sub')}
                                         />
                                         <RoleButton
                                             active={role === 'business'}
                                             onClick={() => { setRole('business'); nextStep(); }}
                                             icon={Store}
-                                            title="Sou Empresa"
-                                            subtitle="Clínicas, PetShops e estabelecimentos"
+                                            title={t('role_business_title')}
+                                            subtitle={t('role_business_sub')}
                                         />
                                         <RoleButton
                                             active={role === 'provider'}
                                             onClick={() => { setRole('provider'); nextStep(); }}
                                             icon={Briefcase}
-                                            title="Sou Colaborador"
-                                            subtitle="Passeadores, Groomers e Dog Sitters"
+                                            title={t('role_provider_title')}
+                                            subtitle={t('role_provider_sub')}
                                         />
                                     </div>
                                 </motion.div>
@@ -240,45 +250,45 @@ const RegisterView: React.FC = () => {
                                 >
                                     <div className="text-center md:text-left">
                                         <h1 className="text-4xl font-black text-slate-900 tracking-tighter leading-tight mb-4">
-                                            Suas <span className="text-[#22eb7e]">Credenciais</span>
+                                            {t('your_label')} <span className="text-[#22eb7e]">{t('credentials_accent')}</span>
                                         </h1>
-                                        <p className="text-slate-500 font-bold leading-relaxed">Dados fundamentais para o seu acesso seguro.</p>
+                                        <p className="text-slate-500 font-bold leading-relaxed">{t('credentials_desc')}</p>
                                     </div>
 
                                     <div className="space-y-6">
                                         <div className="space-y-2 group">
-                                            <label className="label-premium ml-5 group-focus-within:text-[#22eb7e] transition-colors">Nome Completo</label>
+                                            <label className="label-premium ml-5 group-focus-within:text-[#22eb7e] transition-colors">{t('full_name_label')}</label>
                                             <div className="relative">
                                                 <div className="absolute left-6 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-slate-50 text-slate-400 group-focus-within:text-[#22eb7e] group-focus-within:bg-[#22eb7e]/10 transition-all">
                                                     <User size={20} strokeWidth={2.5} />
                                                 </div>
-                                                <input className="input-premium !pl-20" placeholder="João Silva" value={formData.fullName} onChange={e => setFormData({ ...formData, fullName: e.target.value })} />
+                                                <input className="input-premium !pl-20" placeholder={t('full_name_placeholder')} value={formData.fullName} onChange={e => setFormData({ ...formData, fullName: e.target.value })} />
                                             </div>
                                         </div>
 
                                         <div className="space-y-2 group">
-                                            <label className="label-premium ml-5 group-focus-within:text-[#22eb7e] transition-colors">Nome de Usuário</label>
+                                            <label className="label-premium ml-5 group-focus-within:text-[#22eb7e] transition-colors">{t('username_label')}</label>
                                             <div className="relative">
                                                 <div className="absolute left-6 top-1/2 -translate-y-1/2 size-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 group-focus-within:text-[#22eb7e] group-focus-within:bg-[#22eb7e]/10 transition-all">
                                                     <span className="font-black text-xl leading-none">@</span>
                                                 </div>
-                                                <input className="input-premium !pl-20" placeholder="joaosilva" value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value })} />
+                                                <input className="input-premium !pl-20" placeholder={t('username_placeholder')} value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value })} />
                                             </div>
                                         </div>
 
                                         <div className="space-y-2 group">
-                                            <label className="label-premium ml-5 group-focus-within:text-[#22eb7e] transition-colors">E-mail</label>
+                                            <label className="label-premium ml-5 group-focus-within:text-[#22eb7e] transition-colors">{t('email_label')}</label>
                                             <div className="relative">
                                                 <div className="absolute left-6 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-slate-50 text-slate-400 group-focus-within:text-[#22eb7e] group-focus-within:bg-[#22eb7e]/10 transition-all">
                                                     <Mail size={20} strokeWidth={2.5} />
                                                 </div>
-                                                <input className="input-premium !pl-20" placeholder="exemplo@gmail.com" type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                                                <input className="input-premium !pl-20" placeholder={t('email_placeholder')} type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
                                             </div>
                                         </div>
 
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div className="space-y-2 group">
-                                                <label className="label-premium ml-5 group-focus-within:text-[#22eb7e] transition-colors">Senha</label>
+                                                <label className="label-premium ml-5 group-focus-within:text-[#22eb7e] transition-colors">{t('password_label')}</label>
                                                 <div className="relative">
                                                     <div className="absolute left-6 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-slate-50 text-slate-400 group-focus-within:text-[#22eb7e] group-focus-within:bg-[#22eb7e]/10 transition-all">
                                                         <Lock size={20} strokeWidth={2.5} />
@@ -287,7 +297,7 @@ const RegisterView: React.FC = () => {
                                                 </div>
                                             </div>
                                             <div className="space-y-2 group">
-                                                <label className="label-premium ml-5 group-focus-within:text-[#22eb7e] transition-colors">Confirmar</label>
+                                                <label className="label-premium ml-5 group-focus-within:text-[#22eb7e] transition-colors">{t('confirm_password_label')}</label>
                                                 <div className="relative">
                                                     <div className="absolute left-6 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-slate-50 text-slate-400 group-focus-within:text-[#22eb7e] group-focus-within:bg-[#22eb7e]/10 transition-all">
                                                         <Lock size={20} strokeWidth={2.5} />
@@ -300,10 +310,10 @@ const RegisterView: React.FC = () => {
 
                                     <div className="pt-8 flex flex-col md:flex-row gap-4">
                                         <PremiumButton variant="ghost" onClick={prevStep} className="flex-1 py-6">
-                                            <ArrowLeft size={18} className="mr-3" /> Voltar
+                                            <ArrowLeft size={18} className="mr-3" /> {t('back_btn')}
                                         </PremiumButton>
                                         <PremiumButton onClick={isBusinessRole ? nextStep : handleRegister} className="flex-1 py-6">
-                                            {isBusinessRole ? 'Continuar Configuração' : 'Finalizar Registro'} <ArrowRight size={18} className="ml-3" />
+                                            {isBusinessRole ? t('continue_config') : t('finish_register')} <ArrowRight size={18} className="ml-3" />
                                         </PremiumButton>
                                     </div>
                                 </motion.div>
@@ -318,14 +328,14 @@ const RegisterView: React.FC = () => {
                                 >
                                     <div className="text-center md:text-left">
                                         <h1 className="text-4xl font-black text-slate-900 tracking-tighter leading-tight mb-4">
-                                            Dados do <span className="text-[#22eb7e]">Negócio</span>
+                                            {t('business_label')} <span className="text-[#22eb7e]">{t('business_accent')}</span>
                                         </h1>
-                                        <p className="text-slate-500 font-bold leading-relaxed">Informações comerciais e fiscais para Portugal.</p>
+                                        <p className="text-slate-500 font-bold leading-relaxed">{t('business_desc')}</p>
                                     </div>
 
                                     <div className="space-y-6">
                                         <div className="space-y-2 group">
-                                            <label className="label-premium ml-5 group-focus-within:text-[#22eb7e] transition-colors">NIF (Portugal)</label>
+                                            <label className="label-premium ml-5 group-focus-within:text-[#22eb7e] transition-colors">{t('nif_label')}</label>
                                             <div className="relative">
                                                 <div className="absolute left-6 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-slate-50 text-slate-400 group-focus-within:text-[#102217] group-focus-within:bg-[#22eb7e] transition-all">
                                                     <FileText size={20} strokeWidth={2.5} />
@@ -335,27 +345,27 @@ const RegisterView: React.FC = () => {
                                         </div>
 
                                         <div className="space-y-2 group">
-                                            <label className="label-premium ml-5 group-focus-within:text-[#22eb7e] transition-colors">Nome Comercial</label>
+                                            <label className="label-premium ml-5 group-focus-within:text-[#22eb7e] transition-colors">{t('company_name_label')}</label>
                                             <div className="relative">
                                                 <div className="absolute left-6 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-slate-50 text-slate-400 group-focus-within:text-[#102217] group-focus-within:bg-[#22eb7e] transition-all">
                                                     <Building2 size={20} strokeWidth={2.5} />
                                                 </div>
-                                                <input className="input-premium !pl-20" placeholder="Minha Loja Pet" value={formData.companyName} onChange={e => setFormData({ ...formData, companyName: e.target.value })} />
+                                                <input className="input-premium !pl-20" placeholder={t('company_name_placeholder')} value={formData.companyName} onChange={e => setFormData({ ...formData, companyName: e.target.value })} />
                                             </div>
                                         </div>
 
                                         <div className="space-y-2 group">
-                                            <label className="label-premium ml-5 group-focus-within:text-[#22eb7e] transition-colors">Endereço Principal</label>
+                                            <label className="label-premium ml-5 group-focus-within:text-[#22eb7e] transition-colors">{t('business_address_label')}</label>
                                             <div className="relative">
                                                 <div className="absolute left-6 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-slate-50 text-slate-400 group-focus-within:text-[#102217] group-focus-within:bg-[#22eb7e] transition-all">
                                                     <Phone size={20} strokeWidth={2.5} />
                                                 </div>
-                                                <input className="input-premium !pl-20" placeholder="Rua, Cidade, Portugal" value={formData.businessAddress} onChange={e => setFormData({ ...formData, businessAddress: e.target.value })} />
+                                                <input className="input-premium !pl-20" placeholder={t('business_address_placeholder')} value={formData.businessAddress} onChange={e => setFormData({ ...formData, businessAddress: e.target.value })} />
                                             </div>
                                         </div>
 
                                         <div className="space-y-2 group">
-                                            <label className="label-premium ml-5 group-focus-within:text-[#22eb7e] transition-colors">Telemóvel de Contato</label>
+                                            <label className="label-premium ml-5 group-focus-within:text-[#22eb7e] transition-colors">{t('business_phone_label')}</label>
                                             <div className="relative">
                                                 <div className="absolute left-6 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-slate-50 text-slate-400 group-focus-within:text-[#102217] group-focus-within:bg-[#22eb7e] transition-all">
                                                     <Phone size={20} strokeWidth={2.5} />
@@ -367,10 +377,10 @@ const RegisterView: React.FC = () => {
 
                                     <div className="pt-8 flex flex-col md:flex-row gap-4">
                                         <PremiumButton variant="ghost" onClick={prevStep} className="flex-1 py-6">
-                                            <ArrowLeft size={18} className="mr-3" /> Voltar
+                                            <ArrowLeft size={18} className="mr-3" /> {t('back_btn')}
                                         </PremiumButton>
                                         <PremiumButton onClick={handleRegister} isLoading={loading} className="flex-1 py-6">
-                                            Finalizar e Entrar <ArrowRight size={18} className="ml-3" />
+                                            {t('finish_and_enter')} <ArrowRight size={18} className="ml-3" />
                                         </PremiumButton>
                                     </div>
                                 </motion.div>
@@ -383,7 +393,7 @@ const RegisterView: React.FC = () => {
                             transition={{ delay: 0.5 }}
                             className="mt-16 text-center text-slate-400 font-bold text-sm"
                         >
-                            Já possui conta? <button onClick={() => navigate('/login')} className="text-[#22eb7e] hover:text-[#19c765] font-black transition-colors underline underline-offset-4 decoration-2">Entrar agora</button>
+                            {t('already_have_account')} <button onClick={() => navigate('/login')} className="text-[#22eb7e] hover:text-[#19c765] font-black transition-colors underline underline-offset-4 decoration-2">{t('login_now')}</button>
                         </motion.p>
                     </main>
                 </div>

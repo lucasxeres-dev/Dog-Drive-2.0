@@ -3,8 +3,10 @@ import { useNavigate, useLocation as useRouterLocation } from 'react-router-dom'
 import { useTranslation } from '../contexts/LanguageContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { useSupabase } from '../hooks/useSupabase';
-import { ArrowLeft, Filter, Search, ShieldCheck, MapPin, Star } from 'lucide-react';
+import { ArrowLeft, Filter, Search, ShieldCheck, MapPin, Star, MoreVertical } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import FilterModal from '../components/FilterModal';
+import { GlassCard, PremiumSkeleton } from '../components/UIComponents';
 
 const WalkerListView: React.FC = () => {
     const navigate = useNavigate();
@@ -120,27 +122,38 @@ const WalkerListView: React.FC = () => {
     }, [sortBy, walkers]);
 
     return (
-        <div className="flex-1 flex flex-col bg-[#f8fafc] h-screen overflow-hidden pb-16 animate-fade-in">
-            <header className="px-6 pt-12 pb-6 flex items-center justify-between bg-white shadow-sm shadow-slate-200/30">
+        <div className="flex-1 flex flex-col bg-[#f8fafc] h-screen overflow-hidden pb-16">
+            <motion.header
+                initial={{ y: -50, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                className="px-6 pt-12 pb-6 flex items-center justify-between bg-white/80 backdrop-blur-xl border-b border-slate-100 sticky top-0 z-50"
+            >
                 <div className="flex items-center gap-4">
-                    <button
+                    <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
                         onClick={() => navigate(-1)}
-                        className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-600 active:scale-90 transition-all border border-slate-200/50"
+                        className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-600 border border-slate-200/50 shadow-sm"
                     >
-                        <ArrowLeft size={20} />
-                    </button>
+                        <ArrowLeft size={18} />
+                    </motion.button>
                     <div>
                         <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-none">{t('find_walker')}</h1>
-                        <p className="text-[10px] font-black text-[#22eb7e] uppercase tracking-widest mt-1">{locationName}</p>
+                        <p className="text-[10px] font-black text-[#22eb7e] uppercase tracking-[0.2em] mt-1.5 flex items-center gap-1.5">
+                            <MapPin size={10} strokeWidth={3} />
+                            {locationName}
+                        </p>
                     </div>
                 </div>
-                <button
+                <motion.button
+                    whileHover={{ scale: 1.1, rotate: 90 }}
+                    whileTap={{ scale: 0.9 }}
                     onClick={() => setShowFilters(true)}
-                    className="w-10 h-10 rounded-xl bg-[#22eb7e]/10 text-[#22eb7e] flex items-center justify-center active:scale-90 transition-all"
+                    className="w-10 h-10 rounded-2xl bg-[#22eb7e]/10 text-[#22eb7e] flex items-center justify-center shadow-sm"
                 >
-                    <Filter size={20} />
-                </button>
-            </header>
+                    <Filter size={18} />
+                </motion.button>
+            </motion.header>
 
             <div className="px-6 py-6">
                 <div className="relative">
@@ -169,52 +182,110 @@ const WalkerListView: React.FC = () => {
             </div>
 
             <main className="flex-1 overflow-y-auto px-6 pb-28 space-y-4 no-scrollbar">
-                {loading ? (
-                    <div className="flex flex-col items-center justify-center py-20 gap-4">
-                        <div className="w-12 h-12 border-4 border-[#22eb7e] border-t-transparent rounded-full animate-spin"></div>
-                        <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest animate-pulse">Buscando colaboradores...</p>
-                    </div>
-                ) : sortedWalkers.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-center">
-                        <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6">
-                            <Search size={40} className="text-slate-200" />
-                        </div>
-                        <h3 className="text-xl font-black text-slate-900 mb-2">Nenhum colaborador encontrado</h3>
-                        <p className="text-sm font-bold text-slate-400 max-w-[200px]">Tente ajustar seus filtros ou mudar de localização.</p>
-                    </div>
-                ) : sortedWalkers.map(walker => (
-                    <div
-                        key={walker.id}
-                        onClick={() => navigate(`/booking/${walker.id}`)}
-                        className="flex items-center p-5 bg-white rounded-[2.5rem] shadow-sm border border-white hover:border-[#22eb7e]/30 transition-all cursor-pointer group"
-                    >
-                        <div className="relative shrink-0">
-                            <img className="h-20 w-20 rounded-3xl object-cover group-hover:scale-105 transition-transform duration-500" src={walker.img} alt={walker.name} />
-                            <div className="absolute -bottom-1 -right-1 bg-[#22eb7e] rounded-full w-5 h-5 border-2 border-white flex items-center justify-center">
-                                <ShieldCheck size={10} className="text-[#102217]" strokeWidth={3} />
+                <AnimatePresence mode="wait">
+                    {loading ? (
+                        <motion.div
+                            key="skeleton"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="space-y-4"
+                        >
+                            {[1, 2, 3, 4].map(i => (
+                                <div key={i} className="flex items-center p-5 bg-white/50 rounded-[2.5rem] border border-white">
+                                    <PremiumSkeleton className="size-20 !rounded-3xl shrink-0" />
+                                    <div className="flex-1 px-5 space-y-3">
+                                        <PremiumSkeleton className="h-4 w-1/2" />
+                                        <PremiumSkeleton className="h-3 w-1/3" />
+                                        <div className="flex gap-2">
+                                            <PremiumSkeleton className="h-3 w-12" />
+                                            <PremiumSkeleton className="h-3 w-12" />
+                                        </div>
+                                    </div>
+                                    <PremiumSkeleton className="w-12 h-10 rounded-2xl" />
+                                </div>
+                            ))}
+                        </motion.div>
+                    ) : sortedWalkers.length === 0 ? (
+                        <motion.div
+                            key="empty"
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="flex flex-col items-center justify-center py-20 text-center"
+                        >
+                            <div className="w-20 h-20 bg-slate-50 rounded-[2.5rem] flex items-center justify-center mb-6 shadow-inner">
+                                <Search size={32} className="text-slate-200" />
                             </div>
-                        </div>
-                        <div className="flex-1 px-5 flex flex-col justify-center">
-                            <h3 className="text-lg font-black text-[#102217] leading-tight mb-1">{walker.name}</h3>
-                            <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest line-clamp-1 mb-2">{walker.specialty}</p>
-                            <div className="flex items-center gap-3">
-                                <span className="flex items-center gap-1.5 text-[10px] font-black text-[#2e9c60] uppercase tracking-widest">
-                                    <MapPin size={12} strokeWidth={3} />
-                                    {walker.dist === 999 ? '...' : (walker.dist < 1 ? t('under_1km') || 'Perto' : `${walker.dist.toFixed(1)}km`)}
-                                </span>
-                                <div className="w-1 h-1 rounded-full bg-slate-200"></div>
-                                <span className="text-sm font-black text-[#102217]">
-                                    €{walker.price}
-                                    <span className="text-slate-300 font-bold text-[10px] ml-1 uppercase">{t('per_hour')}</span>
-                                </span>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-1.5 bg-[#22eb7e]/10 px-3 py-2 rounded-2xl">
-                            <Star size={14} className="text-[#2e9c60] fill-[#2e9c60]" />
-                            <span className="text-[#2e9c60] text-xs font-black">{walker.rating.toFixed(1)}</span>
-                        </div>
-                    </div>
-                ))}
+                            <h3 className="text-xl font-black text-slate-900 mb-2">Nenhum colaborador encontrado</h3>
+                            <p className="text-sm font-bold text-slate-400 max-w-[200px]">Tente ajustar seus filtros ou mudar de localização.</p>
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="list"
+                            initial="hidden"
+                            animate="visible"
+                            variants={{
+                                visible: {
+                                    transition: {
+                                        staggerChildren: 0.1
+                                    }
+                                }
+                            }}
+                            className="space-y-4"
+                        >
+                            {sortedWalkers.map(walker => (
+                                <motion.div
+                                    key={walker.id}
+                                    variants={{
+                                        hidden: { y: 20, opacity: 0 },
+                                        visible: { y: 0, opacity: 1 }
+                                    }}
+                                >
+                                    <GlassCard
+                                        onClick={() => navigate(`/booking/${walker.id}`)}
+                                        className="!p-5 flex items-center"
+                                    >
+                                        <div className="relative shrink-0">
+                                            <motion.img
+                                                whileHover={{ scale: 1.1 }}
+                                                className="h-20 w-20 rounded-3xl object-cover shadow-md"
+                                                src={walker.img}
+                                                alt={walker.name}
+                                            />
+                                            <div className="absolute -bottom-1 -right-1 bg-[#22eb7e] rounded-full w-6 h-6 border-2 border-white flex items-center justify-center shadow-sm">
+                                                <ShieldCheck size={12} className="text-[#102217]" strokeWidth={3} />
+                                            </div>
+                                        </div>
+                                        <div className="flex-1 px-5 flex flex-col justify-center">
+                                            <h3 className="text-lg font-black text-[#102217] leading-tight mb-0.5">{walker.name}</h3>
+                                            <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.15em] line-clamp-1 mb-2.5">{walker.specialty}</p>
+                                            <div className="flex items-center gap-3">
+                                                <span className="flex items-center gap-1.5 text-[10px] font-black text-[#22eb7e] uppercase tracking-wider">
+                                                    <MapPin size={10} strokeWidth={3} />
+                                                    {walker.dist === 999 ? '...' : (walker.dist < 1 ? t('under_1km') || 'Perto' : `${walker.dist.toFixed(1)}km`)}
+                                                </span>
+                                                <div className="w-1 h-1 rounded-full bg-slate-200"></div>
+                                                <span className="text-sm font-black text-[#102217]">
+                                                    €{walker.price}
+                                                    <span className="text-slate-300 font-bold text-[10px] ml-1 uppercase">{t('per_hour')}</span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-end gap-2">
+                                            <div className="flex items-center gap-1.5 bg-[#22eb7e]/10 px-3 py-2 rounded-2xl">
+                                                <Star size={14} className="text-[#2e9c60] fill-[#2e9c60]" />
+                                                <span className="text-[#2e9c60] text-xs font-black">{walker.rating.toFixed(1)}</span>
+                                            </div>
+                                            <div className="text-slate-300">
+                                                <MoreVertical size={16} />
+                                            </div>
+                                        </div>
+                                    </GlassCard>
+                                </motion.div>
+                            ))}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </main>
 
             {showFilters && (

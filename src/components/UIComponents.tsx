@@ -5,6 +5,17 @@ export const Skeleton: React.FC<{ className?: string }> = ({ className }) => (
     <div className={`shimmer rounded-xl ${className}`} />
 );
 
+export const PremiumSkeleton: React.FC<{ className?: string }> = ({ className }) => (
+    <div className={`relative overflow-hidden rounded-2xl bg-slate-100 ${className}`}>
+        <motion.div
+            initial={{ x: '-100%' }}
+            animate={{ x: '100%' }}
+            transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
+        />
+    </div>
+);
+
 export const PremiumButton: React.FC<{
     onClick?: () => void;
     variant?: 'primary' | 'dark' | 'ghost';
@@ -100,3 +111,27 @@ export const LoadingOverlay: React.FC = () => (
         <p className="mt-6 text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Dog Drive</p>
     </motion.div>
 );
+
+export const GlassCard: React.FC<{
+    children: React.ReactNode;
+    className?: string;
+    onClick?: () => void;
+    hover?: boolean;
+}> = ({ children, className = '', onClick, hover = true }) => {
+    return (
+        <motion.div
+            whileHover={hover ? { y: -5, scale: 1.02, boxShadow: '0 20px 40px -15px rgba(0,0,0,0.05)' } : {}}
+            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+            onClick={onClick}
+            className={`
+                relative bg-white/70 backdrop-blur-xl border border-white/40 
+                rounded-[2.5rem] p-6 shadow-sm shadow-slate-200/50 
+                overflow-hidden ${onClick ? 'cursor-pointer' : ''} ${className}
+            `}
+        >
+            {/* Glossy Reflection overlay */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent pointer-events-none" />
+            <div className="relative z-10">{children}</div>
+        </motion.div>
+    );
+};

@@ -45,6 +45,20 @@ export const authService = {
         return await supabase.auth.resetPasswordForEmail(email, { redirectTo });
     },
 
+    async signInWithOAuth(provider: 'google' | 'apple') {
+        const redirectTo = `${window.location.origin}/feed`;
+        return await supabase.auth.signInWithOAuth({
+            provider,
+            options: {
+                redirectTo,
+                queryParams: {
+                    access_type: 'offline',
+                    prompt: 'consent',
+                },
+            },
+        });
+    },
+
     async getSession() {
         return await supabase.auth.getSession();
     },
