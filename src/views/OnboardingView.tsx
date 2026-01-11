@@ -142,16 +142,23 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                 showNotification('Nome do pet muito curto', 'error');
                 return;
             }
-            if ((selectedRole === UserRole.PETSHOP || selectedRole === UserRole.GROOMING) && (!businessData.name || businessData.name.trim().length < 3)) {
+        }
+
+        if (step === 3 && (selectedRole === UserRole.PETSHOP || selectedRole === UserRole.GROOMING)) {
+            if (!businessData.name || businessData.name.trim().length < 3) {
                 showNotification('Nome da empresa inválido', 'error');
+                return;
+            }
+            const nifRegex = /^[0-9]{9}$/;
+            if (!nifRegex.test(businessData.tax_id)) {
+                showNotification('NIF deve ter 9 dígitos (Portugal)', 'error');
                 return;
             }
         }
 
-        if (step === 3 && (selectedRole === UserRole.PETSHOP || selectedRole === UserRole.GROOMING)) {
-            const nifRegex = /^[0-9]{9}$/;
-            if (!nifRegex.test(businessData.tax_id)) {
-                showNotification('NIF deve ter 9 dígitos (Portugal)', 'error');
+        if (step === 2 && (selectedRole === UserRole.WALKER || selectedRole === UserRole.BOARDING)) {
+            if (providerData.services.length === 0) {
+                showNotification('Selecione pelo menos um serviço', 'error');
                 return;
             }
         }
@@ -468,6 +475,22 @@ const OnboardingView: React.FC<OnboardingViewProps> = ({ onSelectRole }) => {
                                             value={dogData.name}
                                             onChange={e => setDogData({ ...dogData, name: e.target.value })}
                                             placeholder="ex: Max"
+                                            className="input-premium !pl-20"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2 group">
+                                    <label className="label-premium ml-5 group-focus-within:text-[#22eb7e] transition-colors">Raça</label>
+                                    <div className="relative">
+                                        <div className="absolute left-6 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-slate-50 text-slate-400 group-focus-within:text-[#102217] group-focus-within:bg-[#22eb7e] transition-all">
+                                            <Dog size={18} strokeWidth={2.5} />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            value={dogData.breed}
+                                            onChange={e => setDogData({ ...dogData, breed: e.target.value })}
+                                            placeholder="ex: Golden Retriever"
                                             className="input-premium !pl-20"
                                         />
                                     </div>
