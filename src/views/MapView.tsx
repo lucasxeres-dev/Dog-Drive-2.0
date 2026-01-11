@@ -8,15 +8,16 @@ import {
     Search,
     Navigation,
     Star,
-    Footprints,
     Home,
     Scissors,
     ShoppingBag,
-    X
+    X,
+    Clock,
+    MapPin as MapIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSupabase } from '../hooks/useSupabase';
-import { Skeleton } from '../components/UIComponents';
+import { Skeleton, GlassCard, PremiumButton } from '../components/UIComponents';
 
 // Fix for default marker icons
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -39,16 +40,15 @@ interface ServicePoint {
     longitude: number;
     rating: number;
     address: string;
+    hours?: string;
 }
 
-// Component to get user location
 const UserLocationMarker: React.FC = () => {
     const [position, setPosition] = useState<[number, number] | null>(null);
     const map = useMap();
 
     useEffect(() => {
         map.locate({ setView: true, maxZoom: 14 });
-
         map.on('locationfound', (e) => {
             setPosition([e.latlng.lat, e.latlng.lng]);
         });
@@ -72,10 +72,9 @@ const MapView: React.FC = () => {
     useEffect(() => {
         const fetchLocations = async () => {
             try {
-                // Fetch from business_locations joined with business_profiles
                 const { data, error } = await supabase
                     .from('business_locations')
-                    .select('*, business_profiles(id, company_name, service_type)')
+                    .select('*, business_profiles(id, company_name, service_type, rating)')
                     .eq('is_active', true);
 
                 if (error) throw error;
@@ -85,12 +84,13 @@ const MapView: React.FC = () => {
                     .map((l: any) => ({
                         id: l.id,
                         business_id: l.business_id,
-                        name: l.name || l.business_profiles?.company_name || 'Local',
-                        role: l.business_profiles?.service_type || 'grooming',
+                        name: l.name || l.business_profiles?.company_name || 'Estabelecimento',
+                        role: l.business_profiles?.service_type || 'boarding',
                         latitude: parseFloat(l.latitude),
                         longitude: parseFloat(l.longitude),
-                        rating: 4.8,
-                        address: l.address
+                        rating: l.business_profiles?.rating || 4.5 + Math.random() * 0.5,
+                        address: l.address,
+                        hours: '09:00 - 19:00'
                     }));
 
                 setLocations(mapped);
@@ -115,21 +115,21 @@ const MapView: React.FC = () => {
             case 'petshop': return ShoppingBag;
             case 'boarding': return Home;
             case 'grooming': return Scissors;
-            default: return Footprints;
+            default: return MapIcon;
         }
     };
 
     const getColorForRole = (role: string) => {
         switch (role) {
-            case 'petshop': return 'bg-[#22eb7e]';
-            case 'boarding': return 'bg-purple-500';
-            case 'grooming': return 'bg-pink-500';
-            default: return 'bg-blue-500';
+            case 'petshop': return 'text-[#22eb7e] bg-[#22eb7e]/10';
+            case 'boarding': return 'text-purple-500 bg-purple-500/10';
+            case 'grooming': return 'text-pink-500 bg-pink-500/10';
+            default: return 'text-blue-500 bg-blue-500/10';
         }
     };
 
     return (
-        <div className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-900 relative">
+        <div className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-100 relative">
             <div className="absolute inset-0 z-0">
                 {!loading && (
                     <MapContainer
@@ -142,9 +142,7 @@ const MapView: React.FC = () => {
                             attribution='&copy; OpenStreetMap'
                             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                         />
-
                         <UserLocationMarker />
-
                         {filteredLocations.map((loc) => (
                             <Marker
                                 key={loc.id}
@@ -154,9 +152,12 @@ const MapView: React.FC = () => {
                                 }}
                             >
                                 <Popup>
-                                    <div className="text-center">
-                                        <p className="font-bold text-sm">{loc.name}</p>
-                                        <p className="text-[10px] text-slate-500 uppercase">{loc.role}</p>
+                                    <div className="p-2">
+                                        <p className="font-black text-slate-900 leading-tight mb-1">{loc.name}</p>
+                                        <div className="flex items-center gap-1">
+                                            <Star size={10} className="text-amber-400 fill-amber-400" />
+                                            <span className="text-[10px] font-bold text-slate-600">{loc.rating.toFixed(1)}</span>
+                                        </div>
                                     </div>
                                 </Popup>
                             </Marker>
@@ -165,35 +166,34 @@ const MapView: React.FC = () => {
                 )}
             </div>
 
-            <div className="absolute top-0 left-0 right-0 p-6 z-20">
+            <div className="absolute top-0 left-0 right-0 p-6 z-20 space-y-4">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => navigate(-1)}
-                        className="size-12 rounded-2xl bg-white shadow-lg flex items-center justify-center text-slate-600"
+                        className="size-12 rounded-2xl bg-white shadow-xl flex items-center justify-center text-slate-600 active:scale-95 transition-all"
                     >
                         <ChevronLeft size={24} />
                     </button>
-                    <div className="flex-1 relative">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <div className="flex-1 relative group">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#22eb7e] transition-colors" size={18} />
                         <input
-                            placeholder="Buscar no Dog Drive..."
-                            className="w-full h-12 pl-12 pr-4 rounded-2xl bg-white shadow-lg text-slate-900 outline-none font-bold"
+                            placeholder="Buscar estabelecimentos..."
+                            className="w-full h-12 pl-12 pr-4 rounded-2xl bg-white shadow-xl text-slate-900 outline-none font-bold text-sm placeholder:text-slate-300 focus:ring-4 focus:ring-[#22eb7e]/5 transition-all"
                         />
                     </div>
                 </div>
 
-                <div className="flex gap-2 overflow-x-auto no-scrollbar mt-4">
+                <div className="flex gap-2 overflow-x-auto no-scrollbar">
                     {[
                         { label: 'Todos', value: 'all' },
-                        { label: 'Passeios', value: 'walker' },
-                        { label: 'Lojas Pet', value: 'petshop' },
                         { label: 'Hospedagem', value: 'boarding' },
-                        { label: 'Banho & Tosa', value: 'grooming' }
+                        { label: 'Banho & Tosa', value: 'grooming' },
+                        { label: 'Lojas Pet', value: 'petshop' }
                     ].map((cat) => (
                         <button
                             key={cat.value}
                             onClick={() => setFilter(cat.value)}
-                            className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${filter === cat.value ? 'bg-[#22eb7e] text-[#102217]' : 'bg-white text-slate-600'}`}
+                            className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all shadow-lg ${filter === cat.value ? 'bg-[#102217] text-white' : 'bg-white text-slate-400'}`}
                         >
                             {cat.label}
                         </button>
@@ -204,42 +204,58 @@ const MapView: React.FC = () => {
             <AnimatePresence>
                 {selectedPoint && (
                     <motion.div
-                        initial={{ y: 100, opacity: 0 }}
+                        initial={{ y: 200, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: 100, opacity: 0 }}
+                        exit={{ y: 200, opacity: 0 }}
                         className="absolute bottom-10 left-6 right-6 z-30"
                     >
-                        <div className="bg-white rounded-[2rem] p-5 flex items-center gap-4 shadow-2xl border border-slate-100 relative">
-                            <div className={`size-16 rounded-[1.5rem] ${getColorForRole(selectedPoint.role)} flex items-center justify-center text-white shadow-lg`}>
-                                {React.createElement(getIconForRole(selectedPoint.role), { size: 32 })}
-                            </div>
-                            <div className="flex-1">
-                                <h3 className="text-slate-900 font-black tracking-tight">{selectedPoint.name}</h3>
-                                <div className="flex items-center gap-1.5 mt-1">
-                                    <Star size={12} className="text-amber-400 fill-amber-400" />
-                                    <span className="text-slate-600 text-xs font-bold">{selectedPoint.rating}</span>
-                                    <span className="text-slate-400 text-[10px]">• {selectedPoint.address.split(',')[0]}</span>
-                                </div>
-                                <button
-                                    onClick={() => navigate(`/store/${selectedPoint.business_id}`)}
-                                    className="mt-3 text-[#22eb7e] text-[10px] font-black uppercase tracking-widest"
-                                >
-                                    Ver Perfil Completo
-                                </button>
-                            </div>
+                        <GlassCard className="!p-5 relative flex flex-col gap-4 border-white/40">
                             <button
                                 onClick={() => setSelectedId(null)}
-                                className="absolute top-4 right-4 text-slate-300"
+                                className="absolute top-4 right-4 text-slate-300 hover:text-slate-900 transition-colors"
                             >
                                 <X size={20} />
                             </button>
-                        </div>
+
+                            <div className="flex items-center gap-4">
+                                <div className={`size-16 rounded-[1.5rem] ${getColorForRole(selectedPoint.role)} flex items-center justify-center shadow-inner`}>
+                                    {React.createElement(getIconForRole(selectedPoint.role), { size: 30 })}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="text-slate-900 font-black tracking-tighter truncate leading-none mb-1">{selectedPoint.name}</h3>
+                                    <div className="flex items-center gap-1.5 mb-2">
+                                        <div className="flex items-center gap-1">
+                                            <Star size={12} className="text-amber-400 fill-amber-400" />
+                                            <span className="text-slate-900 text-xs font-black">{selectedPoint.rating.toFixed(1)}</span>
+                                        </div>
+                                        <span className="text-slate-400 text-[10px] uppercase font-bold tracking-widest">• {selectedPoint.role}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 text-slate-500">
+                                        <MapIcon size={12} className="text-[#22eb7e]" />
+                                        <p className="text-[10px] font-medium truncate">{selectedPoint.address}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+                                <div className="flex items-center gap-2 text-slate-400">
+                                    <Clock size={12} />
+                                    <span className="text-[10px] font-bold uppercase tracking-widest">{selectedPoint.hours}</span>
+                                </div>
+                                <PremiumButton
+                                    onClick={() => navigate(`/store/${selectedPoint.business_id}`)}
+                                    className="!h-10 !px-6 !rounded-xl !text-[10px] !bg-[#22eb7e] !text-[#102217] font-black uppercase tracking-widest"
+                                >
+                                    Ver Perfil
+                                </PremiumButton>
+                            </div>
+                        </GlassCard>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            <button className="absolute bottom-10 right-6 size-14 rounded-[1.5rem] bg-[#22eb7e] shadow-2xl flex items-center justify-center text-[#102217] z-20">
-                <Navigation size={24} fill="currentColor" />
+            <button className="absolute bottom-10 right-6 size-14 rounded-2xl bg-[#102217] shadow-2xl flex items-center justify-center text-[#22eb7e] z-20 active:scale-90 transition-all">
+                <Navigation size={24} strokeWidth={2.5} />
             </button>
         </div>
     );

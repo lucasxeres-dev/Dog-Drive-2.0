@@ -6,12 +6,42 @@ export enum UserRole {
     GROOMING = 'grooming'
 }
 
+export interface BusinessProfile {
+    id: string;
+    company_name: string;
+    service_type: UserRole;
+    rating: number;
+    description?: string;
+    image_url?: string;
+    address?: string;
+    phone?: string;
+    is_active: boolean;
+    created_at?: string;
+}
+
+export interface Match {
+    id: string;
+    user_id: string;
+    target_dog_id?: string;
+    target_profile_id?: string;
+    status: 'pending' | 'liked' | 'rejected' | 'matched';
+    match_type?: string;
+    created_at: string;
+    target_profile?: UserProfile;
+}
+
 export interface UserProfile {
     id: string;
+    full_name?: string;
+    username?: string;
+    avatar_url?: string;
     role: UserRole;
     preferences: any;
+    bio?: string;
+    phone?: string;
+    email?: string;
+    rating?: number;
     created_at?: string;
-    // Add other fields as needed
 }
 
 export interface Dog {
