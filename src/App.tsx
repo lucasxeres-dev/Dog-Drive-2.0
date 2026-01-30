@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from 'react';
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { AuthProvider } from './contexts/AuthContext';
@@ -50,10 +50,7 @@ const MainApp: React.FC = () => {
 
     if (isLoadingAuth) return <LoadingFallback />;
 
-    const isAuthPage = ['/', '/login', '/register', '/onboarding'].includes(location.pathname);
-    const containerClasses = isAuthPage
-        ? "w-full lg:max-w-6xl h-[100dvh] lg:h-[850px] bg-white dark:bg-background-dark lg:rounded-[4rem] shadow-2xl relative overflow-hidden flex flex-col border border-white/5 font-sans transition-all duration-700"
-        : "w-full max-w-[440px] h-[100dvh] md:h-[850px] bg-white dark:bg-background-dark md:rounded-[3rem] shadow-2xl relative overflow-hidden flex flex-col border border-white/5 font-sans transition-all duration-700";
+    const containerClasses = "w-full max-w-[440px] m-auto h-[100dvh] md:h-[850px] bg-white dark:bg-background-dark md:rounded-[3rem] shadow-2xl relative overflow-hidden flex flex-col border border-white/5 font-sans transition-all duration-700";
 
     return (
         <div className="min-h-screen bg-[#050705] flex justify-center items-center p-0 md:p-4">
@@ -77,8 +74,6 @@ const MainApp: React.FC = () => {
                         <Route path="/cart" element={<CartView />} />
                         <Route path="/checkout" element={<CheckoutView />} />
                         <Route path="/provider-dashboard" element={<ProviderDashboard />} />
-                        <Route path="/chats" element={<ChatList />} />
-                        <Route path="/chat/:chatId" element={<ChatView />} />
                         <Route path="/bookings" element={<MyBookingsView />} />
                         <Route path="/bookings/:id" element={<BookingDetailView />} />
                         <Route path="/wallet" element={<WalletView />} />
@@ -148,7 +143,7 @@ const FeedCheck: React.FC<{ isAuthenticated: boolean, role: string | null }> = (
     return role === 'owner' ? <WalkerListView /> : <FeedView />;
 };
 
-import { useLocation } from 'react-router-dom';
+
 
 const AuthBottomNav: React.FC<{ isAuthenticated: boolean, preferences: any, role: string | null }> = ({ isAuthenticated, preferences, role }) => {
     const location = useLocation();
